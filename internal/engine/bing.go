@@ -48,7 +48,14 @@ func (e *BingEngine) About() string {
 }
 
 func (e *BingEngine) Search(ctx context.Context, req models.SearchRequest) ([]models.SearchResult, error) {
-	searchURL := fmt.Sprintf("https://www.bing.com/search?q=%s&count=15", url.QueryEscape(req.Query))
+	adlt := "off"
+	if req.SafeSearch == models.SafeSearchStrict {
+		adlt = "strict"
+	} else if req.SafeSearch == models.SafeSearchModerate {
+		adlt = "moderate"
+	}
+
+	searchURL := fmt.Sprintf("https://www.bing.com/search?q=%s&count=15&adlt=%s", url.QueryEscape(req.Query), adlt)
 	if req.Page > 1 {
 		searchURL += fmt.Sprintf("&first=%d", (req.Page-1)*15+1)
 	}
@@ -61,6 +68,7 @@ func (e *BingEngine) Search(ctx context.Context, req models.SearchRequest) ([]mo
 	httpReq.Header.Set("User-Agent", GetRandomUserAgent())
 	httpReq.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 	httpReq.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	httpReq.Header.Set("Cookie", fmt.Sprintf("SRCHHPGUSR=ADLT=%s", strings.ToUpper(adlt)))
 
 	resp, err := e.client.Do(httpReq)
 	if err != nil {

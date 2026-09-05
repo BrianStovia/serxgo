@@ -166,9 +166,9 @@
                 <div class="settings-sublabel">Filter adult or explicit media content</div>
               </div>
               <select id="safesearch-select" name="safesearch" class="form-select" style="min-width: 200px;">
-                <option value="2">Strict (Filter text &amp; media)</option>
-                <option value="1" selected>Moderate (Filter explicit images)</option>
-                <option value="0">None (No filtering)</option>
+                <option value="0" {{if or (eq .SafeSearch "0") (not .SafeSearch)}}selected{{end}}>Off (Uncensored / No filtering)</option>
+                <option value="1" {{if eq .SafeSearch "1"}}selected{{end}}>Moderate (Filter explicit images)</option>
+                <option value="2" {{if eq .SafeSearch "2"}}selected{{end}}>Strict (Filter text &amp; media)</option>
               </select>
             </div>
 

@@ -52,8 +52,15 @@ func (e *GoogleEngine) Search(ctx context.Context, req models.SearchRequest) ([]
 		hl = req.Language
 	}
 
-	searchURL := fmt.Sprintf("https://www.google.com/search?q=%s&hl=%s&num=15&gbv=1",
-		url.QueryEscape(req.Query), hl)
+	safeParam := "off"
+	if req.SafeSearch == models.SafeSearchStrict {
+		safeParam = "active"
+	} else if req.SafeSearch == models.SafeSearchModerate {
+		safeParam = "medium"
+	}
+
+	searchURL := fmt.Sprintf("https://www.google.com/search?q=%s&hl=%s&num=15&gbv=1&safe=%s",
+		url.QueryEscape(req.Query), hl, safeParam)
 	if req.Page > 1 {
 		searchURL += fmt.Sprintf("&start=%d", (req.Page-1)*10)
 	}

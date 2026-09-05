@@ -47,7 +47,14 @@ func (e *BraveEngine) About() string {
 }
 
 func (e *BraveEngine) Search(ctx context.Context, req models.SearchRequest) ([]models.SearchResult, error) {
-	searchURL := fmt.Sprintf("https://search.brave.com/search?q=%s&source=web", url.QueryEscape(req.Query))
+	safeParam := "off"
+	if req.SafeSearch == models.SafeSearchStrict {
+		safeParam = "strict"
+	} else if req.SafeSearch == models.SafeSearchModerate {
+		safeParam = "moderate"
+	}
+
+	searchURL := fmt.Sprintf("https://search.brave.com/search?q=%s&source=web&safesearch=%s", url.QueryEscape(req.Query), safeParam)
 	if req.Page > 1 {
 		searchURL += fmt.Sprintf("&offset=%d", (req.Page-1)*20)
 	}

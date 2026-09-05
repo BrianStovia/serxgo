@@ -698,7 +698,7 @@
         form.querySelectorAll('input[name^="engine_"]:checked').forEach(cb => engines.push(cb.value));
         const data = {
           theme: themeSelect ? themeSelect.value : 'dark',
-          safesearch: safeSearchSelect ? safeSearchSelect.value : '1',
+          safesearch: safeSearchSelect ? safeSearchSelect.value : '0',
           language: langSelect ? langSelect.value : '',
           infinite_scroll: infiniteToggle ? infiniteToggle.checked : false,
           new_tab: newtabToggle ? newtabToggle.checked : true,

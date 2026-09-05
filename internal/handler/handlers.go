@@ -562,9 +562,15 @@ func (h *Handler) ServeSettings(w http.ResponseWriter, r *http.Request) {
 
 	categorized := engine.GetCategorizedCatalog()
 
+	safeSearch := "0"
+	if cookie, err := r.Cookie("searxgo_safesearch"); err == nil {
+		safeSearch = cookie.Value
+	}
+
 	data := map[string]interface{}{
 		"Categories": categorized,
 		"AllEngines": engine.FullEngineCatalog,
+		"SafeSearch": safeSearch,
 		"Saved":      r.URL.Query().Get("saved") == "1",
 	}
 	var buf bytes.Buffer
