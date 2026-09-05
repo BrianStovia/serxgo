@@ -30,7 +30,7 @@ func (e *GeniusEngine) DisplayName() string {
 }
 
 func (e *GeniusEngine) Categories() []models.Category {
-	return []models.Category{models.CategoryMusic, models.CategoryGeneral}
+	return []models.Category{models.CategoryMusic}
 }
 
 func (e *GeniusEngine) DefaultOn() bool {

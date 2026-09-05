@@ -31,7 +31,7 @@ func (e *ArxivEngine) DisplayName() string {
 }
 
 func (e *ArxivEngine) Categories() []models.Category {
-	return []models.Category{models.CategoryScience, models.CategoryGeneral}
+	return []models.Category{models.CategoryScience}
 }
 
 func (e *ArxivEngine) DefaultOn() bool {

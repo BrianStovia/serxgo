@@ -31,7 +31,7 @@ func (e *RedditEngine) DisplayName() string {
 }
 
 func (e *RedditEngine) Categories() []models.Category {
-	return []models.Category{models.CategorySocial, models.CategoryGeneral, models.CategoryNews}
+	return []models.Category{models.CategorySocial, models.CategoryNews}
 }
 
 func (e *RedditEngine) DefaultOn() bool {

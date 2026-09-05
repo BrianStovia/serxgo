@@ -3,6 +3,7 @@ searxgo
 searxgo.exe
 searxgo-linux
 searxgo-linux-*
+searxgo-darwin-*
 *.exe
 *.exe~
 *.dll

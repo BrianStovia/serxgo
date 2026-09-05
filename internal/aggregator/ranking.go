@@ -40,21 +40,43 @@ func CalculateSearXNGScore(result *models.SearchResult, query string) float64 {
 		if pos <= 0 {
 			pos = 1
 		}
-		score += (weight * 10.0) / float64(pos)
+		score += (weight * 15.0) / float64(pos)
 	}
 
-	// 3. Exact query in title bonus (SearXNG ranking enhancement)
+	// 3. Relevance bonus based on query terms matching Title, URL, and Content
 	queryLower := strings.ToLower(strings.TrimSpace(query))
 	titleLower := strings.ToLower(result.Title)
+	urlLower := strings.ToLower(result.URL)
+	contentLower := strings.ToLower(result.Content)
 
 	if queryLower != "" {
+		// Full query exact match in title: massive boost
 		if strings.Contains(titleLower, queryLower) {
+			score += 25.0
+		}
+		// Full query exact match in URL / Domain
+		if strings.Contains(urlLower, queryLower) {
 			score += 15.0
 		}
-		for _, term := range strings.Fields(queryLower) {
+
+		terms := strings.Fields(queryLower)
+		allTermsInTitle := true
+		for _, term := range terms {
 			if strings.Contains(titleLower, term) {
-				score += 2.5
+				score += 5.0
+			} else {
+				allTermsInTitle = false
 			}
+			if strings.Contains(urlLower, term) {
+				score += 3.0
+			}
+			if strings.Contains(contentLower, term) {
+				score += 1.5
+			}
+		}
+		// Bonus if all words of query are present in title
+		if len(terms) > 1 && allTermsInTitle {
+			score += 10.0
 		}
 	}
 

@@ -31,7 +31,7 @@ func (e *GitHubEngine) DisplayName() string {
 }
 
 func (e *GitHubEngine) Categories() []models.Category {
-	return []models.Category{models.CategoryIT, models.CategoryGeneral}
+	return []models.Category{models.CategoryIT}
 }
 
 func (e *GitHubEngine) DefaultOn() bool {

@@ -1126,28 +1126,7 @@ func searchTorrentsWeb(ctx context.Context, client *http.Client, engineID, query
 }
 
 func searchGenericWeb(ctx context.Context, client *http.Client, def EngineDefinition, query string) ([]models.SearchResult, error) {
-	searchURL := fmt.Sprintf("https://html.duckduckgo.com/html/?q=%s", url.QueryEscape(query))
-	req, err := http.NewRequestWithContext(ctx, "GET", searchURL, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	results := parseDuckDuckGoHTML(string(body))
-	for i := range results {
-		results[i].Engine = def.ID
-		results[i].Category = def.Category
-	}
-	return results, nil
+	// Specialized catalog engines have explicit handlers above.
+	// For secondary catalog engines without an active API adapter, return empty to prevent upstream rate-limiting.
+	return []models.SearchResult{}, nil
 }

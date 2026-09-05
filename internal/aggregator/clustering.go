@@ -110,7 +110,7 @@ func GenerateTopicClusters(results []models.SearchResult, query string) ([]model
 			// 2. Check keywords if not matched by domain
 			if !matched {
 				for _, kw := range rule.Keywords {
-					if strings.Contains(titleLower, kw) || strings.Contains(contentLower, kw) {
+					if containsWord(titleLower, kw) || containsWord(contentLower, kw) {
 						matched = true
 						break
 					}
@@ -206,4 +206,41 @@ func generateDynamicKeywordClusters(results []models.SearchResult, query string)
 	}
 
 	return dyn
+}
+
+func containsWord(text, target string) bool {
+	textLower := strings.ToLower(text)
+	targetLower := strings.ToLower(target)
+
+	if strings.Contains(targetLower, " ") {
+		return strings.Contains(textLower, targetLower)
+	}
+
+	idx := 0
+	targetLen := len(targetLower)
+	for {
+		pos := strings.Index(textLower[idx:], targetLower)
+		if pos == -1 {
+			return false
+		}
+		actualPos := idx + pos
+
+		startOk := actualPos == 0 || isBoundaryRune(rune(textLower[actualPos-1]))
+		endPos := actualPos + targetLen
+		endOk := endPos == len(textLower) || isBoundaryRune(rune(textLower[endPos]))
+
+		if startOk && endOk {
+			return true
+		}
+
+		idx = actualPos + 1
+		if idx >= len(textLower) {
+			break
+		}
+	}
+	return false
+}
+
+func isBoundaryRune(r rune) bool {
+	return (r < 'a' || r > 'z') && (r < '0' || r > '9')
 }

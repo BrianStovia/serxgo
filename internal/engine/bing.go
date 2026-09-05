@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -86,11 +87,15 @@ func (e *BingEngine) Search(ctx context.Context, req models.SearchRequest) ([]mo
 		}
 		linkNode := FindFirstNode(titleNode, "a", "")
 		if linkNode == nil {
+			linkNode = FindFirstNode(item, "a", "")
+		}
+		if linkNode == nil {
 			continue
 		}
 
-		href := GetAttr(linkNode, "href")
-		if href == "" || strings.HasPrefix(href, "/") || strings.Contains(href, "bing.com") {
+		rawHref := GetAttr(linkNode, "href")
+		cleanHref := extractBingURL(rawHref)
+		if cleanHref == "" || strings.HasPrefix(cleanHref, "/") {
 			continue
 		}
 
@@ -110,15 +115,15 @@ func (e *BingEngine) Search(ctx context.Context, req models.SearchRequest) ([]mo
 			}
 		}
 
-		parsed, err := url.Parse(href)
-		pretty := href
+		parsed, err := url.Parse(cleanHref)
+		pretty := cleanHref
 		if err == nil {
 			pretty = parsed.Host + parsed.Path
 		}
 
 		results = append(results, models.SearchResult{
 			Title:     title,
-			URL:       href,
+			URL:       cleanHref,
 			PrettyURL: pretty,
 			Content:   content,
 			Engine:    e.Name(),
@@ -127,4 +132,32 @@ func (e *BingEngine) Search(ctx context.Context, req models.SearchRequest) ([]mo
 	}
 
 	return results, nil
+}
+
+func extractBingURL(raw string) string {
+	if strings.Contains(raw, "bing.com/ck/a") {
+		u, err := url.Parse(raw)
+		if err == nil {
+			uParam := u.Query().Get("u")
+			if strings.HasPrefix(uParam, "a1") {
+				b64Str := strings.TrimPrefix(uParam, "a1")
+				if pad := len(b64Str) % 4; pad != 0 {
+					b64Str += strings.Repeat("=", 4-pad)
+				}
+				decoded, err := base64.URLEncoding.DecodeString(b64Str)
+				if err != nil {
+					decoded, err = base64.StdEncoding.DecodeString(b64Str)
+				}
+				if err == nil && len(decoded) > 0 {
+					return string(decoded)
+				}
+			}
+		}
+	}
+	if strings.HasPrefix(raw, "http://") || strings.HasPrefix(raw, "https://") {
+		if !strings.Contains(raw, "bing.com") {
+			return raw
+		}
+	}
+	return ""
 }

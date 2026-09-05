@@ -34,7 +34,7 @@ func (e *StackOverflowEngine) DisplayName() string {
 }
 
 func (e *StackOverflowEngine) Categories() []models.Category {
-	return []models.Category{models.CategoryIT, models.CategoryGeneral}
+	return []models.Category{models.CategoryIT}
 }
 
 func (e *StackOverflowEngine) DefaultOn() bool {

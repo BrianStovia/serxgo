@@ -100,8 +100,15 @@ func (a *Aggregator) Search(ctx context.Context, req models.SearchRequest) (*mod
 				selectedEngines = append(selectedEngines, e)
 			}
 		}
+	} else if len(bangParsed.Engines) == 0 {
+		// Default behavior (SearXNG Parity): Query engines enabled by default for this category
+		for _, e := range availableEngines {
+			if e.DefaultOn() {
+				selectedEngines = append(selectedEngines, e)
+			}
+		}
 	} else {
-		// Query all engines in the selected category for maximum coverage & multi-source aggregation
+		// Bang specified engines
 		selectedEngines = availableEngines
 	}
 

@@ -30,7 +30,7 @@ func (e *OpenStreetMapEngine) DisplayName() string {
 }
 
 func (e *OpenStreetMapEngine) Categories() []models.Category {
-	return []models.Category{models.CategoryMaps, models.CategoryGeneral}
+	return []models.Category{models.CategoryMaps}
 }
 
 func (e *OpenStreetMapEngine) DefaultOn() bool {

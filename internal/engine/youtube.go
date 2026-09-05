@@ -33,7 +33,7 @@ func (e *YouTubeEngine) DisplayName() string {
 }
 
 func (e *YouTubeEngine) Categories() []models.Category {
-	return []models.Category{models.CategoryVideos, models.CategoryGeneral}
+	return []models.Category{models.CategoryVideos}
 }
 
 func (e *YouTubeEngine) DefaultOn() bool {

@@ -31,7 +31,7 @@ func (e *HackerNewsEngine) DisplayName() string {
 }
 
 func (e *HackerNewsEngine) Categories() []models.Category {
-	return []models.Category{models.CategoryIT, models.CategoryGeneral, models.CategoryNews}
+	return []models.Category{models.CategoryIT, models.CategoryNews}
 }
 
 func (e *HackerNewsEngine) DefaultOn() bool {

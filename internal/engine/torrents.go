@@ -143,7 +143,7 @@ func (e *InternetArchiveEngine) DisplayName() string {
 }
 
 func (e *InternetArchiveEngine) Categories() []models.Category {
-	return []models.Category{models.CategoryFiles, models.CategoryGeneral}
+	return []models.Category{models.CategoryFiles}
 }
 
 func (e *InternetArchiveEngine) DefaultOn() bool {

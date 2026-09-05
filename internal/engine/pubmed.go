@@ -31,7 +31,7 @@ func (e *PubMedEngine) DisplayName() string {
 }
 
 func (e *PubMedEngine) Categories() []models.Category {
-	return []models.Category{models.CategoryScience, models.CategoryGeneral}
+	return []models.Category{models.CategoryScience}
 }
 
 func (e *PubMedEngine) DefaultOn() bool {
