@@ -54,6 +54,20 @@
 
 ## 🚀 Quickstart
 
+### ⚡ 1-Line Automated Installer
+
+**Linux & macOS (Systemd + Service Auto-Setup):**
+```bash
+curl -fsSL https://raw.githubusercontent.com/BrianStovia/serxgo/main/install.sh | bash
+```
+
+**Windows (PowerShell Auto-Setup & PATH Configuration):**
+```powershell
+irm https://raw.githubusercontent.com/BrianStovia/serxgo/main/install.ps1 | iex
+```
+
+---
+
 ### 1. Run from Precompiled Binaries
 
 Download the latest binary for your architecture from [Releases](https://github.com/BrianStovia/serxgo/releases):
