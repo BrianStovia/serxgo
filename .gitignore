@@ -1,0 +1,24 @@
+# Binaries and executables
+searxgo
+searxgo.exe
+searxgo-linux
+searxgo-linux-*
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binaries and coverage
+*.test
+*.out
+coverage.html
+
+# Operating System and IDE files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

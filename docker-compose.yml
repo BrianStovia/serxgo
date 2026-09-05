@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  searxgo:
+    build: .
+    container_name: searxgo
+    restart: unless-stopped
+    ports:
+      - "8184:8184"
+    environment:
+      - SEARXNG_PORT=8184
+      - SEARXNG_BIND_ADDRESS=0.0.0.0
+      - SEARXNG_SECRET_KEY=searxgo-secret-key-change-in-prod
+      - SEARXNG_TIMEOUT_MS=3500
+    volumes:
+      - ./settings.yml:/app/settings.yml:ro
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8184/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

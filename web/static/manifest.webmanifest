@@ -1,0 +1,39 @@
+{
+  "name": "SearXGo - Privacy Metasearch",
+  "short_name": "SearXGo",
+  "description": "Next-Generation Privacy-Preserving Metasearch Engine Aggregator",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0a0c10",
+  "theme_color": "#6366f1",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%236366f1'/><path d='M35 50a15 15 0 1 0 30 0 15 15 0 1 0-30 0' fill='none' stroke='white' stroke-width='6'/><line x1='61' y1='61' x2='78' y2='78' stroke='white' stroke-width='6' stroke-linecap='round'/></svg>",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Images Search",
+      "short_name": "Images",
+      "url": "/search?q=&category=images",
+      "icons": [{ "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🖼️</text></svg>", "sizes": "96x96" }]
+    },
+    {
+      "name": "Videos Search",
+      "short_name": "Videos",
+      "url": "/search?q=&category=videos",
+      "icons": [{ "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>", "sizes": "96x96" }]
+    },
+    {
+      "name": "Preferences & Settings",
+      "short_name": "Settings",
+      "url": "/preferences",
+      "icons": [{ "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>", "sizes": "96x96" }]
+    }
+  ]
+}
