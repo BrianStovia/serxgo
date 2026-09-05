@@ -81,15 +81,19 @@ elif [ -f "./cmd/server/main.go" ] && command -v go >/dev/null 2>&1; then
     echo -e "${GREEN}✓ Compiling from source using Go...${RESET}"
     CGO_ENABLED=0 go build -ldflags="-s -w" -o "${TMP_DIR}/searxgo" ./cmd/server
 else
-    echo -e "${YELLOW}➜ Downloading latest release from GitHub (${REPO})...${RESET}"
+    echo -e "${YELLOW}➜ Downloading prebuilt binary for ${OS}/${TARGET_ARCH}...${RESET}"
+    PREBUILT_URL="https://raw.githubusercontent.com/${REPO}/prebuilt/${BINARY_NAME}"
     RELEASE_URL="https://github.com/${REPO}/releases/latest/download/${BINARY_NAME}"
+    
     if command -v curl >/dev/null 2>&1; then
-        curl -fsSL "${RELEASE_URL}" -o "${TMP_DIR}/searxgo" || true
+        curl -fsSL "${PREBUILT_URL}" -o "${TMP_DIR}/searxgo" 2>/dev/null || curl -fsSL "${RELEASE_URL}" -o "${TMP_DIR}/searxgo" 2>/dev/null || true
     elif command -v wget >/dev/null 2>&1; then
-        wget -q "${RELEASE_URL}" -O "${TMP_DIR}/searxgo" || true
+        wget -q "${PREBUILT_URL}" -O "${TMP_DIR}/searxgo" 2>/dev/null || wget -q "${RELEASE_URL}" -O "${TMP_DIR}/searxgo" 2>/dev/null || true
     fi
 
-    if [ ! -s "${TMP_DIR}/searxgo" ]; then
+    if [ -s "${TMP_DIR}/searxgo" ]; then
+        echo -e "${GREEN}✓ Prebuilt binary downloaded successfully!${RESET}"
+    else
         echo -e "${YELLOW}➜ Downloading repository source (${REPO})...${RESET}"
         mkdir -p "${TMP_DIR}/src"
         if command -v git >/dev/null 2>&1; then

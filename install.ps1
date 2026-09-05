@@ -37,11 +37,25 @@ if (Test-Path ".\searxgo.exe") {
     go build -ldflags="-s -w" -o $TargetExe ./cmd/server
 } else {
     Write-Host "➜ Downloading prebuilt Windows binary from GitHub..." -ForegroundColor Yellow
-    $DownloadUrl = "https://github.com/BrianStovia/serxgo/releases/latest/download/searxgo-windows-amd64.exe"
-    try {
-        Invoke-WebRequest -Uri $DownloadUrl -OutFile $TargetExe -UseBasicParsing
-    } catch {
-        Write-Warning "Could not download release binary directly. Building via Go if available..."
+    $PrebuiltUrl = "https://raw.githubusercontent.com/BrianStovia/serxgo/prebuilt/searxgo-windows-amd64.exe"
+    $ReleaseUrl = "https://github.com/BrianStovia/serxgo/releases/latest/download/searxgo-windows-amd64.exe"
+    $Downloaded = $false
+    
+    foreach ($Url in @($PrebuiltUrl, $ReleaseUrl)) {
+        try {
+            Invoke-WebRequest -Uri $Url -OutFile $TargetExe -UseBasicParsing -ErrorAction Stop
+            if ((Get-Item $TargetExe).Length -gt 1000000) {
+                Write-Host "✓ Prebuilt Windows binary downloaded successfully!" -ForegroundColor Green
+                $Downloaded = $true
+                break
+            }
+        } catch {
+            # Continue to next URL
+        }
+    }
+
+    if (-not $Downloaded) {
+        Write-Warning "Could not download prebuilt binary directly. Building via Go if available..."
         if (Get-Command go -ErrorAction SilentlyContinue) {
             go install github.com/BrianStovia/serxgo/cmd/server@latest
             $Gopath = (go env GOPATH)
