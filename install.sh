@@ -90,12 +90,40 @@ else
     fi
 
     if [ ! -s "${TMP_DIR}/searxgo" ]; then
-        echo -e "${YELLOW}⚠️ Binary release not directly reachable, building locally with Go...${RESET}"
-        if command -v go >/dev/null 2>&1; then
-            go install "github.com/${REPO}/cmd/server@latest"
-            cp "$(go env GOPATH)/bin/server" "${TMP_DIR}/searxgo"
+        echo -e "${YELLOW}➜ Downloading repository source (${REPO})...${RESET}"
+        mkdir -p "${TMP_DIR}/src"
+        if command -v git >/dev/null 2>&1; then
+            git clone --depth 1 "https://github.com/${REPO}.git" "${TMP_DIR}/src"
         else
-            echo -e "${RED}❌ Failed to download or build SearXGo. Please install Go or check your network.${RESET}"
+            curl -fsSL "https://github.com/${REPO}/archive/refs/heads/main.tar.gz" | tar -xz -C "${TMP_DIR}/src" --strip-components=1
+        fi
+
+        # Check if Go is installed on host
+        if command -v go >/dev/null 2>&1; then
+            echo -e "${GREEN}✓ Building SearXGo using host Go compiler...${RESET}"
+            (cd "${TMP_DIR}/src" && CGO_ENABLED=0 go build -ldflags="-s -w" -o "${TMP_DIR}/searxgo" ./cmd/server)
+        else
+            echo -e "${CYAN}➜ Host system does not have Go installed.${RESET}"
+            echo -e "${CYAN}➜ Downloading official portable Go compiler for ${OS}/${TARGET_ARCH}...${RESET}"
+            GO_VER="1.22.6"
+            GO_TAR="go${GO_VER}.${OS}-${TARGET_ARCH}.tar.gz"
+            GO_URL="https://go.dev/dl/${GO_TAR}"
+            
+            mkdir -p "${TMP_DIR}/go_bootstrap"
+            if command -v curl >/dev/null 2>&1; then
+                curl -fsSL "${GO_URL}" | tar -xz -C "${TMP_DIR}/go_bootstrap"
+            elif command -v wget >/dev/null 2>&1; then
+                wget -qO- "${GO_URL}" | tar -xz -C "${TMP_DIR}/go_bootstrap"
+            fi
+
+            if [ -x "${TMP_DIR}/go_bootstrap/go/bin/go" ]; then
+                echo -e "${GREEN}✓ Compiling SearXGo with portable Go compiler...${RESET}"
+                (cd "${TMP_DIR}/src" && CGO_ENABLED=0 "${TMP_DIR}/go_bootstrap/go/bin/go" build -ldflags="-s -w" -o "${TMP_DIR}/searxgo" ./cmd/server)
+            fi
+        fi
+
+        if [ ! -s "${TMP_DIR}/searxgo" ]; then
+            echo -e "${RED}❌ Failed to build SearXGo. Please verify internet connection and retry.${RESET}"
             exit 1
         fi
     fi
