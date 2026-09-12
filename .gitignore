@@ -1,16 +1,15 @@
-# Binaries and executables
-searxgo
-searxgo.exe
-searxgo-linux
-searxgo-linux-*
-searxgo-darwin-*
-dist/
+# Root compiled binaries (dist/ is tracked for prebuilt releases)
+/searxgo
+/searxgo.exe
+/searxgo-linux
+/searxgo-linux-*
+/searxgo-darwin-*
+/searxgo-windows-*
 build/
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
+
+# Ensure dist/ and its contents are tracked
+!dist/
+!dist/**
 
 # Test binaries and coverage
 *.test
@@ -25,3 +24,4 @@ Thumbs.db
 *.swp
 *.swo
 *~
+

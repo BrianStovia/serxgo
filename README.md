@@ -95,7 +95,7 @@ irm https://raw.githubusercontent.com/BrianStovia/serxgo/main/update.ps1 | iex
 
 ### 1. Run from Precompiled Binaries
 
-Download the latest binary for your architecture from [Releases](https://github.com/BrianStovia/serxgo/releases) or the [`prebuilt` branch (`dist/`)](https://github.com/BrianStovia/serxgo/tree/prebuilt/dist):
+Download or clone the latest binary for your architecture directly from the [`dist/` folder](https://github.com/BrianStovia/serxgo/tree/main/dist):
 
 ```bash
 # Linux x86_64 / amd64
