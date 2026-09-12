@@ -98,19 +98,17 @@ if [ -d "./.git" ] && [ -f "./cmd/server/main.go" ] && command -v go >/dev/null 
 # Option B: Download prebuilt binary from GitHub Releases / Raw Repo
 else
     MAIN_DIST_URL="https://raw.githubusercontent.com/${REPO}/main/dist/${BINARY_NAME}"
-    PREBUILT_URL="https://raw.githubusercontent.com/${REPO}/prebuilt/dist/${BINARY_NAME}"
-    PREBUILT_FALLBACK="https://raw.githubusercontent.com/${REPO}/prebuilt/${BINARY_NAME}"
     RELEASE_URL="https://github.com/${REPO}/releases/latest/download/${BINARY_NAME}"
     
     DOWNLOADED=false
     if command -v curl >/dev/null 2>&1; then
-        if curl -fsSL "${MAIN_DIST_URL}" -o "${TMP_DIR}/searxgo" 2>/dev/null || curl -fsSL "${PREBUILT_URL}" -o "${TMP_DIR}/searxgo" 2>/dev/null || curl -fsSL "${PREBUILT_FALLBACK}" -o "${TMP_DIR}/searxgo" 2>/dev/null || curl -fsSL "${RELEASE_URL}" -o "${TMP_DIR}/searxgo" 2>/dev/null; then
+        if curl -fsSL "${MAIN_DIST_URL}" -o "${TMP_DIR}/searxgo" 2>/dev/null || curl -fsSL "${RELEASE_URL}" -o "${TMP_DIR}/searxgo" 2>/dev/null; then
             if [ -s "${TMP_DIR}/searxgo" ]; then
                 DOWNLOADED=true
             fi
         fi
     elif command -v wget >/dev/null 2>&1; then
-        if wget -q "${MAIN_DIST_URL}" -O "${TMP_DIR}/searxgo" 2>/dev/null || wget -q "${PREBUILT_URL}" -O "${TMP_DIR}/searxgo" 2>/dev/null || wget -q "${RELEASE_URL}" -O "${TMP_DIR}/searxgo" 2>/dev/null; then
+        if wget -q "${MAIN_DIST_URL}" -O "${TMP_DIR}/searxgo" 2>/dev/null || wget -q "${RELEASE_URL}" -O "${TMP_DIR}/searxgo" 2>/dev/null; then
             if [ -s "${TMP_DIR}/searxgo" ]; then
                 DOWNLOADED=true
             fi

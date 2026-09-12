@@ -38,12 +38,10 @@ if (Test-Path ".\searxgo.exe") {
 } else {
     Write-Host "➜ Downloading prebuilt Windows binary from GitHub..." -ForegroundColor Yellow
     $MainDistUrl = "https://raw.githubusercontent.com/BrianStovia/serxgo/main/dist/searxgo-windows-amd64.exe"
-    $PrebuiltUrl = "https://raw.githubusercontent.com/BrianStovia/serxgo/prebuilt/dist/searxgo-windows-amd64.exe"
-    $PrebuiltFallback = "https://raw.githubusercontent.com/BrianStovia/serxgo/prebuilt/searxgo-windows-amd64.exe"
     $ReleaseUrl = "https://github.com/BrianStovia/serxgo/releases/latest/download/searxgo-windows-amd64.exe"
     $Downloaded = $false
     
-    foreach ($Url in @($MainDistUrl, $PrebuiltUrl, $PrebuiltFallback, $ReleaseUrl)) {
+    foreach ($Url in @($MainDistUrl, $ReleaseUrl)) {
         try {
             Invoke-WebRequest -Uri $Url -OutFile $TargetExe -UseBasicParsing -ErrorAction Stop
             if ((Get-Item $TargetExe).Length -gt 1000000) {

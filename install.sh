@@ -83,14 +83,12 @@ elif [ -f "./cmd/server/main.go" ] && command -v go >/dev/null 2>&1; then
 else
     echo -e "${YELLOW}➜ Downloading prebuilt binary for ${OS}/${TARGET_ARCH}...${RESET}"
     MAIN_DIST_URL="https://raw.githubusercontent.com/${REPO}/main/dist/${BINARY_NAME}"
-    PREBUILT_URL="https://raw.githubusercontent.com/${REPO}/prebuilt/dist/${BINARY_NAME}"
-    PREBUILT_FALLBACK="https://raw.githubusercontent.com/${REPO}/prebuilt/${BINARY_NAME}"
     RELEASE_URL="https://github.com/${REPO}/releases/latest/download/${BINARY_NAME}"
     
     if command -v curl >/dev/null 2>&1; then
-        curl -fsSL "${MAIN_DIST_URL}" -o "${TMP_DIR}/searxgo" 2>/dev/null || curl -fsSL "${PREBUILT_URL}" -o "${TMP_DIR}/searxgo" 2>/dev/null || curl -fsSL "${PREBUILT_FALLBACK}" -o "${TMP_DIR}/searxgo" 2>/dev/null || curl -fsSL "${RELEASE_URL}" -o "${TMP_DIR}/searxgo" 2>/dev/null || true
+        curl -fsSL "${MAIN_DIST_URL}" -o "${TMP_DIR}/searxgo" 2>/dev/null || curl -fsSL "${RELEASE_URL}" -o "${TMP_DIR}/searxgo" 2>/dev/null || true
     elif command -v wget >/dev/null 2>&1; then
-        wget -q "${MAIN_DIST_URL}" -O "${TMP_DIR}/searxgo" 2>/dev/null || wget -q "${PREBUILT_URL}" -O "${TMP_DIR}/searxgo" 2>/dev/null || wget -q "${PREBUILT_FALLBACK}" -O "${TMP_DIR}/searxgo" 2>/dev/null || wget -q "${RELEASE_URL}" -O "${TMP_DIR}/searxgo" 2>/dev/null || true
+        wget -q "${MAIN_DIST_URL}" -O "${TMP_DIR}/searxgo" 2>/dev/null || wget -q "${RELEASE_URL}" -O "${TMP_DIR}/searxgo" 2>/dev/null || true
     fi
 
     if [ -s "${TMP_DIR}/searxgo" ]; then
