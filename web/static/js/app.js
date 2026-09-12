@@ -811,6 +811,20 @@
         setTimeout(() => { msg.style.display = 'none'; }, 2500);
       }
     });
+
+    // Real-time Bangs & Syntax Table Filter
+    window.filterBangsTable = function (query) {
+      const q = (query || '').toLowerCase().trim();
+      const rows = document.querySelectorAll('.bang-row');
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (!q || text.includes(q)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    };
   }
 
   // Apply user-selected form method & link target rules
