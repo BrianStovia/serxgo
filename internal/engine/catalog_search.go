@@ -305,12 +305,13 @@ func searchGiphy(ctx context.Context, client *http.Client, engineID, query strin
 }
 
 func searchDDGImageEngine(ctx context.Context, client *http.Client, engineID, query string, page int) ([]models.SearchResult, error) {
-	vqdURL := fmt.Sprintf("https://duckduckgo.com/?q=%s&iax=images&ia=images", url.QueryEscape(query))
+	vqdURL := fmt.Sprintf("https://duckduckgo.com/?q=%s&iax=images&ia=images&kp=-2&p=-2", url.QueryEscape(query))
 	tokenReq, err := http.NewRequestWithContext(ctx, "GET", vqdURL, nil)
 	if err != nil {
 		return nil, err
 	}
 	tokenReq.Header.Set("User-Agent", GetRandomUserAgent())
+	tokenReq.Header.Set("Cookie", "p=-2; kp=-2")
 
 	tokenResp, err := client.Do(tokenReq)
 	if err != nil {
@@ -336,13 +337,14 @@ func searchDDGImageEngine(ctx context.Context, client *http.Client, engineID, qu
 		page = 1
 	}
 	offset := (page - 1) * 30
-	imgAPI := fmt.Sprintf("https://duckduckgo.com/i.js?l=us-en&o=json&q=%s&vqd=%s&f=,,,,,&s=%d", url.QueryEscape(query), vqd, offset)
+	imgAPI := fmt.Sprintf("https://duckduckgo.com/i.js?l=us-en&o=json&q=%s&vqd=%s&f=,,,,,&s=%d&p=-2&kp=-2", url.QueryEscape(query), vqd, offset)
 	imgReq, err := http.NewRequestWithContext(ctx, "GET", imgAPI, nil)
 	if err != nil {
 		return nil, err
 	}
 	imgReq.Header.Set("User-Agent", GetRandomUserAgent())
 	imgReq.Header.Set("Referer", "https://duckduckgo.com/")
+	imgReq.Header.Set("Cookie", "p=-2; kp=-2")
 
 	imgResp, err := client.Do(imgReq)
 	if err != nil {
@@ -925,12 +927,13 @@ func searchOpenLibrary(ctx context.Context, client *http.Client, query string) (
 }
 
 func searchVideoWeb(ctx context.Context, client *http.Client, engineID, query string) ([]models.SearchResult, error) {
-	vqdURL := fmt.Sprintf("https://duckduckgo.com/v.js?q=%s&o=json", url.QueryEscape(query))
+	vqdURL := fmt.Sprintf("https://duckduckgo.com/v.js?q=%s&o=json&p=-2&kp=-2", url.QueryEscape(query))
 	req, err := http.NewRequestWithContext(ctx, "GET", vqdURL, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+	req.Header.Set("Cookie", "p=-2; kp=-2")
 
 	resp, err := client.Do(req)
 	if err != nil {

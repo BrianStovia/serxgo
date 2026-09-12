@@ -87,11 +87,21 @@ func LoadConfig() *Config {
 		}
 	}
 
+	safeSearch := 0 // 0: Off (100% Uncensored)
+	for _, key := range []string{"SEARXNG_SAFE_SEARCH", "SAFE_SEARCH"} {
+		if ss := os.Getenv(key); ss != "" {
+			if val, err := strconv.Atoi(ss); err == nil {
+				safeSearch = val
+				break
+			}
+		}
+	}
+
 	return &Config{
 		Host:              host,
 		Port:              port,
 		Timeout:           time.Duration(timeoutMs) * time.Millisecond,
-		SafeSearchDefault: 1, // Moderate
+		SafeSearchDefault: safeSearch, // Default 0: Uncensored
 		ImageProxySecret:  secret,
 		MaxResults:        50,
 		DefaultPageSize:   pageSize,

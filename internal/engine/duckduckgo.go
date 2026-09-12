@@ -167,12 +167,15 @@ func (e *DuckDuckGoEngine) searchWeb(ctx context.Context, req models.SearchReque
 
 func (e *DuckDuckGoEngine) searchImages(ctx context.Context, req models.SearchRequest) ([]models.SearchResult, error) {
 	// 1. Get VQD token first
-	vqdURL := fmt.Sprintf("https://duckduckgo.com/?q=%s&iax=images&ia=images", url.QueryEscape(req.Query))
+	vqdURL := fmt.Sprintf("https://duckduckgo.com/?q=%s&iax=images&ia=images&kp=-2&p=-2", url.QueryEscape(req.Query))
 	tokenReq, err := http.NewRequestWithContext(ctx, "GET", vqdURL, nil)
 	if err != nil {
 		return nil, err
 	}
 	tokenReq.Header.Set("User-Agent", GetRandomUserAgent())
+	if req.SafeSearch == models.SafeSearchOff {
+		tokenReq.Header.Set("Cookie", "p=-2; kp=-2")
+	}
 
 	tokenResp, err := e.client.Do(tokenReq)
 	if err != nil {
@@ -200,15 +203,15 @@ func (e *DuckDuckGoEngine) searchImages(ctx context.Context, req models.SearchRe
 	vqd := matches[1]
 
 	// 2. Fetch images JSON
-	safeParam := "1"
-	if req.SafeSearch == models.SafeSearchOff {
-		safeParam = "-1"
-	} else if req.SafeSearch == models.SafeSearchStrict {
+	safeParam := "-2"
+	if req.SafeSearch == models.SafeSearchStrict {
 		safeParam = "1"
+	} else if req.SafeSearch == models.SafeSearchModerate {
+		safeParam = "-1"
 	}
 
-	imgAPI := fmt.Sprintf("https://duckduckgo.com/i.js?l=us-en&o=json&q=%s&vqd=%s&f=,,,,,&p=%s",
-		url.QueryEscape(req.Query), vqd, safeParam)
+	imgAPI := fmt.Sprintf("https://duckduckgo.com/i.js?l=us-en&o=json&q=%s&vqd=%s&f=,,,,,&p=%s&kp=%s",
+		url.QueryEscape(req.Query), vqd, safeParam, safeParam)
 
 	imgReq, err := http.NewRequestWithContext(ctx, "GET", imgAPI, nil)
 	if err != nil {
@@ -216,6 +219,9 @@ func (e *DuckDuckGoEngine) searchImages(ctx context.Context, req models.SearchRe
 	}
 	imgReq.Header.Set("User-Agent", GetRandomUserAgent())
 	imgReq.Header.Set("Referer", "https://duckduckgo.com/")
+	if req.SafeSearch == models.SafeSearchOff {
+		imgReq.Header.Set("Cookie", "p=-2; kp=-2")
+	}
 
 	imgResp, err := e.client.Do(imgReq)
 	if err != nil {

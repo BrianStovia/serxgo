@@ -20,7 +20,7 @@ server:
   http_protocol_version: "1.1"
 
 search:
-  safe_search: 1                     # 0: Off, 1: Moderate, 2: Strict
+  safe_search: 0                     # 0: Off (100% Uncensored / Tanpa Sensor), 1: Moderate, 2: Strict
   autocomplete: "duckduckgo"          # duckduckgo, wikipedia, google
   default_lang: ""                   # default language
   ban_time_on_fail: 5
