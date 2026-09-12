@@ -46,6 +46,10 @@ func main() {
 	engine.DefaultRegistry.Register(engine.NewStartpageEngine())
 	engine.DefaultRegistry.Register(engine.NewEcosiaEngine())
 	engine.DefaultRegistry.Register(engine.NewMojeekEngine())
+	engine.DefaultRegistry.Register(engine.NewYahooEngine())
+	engine.DefaultRegistry.Register(engine.NewYandexEngine())
+	engine.DefaultRegistry.Register(engine.NewSwisscowsEngine())
+	engine.DefaultRegistry.Register(engine.NewAhmiaEngine())
 	engine.DefaultRegistry.Register(engine.NewWikipediaEngine())
 
 	// Videos & Media

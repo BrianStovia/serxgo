@@ -79,6 +79,12 @@ func (a *Aggregator) Search(ctx context.Context, req models.SearchRequest) (*mod
 	if bangParsed.SiteFilter != "" {
 		req.SiteFilter = bangParsed.SiteFilter
 	}
+	if bangParsed.DeepSearch {
+		req.DeepSearch = true
+	}
+	if bangParsed.CrossCategory {
+		req.CrossCategory = true
+	}
 	if len(bangParsed.ExcludedSites) > 0 {
 		req.ExcludedSites = bangParsed.ExcludedSites
 	}
@@ -116,6 +122,37 @@ func (a *Aggregator) Search(ctx context.Context, req models.SearchRequest) (*mod
 		}
 	} else {
 		availableEngines = a.registry.GetByCategory(req.Category)
+
+		// 2.1 Cross-Category Federated Expansion for General Search
+		if req.Category == models.CategoryGeneral || req.CrossCategory {
+			crossEnginesMap := make(map[string]bool)
+			for _, e := range availableEngines {
+				crossEnginesMap[strings.ToLower(e.Name())] = true
+			}
+
+			var additionalEngineNames []string
+			if IsTechnicalQuery(req.Query) {
+				additionalEngineNames = append(additionalEngineNames, "github", "stackoverflow", "npm", "pypi", "hackernews")
+			}
+			if IsScientificQuery(req.Query) {
+				additionalEngineNames = append(additionalEngineNames, "arxiv", "pubmed", "wolframalpha", "openalex", "crossref")
+			}
+			if IsDiscussionQuery(req.Query) {
+				additionalEngineNames = append(additionalEngineNames, "reddit", "hackernews")
+			}
+			if IsTorDeepWebQuery(req.Query) {
+				additionalEngineNames = append(additionalEngineNames, "ahmia")
+			}
+
+			for _, name := range additionalEngineNames {
+				if !crossEnginesMap[name] {
+					if ce, ok := a.registry.GetByName(name); ok {
+						availableEngines = append(availableEngines, ce)
+						crossEnginesMap[name] = true
+					}
+				}
+			}
+		}
 	}
 
 	// 3. Filter by user's enabled engines if provided
@@ -209,6 +246,50 @@ func (a *Aggregator) Search(ctx context.Context, req models.SearchRequest) (*mod
 				allRawResults = append(allRawResults, scored...)
 			}
 		}(eng)
+
+		// 4.0 Deep Multi-Page concurrent crawling fanout
+		if (req.DeepSearch || req.PageSize >= 25) && !req.IsFallback && len(bangParsed.Engines) == 0 {
+			wg.Add(1)
+			go func(e engine.Engine) {
+				defer wg.Done()
+				deepReq := req
+				deepReq.Page = req.Page + 1
+				res, err := e.Search(searchCtx, deepReq)
+				if err == nil && len(res) > 0 {
+					mu.Lock()
+					scored := CalculateInitialScores(res, e.Weight()*0.85)
+					allRawResults = append(allRawResults, scored...)
+					mu.Unlock()
+				}
+			}(eng)
+		}
+	}
+
+	// 4.0.1 Bilingual & Synonym Query Expansion multi-threading
+	variants := GenerateQueryVariants(req.Query)
+	if len(variants) > 0 && !req.IsFallback && len(bangParsed.Engines) == 0 {
+		variantReq := req
+		variantReq.Query = variants[0]
+		variantReq.IsFallback = true
+
+		limitEngines := selectedEngines
+		if len(limitEngines) > 5 {
+			limitEngines = limitEngines[:5]
+		}
+
+		for _, eng := range limitEngines {
+			wg.Add(1)
+			go func(e engine.Engine) {
+				defer wg.Done()
+				res, err := e.Search(searchCtx, variantReq)
+				if err == nil && len(res) > 0 {
+					mu.Lock()
+					scored := CalculateInitialScores(res, e.Weight()*0.9)
+					allRawResults = append(allRawResults, scored...)
+					mu.Unlock()
+				}
+			}(eng)
+		}
 	}
 
 	wg.Wait()
@@ -226,7 +307,7 @@ func (a *Aggregator) Search(ctx context.Context, req models.SearchRequest) (*mod
 			queriedEngines[strings.ToLower(eng.Name())] = true
 		}
 
-		fallbackNames := []string{"brave", "duckduckgo", "qwant", "startpage", "mojeek", "google", "bing", "wikipedia"}
+		fallbackNames := []string{"brave", "duckduckgo", "qwant", "startpage", "mojeek", "yahoo", "yandex", "swisscows", "ahmia", "google", "bing", "wikipedia"}
 		for _, name := range fallbackNames {
 			if !queriedEngines[name] {
 				if fe, ok := a.registry.GetByName(name); ok {

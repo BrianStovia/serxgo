@@ -334,6 +334,16 @@ func (h *Handler) parseSearchRequest(r *http.Request) models.SearchRequest {
 		}
 	}
 
+	deepSearch := false
+	if getParam("deep") == "1" || getParam("deep") == "true" || getParam("deep_search") == "1" {
+		deepSearch = true
+	}
+
+	crossCategory := false
+	if getParam("cross") == "1" || getParam("cross_category") == "1" || getParam("federated") == "1" {
+		crossCategory = true
+	}
+
 	return models.SearchRequest{
 		Query:           rawQ,
 		RawQuery:        rawQ,
@@ -342,6 +352,8 @@ func (h *Handler) parseSearchRequest(r *http.Request) models.SearchRequest {
 		PageSize:        pageSize,
 		Country:         country,
 		Region:          region,
+		DeepSearch:      deepSearch,
+		CrossCategory:   crossCategory,
 		TimeRange:       timeRange,
 		Language:        lang,
 		SafeSearch:      safeSearch,

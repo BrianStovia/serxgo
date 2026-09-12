@@ -98,6 +98,14 @@ func executeCatalogEngineSearch(ctx context.Context, def EngineDefinition, req m
 		return NewEcosiaEngine().Search(ctx, req)
 	case "mojeek":
 		return NewMojeekEngine().Search(ctx, req)
+	case "yahoo":
+		return NewYahooEngine().Search(ctx, req)
+	case "yandex":
+		return NewYandexEngine().Search(ctx, req)
+	case "swisscows":
+		return NewSwisscowsEngine().Search(ctx, req)
+	case "ahmia":
+		return NewAhmiaEngine().Search(ctx, req)
 	case "wolframalpha":
 		return NewWolframAlphaEngine().Search(ctx, req)
 	case "marginalia":

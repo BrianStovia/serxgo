@@ -70,6 +70,26 @@ func TestEngineCategorization(t *testing.T) {
 	if wa.Name() != "wolframalpha" || !wa.DefaultOn() {
 		t.Errorf("WolframAlphaEngine metadata mismatch: %v", wa.Name())
 	}
+
+	yh := NewYahooEngine()
+	if yh.Name() != "yahoo" || !yh.DefaultOn() {
+		t.Errorf("YahooEngine metadata mismatch: %v", yh.Name())
+	}
+
+	yd := NewYandexEngine()
+	if yd.Name() != "yandex" || !yd.DefaultOn() {
+		t.Errorf("YandexEngine metadata mismatch: %v", yd.Name())
+	}
+
+	sw := NewSwisscowsEngine()
+	if sw.Name() != "swisscows" || !sw.DefaultOn() {
+		t.Errorf("SwisscowsEngine metadata mismatch: %v", sw.Name())
+	}
+
+	ah := NewAhmiaEngine()
+	if ah.Name() != "ahmia" || !ah.DefaultOn() {
+		t.Errorf("AhmiaEngine metadata mismatch: %v", ah.Name())
+	}
 }
 
 func TestExtractBingURL(t *testing.T) {

@@ -167,6 +167,10 @@ SearXGo supports complete SearXNG advanced search query syntax:
 - `!sp zero knowledge` ➔ Search Startpage (Google-grade results)
 - `!eco reforestation` ➔ Search Ecosia (Green search)
 - `!mo independent web` ➔ Search Mojeek (Independent crawler)
+- `!yh global finance` ➔ Search Yahoo Search
+- `!yd non-latin index` ➔ Search Yandex
+- `!sw swiss privacy` ➔ Search Swisscows (Swiss semantic index)
+- `!ahmia privacy network` ➔ Search Ahmia (Tor Onion Deep Web)
 - `!wa speed of light` ➔ Compute with Wolfram|Alpha (Science/Math facts)
 - `!gh kubernetes` ➔ Search GitHub repositories
 - `!yt lofi hip hop` ➔ Search YouTube videos
@@ -178,7 +182,10 @@ SearXGo supports complete SearXNG advanced search query syntax:
 - `!gh! golang` ➔ **Direct Jump:** Immediately navigates to `https://github.com/search?q=golang`
 - `!yt! synthwave` ➔ **Direct Jump:** Immediately navigates to `https://www.youtube.com/results?search_query=synthwave`
 
-### 3. Advanced Operators, Booleans & Modifiers
+### 3. Advanced Operators, Booleans & Mega Deep Search Modifiers
+- **Mega Deep Search**: `!deep machine learning` or `&deep=1` (Concurrently crawls pages 1-3 from all engines)
+- **Cross-Category Federated**: `!cross distributed systems` or `&cross=1` (Blends Web, Code, News, Science, Reddit)
+- **Bilingual & Synonym Expansion**: Automatically searches Indonesian & English term variants in parallel
 - **Boolean Logic**: `golang AND concurrency NOT rust` or `database OR storage +performance -slow`
 - **Date Ranges**: `after:2024-01-01`, `before:2024-12-31`, `since:2023`, `year:2024`
 - **Regional & Language**: `country:id`, `region:id-id`, `lang:id`, `:id` (Indonesian), `:de` (German), `:en` (English)

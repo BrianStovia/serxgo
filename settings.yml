@@ -129,6 +129,34 @@ engines:
     timeout: 3.0
     weight: 1.1
 
+  - name: yahoo
+    engine: yahoo
+    shortcut: yh
+    categories: [general, news]
+    timeout: 3.0
+    weight: 1.05
+
+  - name: yandex
+    engine: yandex
+    shortcut: yd
+    categories: [general, images]
+    timeout: 3.0
+    weight: 1.1
+
+  - name: swisscows
+    engine: swisscows
+    shortcut: sw
+    categories: [general, images]
+    timeout: 3.0
+    weight: 1.1
+
+  - name: ahmia
+    engine: ahmia
+    shortcut: ahmia
+    categories: [general, files, other]
+    timeout: 3.5
+    weight: 1.2
+
   - name: wolframalpha
     engine: wolframalpha
     shortcut: wa

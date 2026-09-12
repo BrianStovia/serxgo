@@ -62,6 +62,9 @@ type SearchRequest struct {
 	MustNotTerms      []string // Terms that must NOT appear (NOT / -term)
 	OrTerms           [][]string // Grouped OR alternatives
 	IsFallback        bool     // Indicates whether query execution is running in secondary fallback mode
+	DeepSearch        bool     // Multi-offset concurrent crawling (page 1, 2, 3 fanout)
+	CrossCategory     bool     // Federated hybrid search blending web, code, news, science, discussions
+	QueryVariants     []string // Bilingual & synonym expanded query terms
 }
 
 // SearchResult represents a single item returned by any search engine

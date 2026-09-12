@@ -112,3 +112,35 @@ func TestAggregatorSearchAndFallback(t *testing.T) {
 		}
 	}
 }
+
+func TestQueryExpansionAndClassification(t *testing.T) {
+	// 1. Test bilingual expansion
+	variants := GenerateQueryVariants("belajar pemrograman")
+	if len(variants) == 0 {
+		t.Errorf("Expected query variants for 'belajar pemrograman'")
+	}
+	foundTutorial := false
+	for _, v := range variants {
+		if v == "learn programming" || v == "tutorial programming" || v == "guide programming" {
+			foundTutorial = true
+			break
+		}
+	}
+	if !foundTutorial {
+		t.Errorf("Expected translated English variant, got %v", variants)
+	}
+
+	// 2. Test query domain classification
+	if !IsTechnicalQuery("golang goroutine memory leak") {
+		t.Errorf("Expected IsTechnicalQuery to be true for golang query")
+	}
+	if !IsScientificQuery("quantum entanglement physics theorem") {
+		t.Errorf("Expected IsScientificQuery to be true for physics query")
+	}
+	if !IsDiscussionQuery("best linux distro reddit discussion") {
+		t.Errorf("Expected IsDiscussionQuery to be true for reddit query")
+	}
+	if !IsTorDeepWebQuery("onion hidden service darknet") {
+		t.Errorf("Expected IsTorDeepWebQuery to be true for onion query")
+	}
+}

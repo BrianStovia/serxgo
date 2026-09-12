@@ -31,6 +31,8 @@ type ParsedBangResult struct {
 	MustTerms         []string
 	MustNotTerms      []string
 	OrTerms           [][]string
+	DeepSearch        bool
+	CrossCategory     bool
 }
 
 var categoryBangs = map[string]models.Category{
@@ -626,6 +628,8 @@ func ParseBangs(rawQuery string, defaultCat models.Category) ParsedBangResult {
 	var orTerms [][]string
 	country := ""
 	region := ""
+	deepSearch := false
+	crossCategory := false
 
 	// Extract exact phrase if in quotes: e.g. "exact keywords"
 	if strings.Contains(rawQuery, "\"") {
@@ -639,6 +643,16 @@ func ParseBangs(rawQuery string, defaultCat models.Category) ParsedBangResult {
 	for i := 0; i < len(tokens); i++ {
 		token := tokens[i]
 		lower := strings.ToLower(token)
+
+		// 0. Check Deep / Cross-Category Bangs: !deep, !broad, !cross, !all
+		if lower == "!deep" || lower == "!broad" {
+			deepSearch = true
+			continue
+		}
+		if lower == "!cross" || lower == "!federated" || lower == "!all" {
+			crossCategory = true
+			continue
+		}
 
 		// 1. Check direct bang: e.g. !yt! or !gh!
 		if tmpl, ok := directBangURLs[lower]; ok {
@@ -852,6 +866,8 @@ func ParseBangs(rawQuery string, defaultCat models.Category) ParsedBangResult {
 		MustTerms:         mustTerms,
 		MustNotTerms:      mustNotTerms,
 		OrTerms:           orTerms,
+		DeepSearch:        deepSearch,
+		CrossCategory:     crossCategory,
 	}
 }
 
