@@ -95,19 +95,23 @@ irm https://raw.githubusercontent.com/BrianStovia/serxgo/main/update.ps1 | iex
 
 ### 1. Run from Precompiled Binaries
 
-Download the latest binary for your architecture from [Releases](https://github.com/BrianStovia/serxgo/releases):
+Download the latest binary for your architecture from [Releases](https://github.com/BrianStovia/serxgo/releases) or the [`prebuilt` branch (`dist/`)](https://github.com/BrianStovia/serxgo/tree/prebuilt/dist):
 
 ```bash
 # Linux x86_64 / amd64
-chmod +x ./searxgo-linux-amd64
-./searxgo-linux-amd64 -port 8184
+chmod +x ./dist/searxgo-linux-amd64
+./dist/searxgo-linux-amd64 -port 8184
 
 # Linux ARM64 / Raspberry Pi / AWS Graviton
-chmod +x ./searxgo-linux-arm64
-./searxgo-linux-arm64 -port 8184
+chmod +x ./dist/searxgo-linux-arm64
+./dist/searxgo-linux-arm64 -port 8184
+
+# macOS Apple Silicon (M1/M2/M3/M4)
+chmod +x ./dist/searxgo-darwin-arm64
+./dist/searxgo-darwin-arm64 -port 8184
 
 # Windows x86_64
-.\searxgo.exe -port 8184
+.\dist\searxgo.exe -port 8184
 ```
 
 Access the web interface at **`http://localhost:8184`**.
@@ -122,21 +126,28 @@ Ensure you have [Go 1.22+](https://go.dev/dl/) installed:
 git clone https://github.com/BrianStovia/serxgo.git
 cd serxgo
 
-# Build for current OS
-go build -ldflags="-s -w" -o searxgo ./cmd/server
-./searxgo -port 8184
+# Build into dist/ for current OS
+go build -ldflags="-s -w" -o dist/searxgo ./cmd/server
+./dist/searxgo -port 8184
 ```
 
 ---
 
-### 3. Cross-Compile for Linux Servers
+### 3. Cross-Compile for All Platforms
 
 ```bash
 # Linux x86_64 / amd64
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o searxgo-linux-amd64 ./cmd/server
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/searxgo-linux-amd64 ./cmd/server
 
-# Linux ARM64 / Apple Silicon / Graviton Server
-CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o searxgo-linux-arm64 ./cmd/server
+# Linux ARM64 / Graviton Server
+CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/searxgo-linux-arm64 ./cmd/server
+
+# macOS Darwin ARM64 & AMD64
+CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/searxgo-darwin-arm64 ./cmd/server
+CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/searxgo-darwin-amd64 ./cmd/server
+
+# Windows x86_64
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/searxgo-windows-amd64.exe ./cmd/server
 ```
 
 Or simply use the `Makefile`:

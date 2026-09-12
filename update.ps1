@@ -47,11 +47,12 @@ try {
         go build -ldflags="-s -w" -o $TempExe ./cmd/server
     } else {
         Write-Host "➜ Fetching latest prebuilt release from GitHub..." -ForegroundColor Yellow
-        $PrebuiltUrl = "https://raw.githubusercontent.com/BrianStovia/serxgo/prebuilt/searxgo-windows-amd64.exe"
+        $PrebuiltUrl = "https://raw.githubusercontent.com/BrianStovia/serxgo/prebuilt/dist/searxgo-windows-amd64.exe"
+        $PrebuiltFallback = "https://raw.githubusercontent.com/BrianStovia/serxgo/prebuilt/searxgo-windows-amd64.exe"
         $ReleaseUrl = "https://github.com/BrianStovia/serxgo/releases/latest/download/searxgo-windows-amd64.exe"
         $Downloaded = $false
 
-        foreach ($Url in @($PrebuiltUrl, $ReleaseUrl)) {
+        foreach ($Url in @($PrebuiltUrl, $PrebuiltFallback, $ReleaseUrl)) {
             try {
                 Invoke-WebRequest -Uri $Url -OutFile $TempExe -UseBasicParsing -ErrorAction Stop
                 if ((Get-Item $TempExe).Length -gt 1000000) {

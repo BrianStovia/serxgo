@@ -97,12 +97,13 @@ if [ -d "./.git" ] && [ -f "./cmd/server/main.go" ] && command -v go >/dev/null 
     CGO_ENABLED=0 go build -ldflags="-s -w" -o "${TMP_DIR}/searxgo" ./cmd/server
 # Option B: Download prebuilt binary from GitHub Releases / Raw Repo
 else
-    PREBUILT_URL="https://raw.githubusercontent.com/${REPO}/prebuilt/${BINARY_NAME}"
+    PREBUILT_URL="https://raw.githubusercontent.com/${REPO}/prebuilt/dist/${BINARY_NAME}"
+    PREBUILT_FALLBACK="https://raw.githubusercontent.com/${REPO}/prebuilt/${BINARY_NAME}"
     RELEASE_URL="https://github.com/${REPO}/releases/latest/download/${BINARY_NAME}"
     
     DOWNLOADED=false
     if command -v curl >/dev/null 2>&1; then
-        if curl -fsSL "${PREBUILT_URL}" -o "${TMP_DIR}/searxgo" 2>/dev/null || curl -fsSL "${RELEASE_URL}" -o "${TMP_DIR}/searxgo" 2>/dev/null; then
+        if curl -fsSL "${PREBUILT_URL}" -o "${TMP_DIR}/searxgo" 2>/dev/null || curl -fsSL "${PREBUILT_FALLBACK}" -o "${TMP_DIR}/searxgo" 2>/dev/null || curl -fsSL "${RELEASE_URL}" -o "${TMP_DIR}/searxgo" 2>/dev/null; then
             if [ -s "${TMP_DIR}/searxgo" ]; then
                 DOWNLOADED=true
             fi

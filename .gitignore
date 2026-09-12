@@ -4,6 +4,8 @@ searxgo.exe
 searxgo-linux
 searxgo-linux-*
 searxgo-darwin-*
+dist/
+build/
 *.exe
 *.exe~
 *.dll
