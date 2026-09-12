@@ -90,6 +90,16 @@ func executeCatalogEngineSearch(ctx context.Context, def EngineDefinition, req m
 		return searchMusicWeb(ctx, client, def.ID, req.Query)
 
 	// --- General / Specific ---
+	case "qwant":
+		return NewQwantEngine().Search(ctx, req)
+	case "startpage":
+		return NewStartpageEngine().Search(ctx, req)
+	case "ecosia":
+		return NewEcosiaEngine().Search(ctx, req)
+	case "mojeek":
+		return NewMojeekEngine().Search(ctx, req)
+	case "wolframalpha":
+		return NewWolframAlphaEngine().Search(ctx, req)
 	case "marginalia":
 		return searchMarginalia(ctx, client, req.Query)
 	case "wiby":

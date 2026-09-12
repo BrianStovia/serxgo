@@ -44,6 +44,32 @@ func TestEngineCategorization(t *testing.T) {
 			t.Errorf("PubMed must not be in CategoryGeneral")
 		}
 	}
+
+	// 5. Verify new engines
+	qw := NewQwantEngine()
+	if qw.Name() != "qwant" || !qw.DefaultOn() {
+		t.Errorf("QwantEngine metadata mismatch: %v", qw.Name())
+	}
+
+	sp := NewStartpageEngine()
+	if sp.Name() != "startpage" || !sp.DefaultOn() {
+		t.Errorf("StartpageEngine metadata mismatch: %v", sp.Name())
+	}
+
+	eco := NewEcosiaEngine()
+	if eco.Name() != "ecosia" || !eco.DefaultOn() {
+		t.Errorf("EcosiaEngine metadata mismatch: %v", eco.Name())
+	}
+
+	mo := NewMojeekEngine()
+	if mo.Name() != "mojeek" || !mo.DefaultOn() {
+		t.Errorf("MojeekEngine metadata mismatch: %v", mo.Name())
+	}
+
+	wa := NewWolframAlphaEngine()
+	if wa.Name() != "wolframalpha" || !wa.DefaultOn() {
+		t.Errorf("WolframAlphaEngine metadata mismatch: %v", wa.Name())
+	}
 }
 
 func TestExtractBingURL(t *testing.T) {

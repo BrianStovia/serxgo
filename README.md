@@ -66,6 +66,18 @@ curl -fsSL https://raw.githubusercontent.com/BrianStovia/serxgo/main/install.sh 
 irm https://raw.githubusercontent.com/BrianStovia/serxgo/main/install.ps1 | iex
 ```
 
+### 🔄 1-Line Automated Updater
+
+**Linux & macOS (Auto-Update & Service Reload):**
+```bash
+curl -fsSL https://raw.githubusercontent.com/BrianStovia/serxgo/main/update.sh | bash
+```
+
+**Windows (PowerShell Auto-Update):**
+```powershell
+irm https://raw.githubusercontent.com/BrianStovia/serxgo/main/update.ps1 | iex
+```
+
 ---
 
 ### 1. Run from Precompiled Binaries
@@ -151,17 +163,27 @@ SearXGo supports complete SearXNG advanced search query syntax:
 | `!maps` | OpenStreetMap POI | `!maps tokyo tower` |
 
 ### 2. Engine Bangs & Direct Redirects
+- `!qw privacy browser` ➔ Search Qwant (European index)
+- `!sp zero knowledge` ➔ Search Startpage (Google-grade results)
+- `!eco reforestation` ➔ Search Ecosia (Green search)
+- `!mo independent web` ➔ Search Mojeek (Independent crawler)
+- `!wa speed of light` ➔ Compute with Wolfram|Alpha (Science/Math facts)
 - `!gh kubernetes` ➔ Search GitHub repositories
 - `!yt lofi hip hop` ➔ Search YouTube videos
 - `!so goroutine leak` ➔ Search StackOverflow
 - `!arx gravitational waves` ➔ Search arXiv papers
 - `!ddg privacy tools` ➔ Search DuckDuckGo
+- `!qw! privacy` ➔ **Direct Jump:** Immediately navigates to `https://www.qwant.com/?q=privacy`
+- `!sp! security` ➔ **Direct Jump:** Immediately navigates to `https://www.startpage.com/sp/search?query=security`
 - `!gh! golang` ➔ **Direct Jump:** Immediately navigates to `https://github.com/search?q=golang`
 - `!yt! synthwave` ➔ **Direct Jump:** Immediately navigates to `https://www.youtube.com/results?search_query=synthwave`
 
-### 3. Filters & Modifiers
-- **Language Filter**: `machine learning :id` (Indonesian), `web dev :de` (German), `ai :en` (English)
+### 3. Advanced Operators, Booleans & Modifiers
+- **Boolean Logic**: `golang AND concurrency NOT rust` or `database OR storage +performance -slow`
+- **Date Ranges**: `after:2024-01-01`, `before:2024-12-31`, `since:2023`, `year:2024`
+- **Regional & Language**: `country:id`, `region:id-id`, `lang:id`, `:id` (Indonesian), `:de` (German), `:en` (English)
 - **Time Range**: Filter via UI or parameter `&time_range=day|week|month|year`
+- **Results per Page**: `&page_size=25` or `&count=30` or `&limit=50`
 - **Timeout Enforcer**: `distributed systems <1.5s` (Force 1.5s timeout)
 - **Engine Exclusion**: `linux kernel -!google` or `coding !~bing`
 
@@ -196,8 +218,10 @@ SearXGo can be configured via [`settings.yml`](settings.yml), CLI arguments, or 
 | `SEARXNG_PORT` / `PORT` | `-port` | `8184` | HTTP server listening port |
 | `SEARXNG_BIND_ADDRESS` | `-host` | `0.0.0.0` | Network binding interface |
 | `SEARXNG_TIMEOUT_MS` | `-timeout` | `3500` | Aggregation timeout in milliseconds |
+| `SEARXNG_PAGE_SIZE` / `PAGE_SIZE` | - | `20` | Default results count per page (max 50) |
 | `SEARXNG_SECRET_KEY` | - | `searxgo-secret-key...` | HMAC secret for image proxy |
 | `SEARXNG_DEBUG` | - | `false` | Enable verbose debug logging |
+| `SEARXNG_LIMITER` | - | `false` | Enable rate limiting (Unlimited by default) |
 
 ---
 

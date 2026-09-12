@@ -101,6 +101,41 @@ engines:
     timeout: 3.0
     weight: 1.0
 
+  - name: qwant
+    engine: qwant
+    shortcut: qw
+    categories: [general, images, news]
+    timeout: 3.0
+    weight: 1.15
+
+  - name: startpage
+    engine: startpage
+    shortcut: sp
+    categories: [general, news]
+    timeout: 3.0
+    weight: 1.15
+
+  - name: ecosia
+    engine: ecosia
+    shortcut: eco
+    categories: [general, images]
+    timeout: 3.0
+    weight: 1.05
+
+  - name: mojeek
+    engine: mojeek
+    shortcut: mo
+    categories: [general]
+    timeout: 3.0
+    weight: 1.1
+
+  - name: wolframalpha
+    engine: wolframalpha
+    shortcut: wa
+    categories: [science, general]
+    timeout: 3.5
+    weight: 1.4
+
   - name: bing
     engine: bing
     shortcut: bi

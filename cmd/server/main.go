@@ -42,6 +42,10 @@ func main() {
 	engine.DefaultRegistry.Register(engine.NewGoogleEngine())
 	engine.DefaultRegistry.Register(engine.NewBingEngine())
 	engine.DefaultRegistry.Register(engine.NewBraveEngine())
+	engine.DefaultRegistry.Register(engine.NewQwantEngine())
+	engine.DefaultRegistry.Register(engine.NewStartpageEngine())
+	engine.DefaultRegistry.Register(engine.NewEcosiaEngine())
+	engine.DefaultRegistry.Register(engine.NewMojeekEngine())
 	engine.DefaultRegistry.Register(engine.NewWikipediaEngine())
 
 	// Videos & Media
@@ -57,6 +61,7 @@ func main() {
 	// Science & Academic
 	engine.DefaultRegistry.Register(engine.NewArxivEngine())
 	engine.DefaultRegistry.Register(engine.NewPubMedEngine())
+	engine.DefaultRegistry.Register(engine.NewWolframAlphaEngine())
 
 	// Social
 	engine.DefaultRegistry.Register(engine.NewRedditEngine())

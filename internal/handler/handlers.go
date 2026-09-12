@@ -298,11 +298,50 @@ func (h *Handler) parseSearchRequest(r *http.Request) models.SearchRequest {
 		autocomplete = ac
 	}
 
+	// Page size preference
+	pageSize := h.cfg.DefaultPageSize
+	if cookie, err := r.Cookie("searxgo_page_size"); err == nil && cookie.Value != "" {
+		if ps, err := strconv.Atoi(cookie.Value); err == nil && ps > 0 {
+			pageSize = ps
+		}
+	}
+	if psStr := getParam("page_size"); psStr != "" {
+		if ps, err := strconv.Atoi(psStr); err == nil && ps > 0 {
+			pageSize = ps
+		}
+	} else if countStr := getParam("count"); countStr != "" {
+		if ps, err := strconv.Atoi(countStr); err == nil && ps > 0 {
+			pageSize = ps
+		}
+	} else if limitStr := getParam("limit"); limitStr != "" {
+		if ps, err := strconv.Atoi(limitStr); err == nil && ps > 0 {
+			pageSize = ps
+		}
+	}
+
+	// Country and Region preferences
+	country := strings.ToLower(getParam("country"))
+	if country == "" {
+		if cookie, err := r.Cookie("searxgo_country"); err == nil && cookie.Value != "" {
+			country = strings.ToLower(cookie.Value)
+		}
+	}
+
+	region := strings.ToLower(getParam("region"))
+	if region == "" {
+		if cookie, err := r.Cookie("searxgo_region"); err == nil && cookie.Value != "" {
+			region = strings.ToLower(cookie.Value)
+		}
+	}
+
 	return models.SearchRequest{
 		Query:           rawQ,
 		RawQuery:        rawQ,
 		Category:        cat,
 		Page:            page,
+		PageSize:        pageSize,
+		Country:         country,
+		Region:          region,
 		TimeRange:       timeRange,
 		Language:        lang,
 		SafeSearch:      safeSearch,

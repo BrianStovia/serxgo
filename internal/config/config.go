@@ -14,6 +14,8 @@ type Config struct {
 	SafeSearchDefault int
 	ImageProxySecret  string
 	MaxResults        int
+	DefaultPageSize   int
+	MaxPageSize       int
 	Debug             bool
 	LimiterEnabled    bool
 	LimiterRate       float64
@@ -75,6 +77,16 @@ func LoadConfig() *Config {
 		}
 	}
 
+	pageSize := 20
+	for _, key := range []string{"SEARXNG_PAGE_SIZE", "PAGE_SIZE", "RESULTS_PER_PAGE"} {
+		if ps := os.Getenv(key); ps != "" {
+			if val, err := strconv.Atoi(ps); err == nil && val > 0 {
+				pageSize = val
+				break
+			}
+		}
+	}
+
 	return &Config{
 		Host:              host,
 		Port:              port,
@@ -82,6 +94,8 @@ func LoadConfig() *Config {
 		SafeSearchDefault: 1, // Moderate
 		ImageProxySecret:  secret,
 		MaxResults:        50,
+		DefaultPageSize:   pageSize,
+		MaxPageSize:       50,
 		Debug:             debug,
 		LimiterEnabled:    limiterEnabled,
 		LimiterRate:       200.0, // High-throughput 200 requests/sec if enabled

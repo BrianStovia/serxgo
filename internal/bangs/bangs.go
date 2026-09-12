@@ -16,6 +16,8 @@ type ParsedBangResult struct {
 	Engines           []string
 	ExcludedEngines   []string
 	Language          string
+	Country           string
+	Region            string
 	TimeoutLimit      time.Duration
 	DirectRedirectURL string
 	SiteFilter        string
@@ -24,6 +26,11 @@ type ParsedBangResult struct {
 	Intitle           string
 	Inurl             string
 	ExactPhrase       string
+	DateAfter         *time.Time
+	DateBefore        *time.Time
+	MustTerms         []string
+	MustNotTerms      []string
+	OrTerms           [][]string
 }
 
 var categoryBangs = map[string]models.Category{
@@ -161,6 +168,9 @@ var engineBangs = map[string]string{
 	"!di": "devicons",
 	"!dictzone": "dictzone",
 	"!dm": "dailymotion",
+	"!eco": "ecosia",
+	"!ecoi": "ecosia_images",
+	"!ecosia": "ecosia",
 	"!docker_hub": "docker_hub",
 	"!dog": "dogpile",
 	"!dogi": "dogpile_images",
@@ -319,6 +329,8 @@ var engineBangs = map[string]string{
 	"!mjk": "mojeek",
 	"!mjkimg": "mojeek_images",
 	"!mjknews": "mojeek_news",
+	"!mo": "mojeek",
+	"!moj": "mojeek",
 	"!mojeek": "mojeek",
 	"!mojeek_images": "mojeek_images",
 	"!mojeek_news": "mojeek_news",
@@ -607,6 +619,14 @@ func ParseBangs(rawQuery string, defaultCat models.Category) ParsedBangResult {
 	directURL := ""
 	var timeoutLimit time.Duration
 
+	var dateAfter *time.Time
+	var dateBefore *time.Time
+	var mustTerms []string
+	var mustNotTerms []string
+	var orTerms [][]string
+	country := ""
+	region := ""
+
 	// Extract exact phrase if in quotes: e.g. "exact keywords"
 	if strings.Contains(rawQuery, "\"") {
 		start := strings.Index(rawQuery, "\"")
@@ -616,7 +636,8 @@ func ParseBangs(rawQuery string, defaultCat models.Category) ParsedBangResult {
 		}
 	}
 
-	for _, token := range tokens {
+	for i := 0; i < len(tokens); i++ {
+		token := tokens[i]
 		lower := strings.ToLower(token)
 
 		// 1. Check direct bang: e.g. !yt! or !gh!
@@ -675,10 +696,52 @@ func ParseBangs(rawQuery string, defaultCat models.Category) ParsedBangResult {
 			continue
 		}
 
-		// 6. Check language modifier: e.g. :en, :id, :de, :fr, :ja, :es, :zh, :all
+		// 6. Check language modifier: e.g. :en, :id, :de, :fr, :ja, :es, :zh, :all or lang:id / language:en
+		if strings.HasPrefix(lower, "lang:") && len(lower) > 5 {
+			language = strings.TrimPrefix(lower, "lang:")
+			continue
+		}
+		if strings.HasPrefix(lower, "language:") && len(lower) > 9 {
+			language = strings.TrimPrefix(lower, "language:")
+			continue
+		}
 		if strings.HasPrefix(lower, ":") && len(lower) >= 3 && len(lower) <= 6 {
 			language = strings.TrimPrefix(lower, ":")
 			continue
+		}
+
+		// 6.1 Check Country & Region modifiers: e.g. country:id or region:id-id
+		if strings.HasPrefix(lower, "country:") && len(lower) > 8 {
+			country = strings.TrimPrefix(lower, "country:")
+			continue
+		}
+		if strings.HasPrefix(lower, "region:") && len(lower) > 7 {
+			region = strings.TrimPrefix(lower, "region:")
+			continue
+		}
+
+		// 6.2 Check Date Filters: e.g. after:2024-01-01, before:2024-12-31, since:2023, year:2024
+		if strings.HasPrefix(lower, "after:") && len(lower) > 6 {
+			dateAfter = parseDateFilter(strings.TrimPrefix(lower, "after:"))
+			continue
+		}
+		if strings.HasPrefix(lower, "since:") && len(lower) > 6 {
+			dateAfter = parseDateFilter(strings.TrimPrefix(lower, "since:"))
+			continue
+		}
+		if strings.HasPrefix(lower, "before:") && len(lower) > 7 {
+			dateBefore = parseDateFilter(strings.TrimPrefix(lower, "before:"))
+			continue
+		}
+		if strings.HasPrefix(lower, "year:") && len(lower) > 5 {
+			yStr := strings.TrimPrefix(lower, "year:")
+			if y, err := strconv.Atoi(yStr); err == nil && y > 1900 && y < 2100 {
+				tStart := time.Date(y, 1, 1, 0, 0, 0, 0, time.UTC)
+				tEnd := time.Date(y, 12, 31, 23, 59, 59, 0, time.UTC)
+				dateAfter = &tStart
+				dateBefore = &tEnd
+				continue
+			}
 		}
 
 		// 7. Check site filter: e.g. site:github.com or -site:pinterest.com
@@ -719,6 +782,40 @@ func ParseBangs(rawQuery string, defaultCat models.Category) ParsedBangResult {
 			continue
 		}
 
+		// 11. Check Boolean Operators: AND, OR, NOT, +term, -term
+		if token == "NOT" && i+1 < len(tokens) {
+			next := tokens[i+1]
+			mustNotTerms = append(mustNotTerms, strings.ToLower(next))
+			i++ // skip next token in raw
+			continue
+		}
+		if token == "OR" && len(remainingTokens) > 0 && i+1 < len(tokens) {
+			prev := remainingTokens[len(remainingTokens)-1]
+			next := tokens[i+1]
+			orTerms = append(orTerms, []string{strings.ToLower(prev), strings.ToLower(next)})
+			remainingTokens = append(remainingTokens, next)
+			i++ // advance token index
+			continue
+		}
+		if token == "AND" {
+			// AND is an explicit conjunction; ensure previous and next tokens are mustTerms
+			if len(remainingTokens) > 0 {
+				mustTerms = append(mustTerms, strings.ToLower(remainingTokens[len(remainingTokens)-1]))
+			}
+			continue
+		}
+		if strings.HasPrefix(token, "+") && len(token) > 1 {
+			term := strings.TrimPrefix(token, "+")
+			mustTerms = append(mustTerms, strings.ToLower(term))
+			remainingTokens = append(remainingTokens, term)
+			continue
+		}
+		if strings.HasPrefix(token, "-") && len(token) > 1 && !strings.HasPrefix(lower, "-site:") && !strings.HasPrefix(lower, "-!") {
+			term := strings.TrimPrefix(token, "-")
+			mustNotTerms = append(mustNotTerms, strings.ToLower(term))
+			continue
+		}
+
 		remainingTokens = append(remainingTokens, token)
 	}
 
@@ -740,6 +837,8 @@ func ParseBangs(rawQuery string, defaultCat models.Category) ParsedBangResult {
 		Engines:           selectedEngines,
 		ExcludedEngines:   excludedEngines,
 		Language:          language,
+		Country:           country,
+		Region:            region,
 		TimeoutLimit:      timeoutLimit,
 		DirectRedirectURL: fullDirectURL,
 		SiteFilter:        siteFilter,
@@ -748,7 +847,30 @@ func ParseBangs(rawQuery string, defaultCat models.Category) ParsedBangResult {
 		Intitle:           intitle,
 		Inurl:             inurl,
 		ExactPhrase:       exactPhrase,
+		DateAfter:         dateAfter,
+		DateBefore:        dateBefore,
+		MustTerms:         mustTerms,
+		MustNotTerms:      mustNotTerms,
+		OrTerms:           orTerms,
 	}
+}
+
+func parseDateFilter(val string) *time.Time {
+	val = strings.TrimSpace(val)
+	formats := []string{
+		"2006-01-02",
+		"2006/01/02",
+		"2006-01",
+		"2006",
+		"02-01-2006",
+		"02/01/2006",
+	}
+	for _, f := range formats {
+		if t, err := time.Parse(f, val); err == nil {
+			return &t
+		}
+	}
+	return nil
 }
 
 // SuggestBangs returns matching category, engine, and direct bangs for search autocompletion

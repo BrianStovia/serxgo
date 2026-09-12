@@ -53,6 +53,15 @@ type SearchRequest struct {
 	Intitle           string   // e.g. "tutorial"
 	Inurl             string   // e.g. "wiki"
 	ExactPhrase       string   // e.g. "exact matched phrase"
+	PageSize          int      // Configurable results per page (default 20, max 50)
+	Country           string   // Country code (e.g. "id", "us", "de")
+	Region            string   // Region code (e.g. "id-id", "en-us")
+	DateAfter         *time.Time // Filter results after this date
+	DateBefore        *time.Time // Filter results before this date
+	MustTerms         []string // Terms that must appear (AND / +term)
+	MustNotTerms      []string // Terms that must NOT appear (NOT / -term)
+	OrTerms           [][]string // Grouped OR alternatives
+	IsFallback        bool     // Indicates whether query execution is running in secondary fallback mode
 }
 
 // SearchResult represents a single item returned by any search engine
@@ -135,6 +144,8 @@ type SearchResponse struct {
 	Errors              map[string]string `json:"errors,omitempty"`
 	Theme               string            `json:"theme,omitempty"`
 	SafeSearch          SafeSearchLevel   `json:"safesearch,omitempty"`
+	IsFallback          bool              `json:"is_fallback,omitempty"`
+	AutoExpanded        bool              `json:"auto_expanded,omitempty"`
 }
 
 // EngineStatItem tracks telemetry per engine
