@@ -5,11 +5,19 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
 	xhtml "golang.org/x/net/html"
 	"searxgo/internal/models"
+)
+
+var (
+	tmeChannelMsgRegex = regexp.MustCompile(`t\.me\/(?:s\/)?([a-zA-Z0-9_]{3,32})\/([0-9]+)`)
+	tmeChannelOnlyRegex = regexp.MustCompile(`t\.me\/(?:s\/)?([a-zA-Z0-9_]{3,32})`)
+	tgstatChannelRegex  = regexp.MustCompile(`tgstat\.(?:com|ru)\/channel\/@?([a-zA-Z0-9_]{3,32})`)
+	telemetrRegex       = regexp.MustCompile(`telemetr\.(?:io|me)\/(?:en\/)?channels\/([a-zA-Z0-9_]{3,32})`)
 )
 
 type TelegramLeaksEngine struct {
@@ -31,7 +39,7 @@ func (e *TelegramLeaksEngine) DisplayName() string {
 }
 
 func (e *TelegramLeaksEngine) Categories() []models.Category {
-	return []models.Category{models.CategorySocial, models.CategoryGeneral, models.CategoryIT}
+	return []models.Category{models.CategorySocial, models.CategoryGeneral, models.CategoryIT, models.CategoryFiles}
 }
 
 func (e *TelegramLeaksEngine) DefaultOn() bool {
@@ -39,16 +47,23 @@ func (e *TelegramLeaksEngine) DefaultOn() bool {
 }
 
 func (e *TelegramLeaksEngine) Weight() float64 {
-	return 1.25
+	return 1.35
 }
 
 func (e *TelegramLeaksEngine) About() string {
-	return "Searches public Telegram web channels, OSINT investigative feeds, and public data dumps across t.me, TGStat, and Telemetr."
+	return "Deep Telegram OSINT & Leaks crawler: searches public t.me channels, message dumps, TGStat, and Telemetr intelligence indexes."
 }
 
 func (e *TelegramLeaksEngine) Search(ctx context.Context, req models.SearchRequest) ([]models.SearchResult, error) {
 	cleanQ := strings.TrimSpace(req.Query)
-	queryWithSites := fmt.Sprintf("%s (site:t.me/s/ OR site:tgstat.com OR site:telemetr.io OR site:t.me)", cleanQ)
+	// Remove redundant bangs or prefixes
+	cleanQ = strings.TrimPrefix(cleanQ, "!tg ")
+	cleanQ = strings.TrimPrefix(cleanQ, "!telegram ")
+	cleanQ = strings.TrimPrefix(cleanQ, "!tgdump ")
+	cleanQ = strings.TrimPrefix(cleanQ, "tg: ")
+	cleanQ = strings.TrimPrefix(cleanQ, "telegram: ")
+
+	queryWithSites := fmt.Sprintf("(site:t.me/s/ OR site:tgstat.com OR site:telemetr.io OR site:lyzem.com OR site:t.me) %s", cleanQ)
 
 	searchURL := fmt.Sprintf("https://html.duckduckgo.com/html/?q=%s", url.QueryEscape(queryWithSites))
 
@@ -121,15 +136,48 @@ func (e *TelegramLeaksEngine) Search(ctx context.Context, req models.SearchReque
 			desc = CleanHTMLText(ExtractText(descNode))
 		}
 
+		// Intelligent classification & tagging of Telegram artifacts
+		displayTitle := title
+		author := ""
+		cluster := "social"
+
+		if matches := tmeChannelMsgRegex.FindStringSubmatch(actualURL); len(matches) > 2 {
+			channel := matches[1]
+			msgID := matches[2]
+			author = "@" + channel
+			displayTitle = fmt.Sprintf("💬 [@%s #%s] %s", channel, msgID, title)
+			cluster = "discussions"
+		} else if matches := tmeChannelOnlyRegex.FindStringSubmatch(actualURL); len(matches) > 1 {
+			channel := matches[1]
+			author = "@" + channel
+			displayTitle = fmt.Sprintf("📱 [@%s] %s", channel, title)
+			cluster = "social"
+		} else if matches := tgstatChannelRegex.FindStringSubmatch(actualURL); len(matches) > 1 {
+			channel := matches[1]
+			author = "@" + channel
+			displayTitle = fmt.Sprintf("📊 [TGStat Analytics @%s] %s", channel, title)
+			cluster = "tools"
+		} else if matches := telemetrRegex.FindStringSubmatch(actualURL); len(matches) > 1 {
+			channel := matches[1]
+			author = "@" + channel
+			displayTitle = fmt.Sprintf("📈 [Telemetr Intel @%s] %s", channel, title)
+			cluster = "tools"
+		} else {
+			displayTitle = fmt.Sprintf("🔍 [Telegram OSINT] %s", title)
+		}
+
 		results = append(results, models.SearchResult{
-			Title:     fmt.Sprintf("[Telegram OSINT] %s", title),
+			Title:     displayTitle,
 			URL:       actualURL,
 			PrettyURL: cleanDisplayURL(actualURL),
 			Content:   desc,
+			Author:    author,
 			Engine:    e.Name(),
 			Category:  models.CategorySocial,
+			Clusters:  cluster,
 		})
 	}
 
 	return results, nil
 }
+

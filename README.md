@@ -23,6 +23,7 @@
 ## 🌟 Key Features
 
 - 🌐 **Network OSINT & Security Suite**: Instant DNS records (A/AAAA/MX/TXT/NS), SSL/TLS certificate inspector, HTTP security headers audit, WHOIS/RDAP lookup, Subdomain crt.sh scanner, and CVE/OSV vulnerability tracker.
+- 📱 **Telegram OSINT & Leaks Intelligence Suite**: Live channel profiler (`tg: @channel` or `telegram: handle`) with avatar, subscriber count, bio, recent post previews, and multi-index leak scrapers (*t.me/s/, TGStat, Telemetr, Lyzem*).
 - 🕰️ **Multi-Archive Snapshot Preservation**: 1-click historical snapshots from *Wayback Machine, Archive.today, Google Cache, and Ghostarchive* directly on every result item.
 - ⚖️ **Split-Screen Dual Search (`/split`)**: Compare two search engines side-by-side in real-time to audit censorship, ranking bias, and index coverage.
 - ⛓️ **Web3 & Decentralized P2P Engine**: Native IPFS gateways and Arweave permanent storage search (`!web3`, `!ipfs`, `!arweave`).
@@ -202,6 +203,9 @@ SearXGo supports complete SearXNG advanced search query syntax:
 - `!exploit! CVE-2024` ➔ **Direct Jump:** Navigates to Exploit-DB search
 - `!packetstorm! tools` ➔ **Direct Jump:** Navigates to Packet Storm Security search
 - `!tgstat! osint` ➔ **Direct Jump:** Navigates to TGStat Telegram search
+- `!telemetr! intel` ➔ **Direct Jump:** Navigates to Telemetr Telegram search
+- `!lyzem! threat` ➔ **Direct Jump:** Navigates to Lyzem Telegram search
+- `tg: @durov` ➔ **Live OSINT Card:** Profiler with bio, avatar, subscribers, and message feeds
 - `!hibp! user@domain.com` ➔ **Direct Jump:** Navigates to HaveIBeenPwned lookup
 - `!intelx! leak search` ➔ **Direct Jump:** Navigates to Intelligence X search
 - `!pastebin! query` ➔ **Direct Jump:** Navigates to Pastebin search

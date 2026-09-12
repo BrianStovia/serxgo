@@ -62,6 +62,12 @@ func (s *InstantService) FindInstantAnswers(ctx context.Context, query string, c
 		return answers
 	}
 
+	// 6. Check Telegram OSINT & Channel Intelligence
+	if tgAns := CheckTelegramOSINTQuery(ctx, q); tgAns != nil {
+		answers = append(answers, *tgAns)
+		return answers
+	}
+
 	// 6. Check Wikipedia Summary Infobox for definitions / entity lookups
 	if infoAns := s.checkWikipediaSummary(ctx, q); infoAns != nil {
 		answers = append(answers, *infoAns)

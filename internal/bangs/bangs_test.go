@@ -144,6 +144,13 @@ func TestParseBangs(t *testing.T) {
 			isDirect:    true,
 		},
 		{
+			input:       "!lyzem! threat intel",
+			defaultCat:  models.CategoryGeneral,
+			expectedQ:   "threat intel",
+			expectedCat: models.CategoryGeneral,
+			isDirect:    true,
+		},
+		{
 			input:       "golang AND concurrency NOT python after:2024-01-01 country:id",
 			defaultCat:  models.CategoryGeneral,
 			expectedQ:   "golang concurrency",

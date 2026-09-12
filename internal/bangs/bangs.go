@@ -598,6 +598,9 @@ var engineBangs = map[string]string{
 	"!tgdump": "telegram_leaks",
 	"!tgstat": "telegram_leaks",
 	"!tme": "telegram_leaks",
+	"!tlgrm": "telegram_leaks",
+	"!lyzem": "telegram_leaks",
+	"!telegago": "telegram_leaks",
 	"!exploit": "exploits",
 	"!exploits": "exploits",
 	"!sploitus": "exploits",
@@ -648,6 +651,8 @@ var directBangURLs = map[string]string{
 	"!exploit!":   "https://www.exploit-db.com/search?q=%s",
 	"!packetstorm!": "https://packetstormsecurity.com/search/?q=%s",
 	"!tgstat!":    "https://tgstat.com/search?q=%s",
+	"!telemetr!":  "https://telemetr.io/en/channels?search=%s",
+	"!lyzem!":     "https://lyzem.com/search?q=%s",
 }
 
 // ParseBangs inspects raw query for bangs (!g, !yt, !images) and language modifiers (:en, :id)
