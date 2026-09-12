@@ -174,21 +174,60 @@ func (s *SuggestService) fetchMultiAggregated(ctx context.Context, q string) []s
 	wg.Wait()
 	close(resultsChan)
 
-	var all []string
-	seen := make(map[string]bool)
+	type suggestionStat struct {
+		original string
+		count    int
+		score    float64
+	}
+
+	statsMap := make(map[string]*suggestionStat)
+	qLower := strings.ToLower(strings.TrimSpace(q))
 
 	for items := range resultsChan {
-		for _, it := range items {
-			lower := strings.ToLower(strings.TrimSpace(it))
-			if lower != "" && !seen[lower] {
-				seen[lower] = true
-				all = append(all, it)
+		for rank, it := range items {
+			trimmed := strings.TrimSpace(it)
+			lower := strings.ToLower(trimmed)
+			if lower == "" {
+				continue
+			}
+
+			if _, exists := statsMap[lower]; !exists {
+				statsMap[lower] = &suggestionStat{original: trimmed, count: 0, score: 0}
+			}
+
+			stat := statsMap[lower]
+			stat.count++
+			// Higher rank in provider gives higher base score
+			stat.score += float64(10 - rank)
+
+			// Exact prefix match bonus
+			if strings.HasPrefix(lower, qLower) {
+				stat.score += 15.0
 			}
 		}
 	}
 
-	if len(all) > 8 {
-		all = all[:8]
+	var candidates []*suggestionStat
+	for _, st := range statsMap {
+		candidates = append(candidates, st)
 	}
-	return all
+
+	// Sort descending by relevance score & multi-engine consensus
+	for i := 0; i < len(candidates)-1; i++ {
+		for j := i + 1; j < len(candidates); j++ {
+			if candidates[j].score > candidates[i].score {
+				candidates[i], candidates[j] = candidates[j], candidates[i]
+			}
+		}
+	}
+
+	var finalSuggestions []string
+	for _, c := range candidates {
+		finalSuggestions = append(finalSuggestions, c.original)
+		if len(finalSuggestions) >= 8 {
+			break
+		}
+	}
+
+	return finalSuggestions
 }
