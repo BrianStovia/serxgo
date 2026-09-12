@@ -2,17 +2,27 @@ package handler
 
 import (
 	"bytes"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/csv"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"html/template"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
+	"io"
 	"io/fs"
 	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"searxgo/internal/aggregator"
 	"searxgo/internal/bangs"
@@ -25,6 +35,17 @@ import (
 	"searxgo/web"
 )
 
+type TempUploadedImage struct {
+	ID          string    `json:"id"`
+	Filename    string    `json:"filename"`
+	Data        []byte    `json:"-"`
+	ContentType string    `json:"content_type"`
+	Size        int64     `json:"size"`
+	Width       int       `json:"width"`
+	Height      int       `json:"height"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
 type Handler struct {
 	cfg            *config.Config
 	aggregator     *aggregator.Aggregator
@@ -33,6 +54,8 @@ type Handler struct {
 	imageProxy     *proxy.ImageProxy
 	limiter        *RateLimiter
 	templates      *template.Template
+	imageStoreMu   sync.RWMutex
+	imageStore     map[string]*TempUploadedImage
 }
 
 func NewHandler(cfg *config.Config, agg *aggregator.Aggregator) (*Handler, error) {
@@ -90,6 +113,7 @@ func NewHandler(cfg *config.Config, agg *aggregator.Aggregator) (*Handler, error
 		imageProxy:     proxy.NewImageProxy(),
 		limiter:        NewRateLimiter(cfg.LimiterRate, cfg.LimiterBurst, cfg.LimiterEnabled),
 		templates:      tmpl,
+		imageStore:     make(map[string]*TempUploadedImage),
 	}, nil
 }
 
@@ -131,6 +155,12 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /split", h.ServeSplit)
 	mux.HandleFunc("GET /watchdog", h.ServeWatchdog)
 	mux.HandleFunc("GET /api/watchdog", h.ServeWatchdog)
+
+	// Visual Reverse Image Search Endpoints
+	mux.HandleFunc("POST /api/reverse-image", h.ServeReverseImage)
+	mux.HandleFunc("GET /api/reverse-image", h.ServeReverseImage)
+	mux.HandleFunc("POST /upload/image", h.ServeUploadImage)
+	mux.HandleFunc("GET /upload/image/{id}", h.ServeTempImage)
 
 	// Privacy Proxy
 	mux.HandleFunc("GET /proxy/image", h.imageProxy.ServeHTTP)
@@ -913,6 +943,334 @@ func (h *Handler) ServeWatchdog(w http.ResponseWriter, r *http.Request) {
 
 	// Serve as RSS 2.0 Webhook / Notification Feed
 	h.ServeRSS(w, r, req)
+}
+
+type ReverseEngineItem struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	URL         string `json:"url"`
+	Icon        string `json:"icon"`
+	Description string `json:"description"`
+}
+
+type ReverseImageResponse struct {
+	Success    bool                `json:"success"`
+	ImageURL   string              `json:"image_url"`
+	Filename   string              `json:"filename"`
+	Size       int64               `json:"size"`
+	Dimensions string              `json:"dimensions"`
+	MimeType   string              `json:"mime_type"`
+	Engines    []ReverseEngineItem `json:"engines"`
+	Error      string              `json:"error,omitempty"`
+}
+
+func (h *Handler) cleanupExpiredImages() {
+	h.imageStoreMu.Lock()
+	defer h.imageStoreMu.Unlock()
+	cutoff := time.Now().Add(-30 * time.Minute)
+	for id, img := range h.imageStore {
+		if img.CreatedAt.Before(cutoff) {
+			delete(h.imageStore, id)
+		}
+	}
+}
+
+func (h *Handler) storeImageBytes(data []byte, filename string) (*TempUploadedImage, error) {
+	if len(data) == 0 {
+		return nil, fmt.Errorf("empty image data")
+	}
+	if len(data) > 20*1024*1024 {
+		return nil, fmt.Errorf("image exceeds maximum size of 20MB")
+	}
+
+	contentType := http.DetectContentType(data)
+	if !strings.HasPrefix(contentType, "image/") && contentType != "application/octet-stream" {
+		if strings.HasSuffix(strings.ToLower(filename), ".png") {
+			contentType = "image/png"
+		} else if strings.HasSuffix(strings.ToLower(filename), ".webp") {
+			contentType = "image/webp"
+		} else if strings.HasSuffix(strings.ToLower(filename), ".gif") {
+			contentType = "image/gif"
+		} else {
+			contentType = "image/jpeg"
+		}
+	}
+
+	width, height := 0, 0
+	if cfg, _, err := image.DecodeConfig(bytes.NewReader(data)); err == nil {
+		width = cfg.Width
+		height = cfg.Height
+	}
+
+	randBytes := make([]byte, 8)
+	rand.Read(randBytes)
+	id := fmt.Sprintf("img_%d_%s", time.Now().Unix(), hex.EncodeToString(randBytes))
+
+	if filename == "" {
+		filename = id + ".jpg"
+	}
+
+	item := &TempUploadedImage{
+		ID:          id,
+		Filename:    filename,
+		Data:        data,
+		ContentType: contentType,
+		Size:        int64(len(data)),
+		Width:       width,
+		Height:      height,
+		CreatedAt:   time.Now(),
+	}
+
+	h.cleanupExpiredImages()
+
+	h.imageStoreMu.Lock()
+	h.imageStore[id] = item
+	h.imageStoreMu.Unlock()
+
+	return item, nil
+}
+
+func (h *Handler) ServeTempImage(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		id = r.URL.Query().Get("id")
+	}
+
+	h.imageStoreMu.RLock()
+	item, exists := h.imageStore[id]
+	h.imageStoreMu.RUnlock()
+
+	if !exists || item == nil {
+		http.Error(w, "Image not found or expired", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", item.ContentType)
+	w.Header().Set("Content-Length", strconv.FormatInt(item.Size, 10))
+	w.Header().Set("Cache-Control", "public, max-age=1800")
+	w.Write(item.Data)
+}
+
+func (h *Handler) ServeUploadImage(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 20*1024*1024)
+	if err := r.ParseMultipartForm(20 * 1024 * 1024); err != nil {
+		http.Error(w, `{"error":"Failed to parse multipart form or image too large"}`, http.StatusBadRequest)
+		return
+	}
+
+	file, header, err := r.FormFile("image")
+	if err != nil {
+		file, header, err = r.FormFile("file")
+		if err != nil {
+			http.Error(w, `{"error":"No image file provided in 'image' or 'file' field"}`, http.StatusBadRequest)
+			return
+		}
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		http.Error(w, `{"error":"Failed to read uploaded image"}`, http.StatusInternalServerError)
+		return
+	}
+
+	item, err := h.storeImageBytes(data, header.Filename)
+	if err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusBadRequest)
+		return
+	}
+
+	scheme := "http"
+	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+		scheme = "https"
+	}
+	host := r.Host
+	if host == "" {
+		host = "localhost:8184"
+	}
+	publicURL := fmt.Sprintf("%s://%s/upload/image/%s", scheme, host, item.ID)
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":    true,
+		"id":         item.ID,
+		"image_url":  publicURL,
+		"filename":   item.Filename,
+		"size":       item.Size,
+		"width":      item.Width,
+		"height":     item.Height,
+		"dimensions": fmt.Sprintf("%dx%d", item.Width, item.Height),
+		"mime_type":  item.ContentType,
+	})
+}
+
+func (h *Handler) buildReverseSearchEngines(targetImageURL string) []ReverseEngineItem {
+	escapedURL := url.QueryEscape(targetImageURL)
+	return []ReverseEngineItem{
+		{
+			ID:          "google_lens",
+			Name:        "Google Lens",
+			URL:         fmt.Sprintf("https://lens.google.com/uploadbyurl?url=%s", escapedURL),
+			Icon:        "🔍",
+			Description: "Object detection, OCR text extraction, visual similarity & web source matching",
+		},
+		{
+			ID:          "bing_visual",
+			Name:        "Bing Visual Search",
+			URL:         fmt.Sprintf("https://www.bing.com/images/searchbyimage?cbir=sbi&imageurl=%s", escapedURL),
+			Icon:        "🌐",
+			Description: "Microsoft visual AI, related products, landmarks and high-res image lookups",
+		},
+		{
+			ID:          "yandex",
+			Name:        "Yandex Reverse Images",
+			URL:         fmt.Sprintf("https://yandex.com/images/search?rpt=imageview&url=%s", escapedURL),
+			Icon:        "🖼️",
+			Description: "Unfiltered face matching, duplicate finder & original source indexing",
+		},
+		{
+			ID:          "tineye",
+			Name:        "TinEye Reverse Search",
+			URL:         fmt.Sprintf("https://tineye.com/search?url=%s", escapedURL),
+			Icon:        "🤖",
+			Description: "Historical image tracking, modified version tracker, and domain source lookups",
+		},
+		{
+			ID:          "saucenao",
+			Name:        "SauceNAO",
+			URL:         fmt.Sprintf("https://saucenao.com/search.php?url=%s", escapedURL),
+			Icon:        "🎨",
+			Description: "Specialized anime, manga, Pixiv, DeviantArt, and digital illustration source finder",
+		},
+		{
+			ID:          "tracemoe",
+			Name:        "Trace.moe",
+			URL:         fmt.Sprintf("https://trace.moe/?url=%s", escapedURL),
+			Icon:        "⚡",
+			Description: "Exact anime scene timestamp, episode and title recognition engine",
+		},
+		{
+			ID:          "searxgo_images",
+			Name:        "SearXGo Aggregated Search",
+			URL:         fmt.Sprintf("/search?q=%s&category=images", escapedURL),
+			Icon:        "🪐",
+			Description: "Multi-engine aggregated image search across DuckDuckGo, Google, Bing, Unsplash, etc.",
+		},
+	}
+}
+
+func (h *Handler) ServeReverseImage(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	scheme := "http"
+	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+		scheme = "https"
+	}
+	host := r.Host
+	if host == "" {
+		host = "localhost:8184"
+	}
+
+	var targetImageURL string
+	var filename string
+	var fileSize int64
+	var dimensions string
+	var mimeType string
+
+	if r.Method == http.MethodPost {
+		contentType := r.Header.Get("Content-Type")
+		if strings.HasPrefix(contentType, "multipart/form-data") {
+			r.Body = http.MaxBytesReader(w, r.Body, 20*1024*1024)
+			if err := r.ParseMultipartForm(20 * 1024 * 1024); err == nil {
+				file, header, err := r.FormFile("image")
+				if err != nil {
+					file, header, err = r.FormFile("file")
+				}
+				if err == nil {
+					defer file.Close()
+					data, _ := io.ReadAll(file)
+					if item, err := h.storeImageBytes(data, header.Filename); err == nil {
+						targetImageURL = fmt.Sprintf("%s://%s/upload/image/%s", scheme, host, item.ID)
+						filename = item.Filename
+						fileSize = item.Size
+						dimensions = fmt.Sprintf("%d × %d px", item.Width, item.Height)
+						mimeType = item.ContentType
+					}
+				}
+			}
+		} else if strings.HasPrefix(contentType, "application/json") {
+			var body struct {
+				ImageURL    string `json:"image_url"`
+				ImageBase64 string `json:"image_base64"`
+				Filename    string `json:"filename"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&body); err == nil {
+				if body.ImageURL != "" {
+					targetImageURL = body.ImageURL
+					filename = body.Filename
+				} else if body.ImageBase64 != "" {
+					rawB64 := body.ImageBase64
+					if idx := strings.Index(rawB64, ","); idx != -1 {
+						rawB64 = rawB64[idx+1:]
+					}
+					if data, err := base64.StdEncoding.DecodeString(rawB64); err == nil {
+						if item, err := h.storeImageBytes(data, body.Filename); err == nil {
+							targetImageURL = fmt.Sprintf("%s://%s/upload/image/%s", scheme, host, item.ID)
+							filename = item.Filename
+							fileSize = item.Size
+							dimensions = fmt.Sprintf("%d × %d px", item.Width, item.Height)
+							mimeType = item.ContentType
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if targetImageURL == "" {
+		targetImageURL = strings.TrimSpace(r.URL.Query().Get("url"))
+		if targetImageURL == "" {
+			targetImageURL = strings.TrimSpace(r.URL.Query().Get("image_url"))
+		}
+	}
+
+	if targetImageURL == "" {
+		http.Error(w, `{"success":false,"error":"Please provide an image file, base64 data, or an image_url"}`, http.StatusBadRequest)
+		return
+	}
+
+	if filename == "" {
+		parts := strings.Split(targetImageURL, "/")
+		if len(parts) > 0 {
+			filename = parts[len(parts)-1]
+		}
+		if idx := strings.Index(filename, "?"); idx != -1 {
+			filename = filename[:idx]
+		}
+		if filename == "" {
+			filename = "image.jpg"
+		}
+	}
+
+	engines := h.buildReverseSearchEngines(targetImageURL)
+
+	resp := ReverseImageResponse{
+		Success:    true,
+		ImageURL:   targetImageURL,
+		Filename:   filename,
+		Size:       fileSize,
+		Dimensions: dimensions,
+		MimeType:   mimeType,
+		Engines:    engines,
+	}
+
+	json.NewEncoder(w).Encode(resp)
 }
 
 

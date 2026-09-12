@@ -1169,6 +1169,263 @@
     });
   }
 
+  // --- Visual Reverse Image Search System ---
+  function initReverseImageSearch() {
+    const modal = document.getElementById('image-search-modal');
+    if (!modal) return;
+
+    const openBtns = document.querySelectorAll('.btn-image-search, #btn-image-search');
+    const closeBtns = modal.querySelectorAll('.btn-close-modal, #btn-close-modal');
+    const dropZone = document.getElementById('image-drop-zone');
+    const fileInput = document.getElementById('image-file-input');
+    const browseBtn = modal.querySelector('.btn-browse-file');
+    const urlInput = document.getElementById('image-url-input');
+    const searchUrlBtn = document.getElementById('btn-search-by-url');
+    const loadingState = document.getElementById('image-upload-loading');
+    const resultsPanel = document.getElementById('image-results-panel');
+    const previewThumb = document.getElementById('image-preview-thumb');
+    const previewFilename = document.getElementById('image-preview-filename');
+    const badgeDims = document.getElementById('badge-image-dimensions');
+    const badgeSize = document.getElementById('badge-image-size');
+    const badgeMime = document.getElementById('badge-image-mime');
+    const enginesGrid = document.getElementById('reverse-engines-grid');
+    const openAllBtn = document.getElementById('btn-open-all-reverse');
+
+    let currentEngineLinks = [];
+
+    function openModal() {
+      modal.style.display = 'flex';
+      if (urlInput) {
+        setTimeout(() => urlInput.focus(), 100);
+      }
+    }
+
+    function closeModal() {
+      modal.style.display = 'none';
+      if (loadingState) loadingState.style.display = 'none';
+    }
+
+    openBtns.forEach(btn => {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        openModal();
+      });
+    });
+
+    closeBtns.forEach(btn => {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        closeModal();
+      });
+    });
+
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && modal.style.display === 'flex') {
+        closeModal();
+      }
+    });
+
+    function formatBytes(bytes) {
+      if (!bytes || bytes <= 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function renderReverseResults(data) {
+      if (loadingState) loadingState.style.display = 'none';
+      if (!resultsPanel) return;
+
+      if (!data || !data.success) {
+        alert(data && data.error ? 'Reverse search failed: ' + data.error : 'Failed to process image');
+        return;
+      }
+
+      resultsPanel.style.display = 'block';
+
+      if (previewThumb) previewThumb.src = data.image_url;
+      if (previewFilename) previewFilename.textContent = data.filename || 'Uploaded Image';
+      if (badgeDims) badgeDims.textContent = data.dimensions || 'Image';
+      if (badgeSize) badgeSize.textContent = formatBytes(data.size);
+      if (badgeMime) badgeMime.textContent = (data.mime_type || 'image/jpeg').replace('image/', '').toUpperCase();
+
+      currentEngineLinks = data.engines || [];
+
+      if (enginesGrid) {
+        enginesGrid.innerHTML = '';
+        currentEngineLinks.forEach(eng => {
+          const card = document.createElement('a');
+          card.className = 'reverse-engine-card';
+          card.href = eng.url;
+          card.target = '_blank';
+          card.rel = 'noopener noreferrer';
+          card.innerHTML = `
+            <div>
+              <div class="reverse-engine-header">
+                <span class="reverse-engine-icon">${eng.icon || '🔍'}</span>
+                <span class="reverse-engine-name">${escapeHtml(eng.name)}</span>
+              </div>
+              <div class="reverse-engine-desc">${escapeHtml(eng.description || '')}</div>
+            </div>
+            <div style="display:flex; justify-content:flex-end;">
+              <span class="reverse-engine-btn">
+                <span>Search Provider</span>
+                <span>↗</span>
+              </span>
+            </div>
+          `;
+          enginesGrid.appendChild(card);
+        });
+      }
+    }
+
+    if (openAllBtn) {
+      openAllBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (!currentEngineLinks || currentEngineLinks.length === 0) return;
+        currentEngineLinks.forEach(eng => {
+          window.open(eng.url, '_blank');
+        });
+      });
+    }
+
+    function processImageFile(file) {
+      if (!file || !file.type.startsWith('image/')) {
+        alert('Please select a valid image file (PNG, JPG, WebP, GIF).');
+        return;
+      }
+
+      if (loadingState) loadingState.style.display = 'block';
+      if (resultsPanel) resultsPanel.style.display = 'none';
+
+      const formData = new FormData();
+      formData.append('image', file);
+
+      fetch('/api/reverse-image', {
+        method: 'POST',
+        body: formData
+      })
+        .then(res => res.json())
+        .then(data => {
+          renderReverseResults(data);
+        })
+        .catch(err => {
+          if (loadingState) loadingState.style.display = 'none';
+          alert('Upload failed: ' + err.message);
+        });
+    }
+
+    function processImageUrl(url) {
+      const trimmed = (url || '').trim();
+      if (!trimmed) {
+        alert('Please enter a valid image URL.');
+        return;
+      }
+
+      if (loadingState) loadingState.style.display = 'block';
+      if (resultsPanel) resultsPanel.style.display = 'none';
+
+      fetch('/api/reverse-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ image_url: trimmed })
+      })
+        .then(res => res.json())
+        .then(data => {
+          renderReverseResults(data);
+        })
+        .catch(err => {
+          if (loadingState) loadingState.style.display = 'none';
+          alert('Error searching by URL: ' + err.message);
+        });
+    }
+
+    // Drag and drop event handlers
+    if (dropZone) {
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZone.classList.add('drag-over');
+        });
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZone.classList.remove('drag-over');
+        });
+      });
+
+      dropZone.addEventListener('drop', function (e) {
+        const dt = e.dataTransfer;
+        if (dt && dt.files && dt.files.length > 0) {
+          processImageFile(dt.files[0]);
+        }
+      });
+
+      dropZone.addEventListener('click', function (e) {
+        if (fileInput) fileInput.click();
+      });
+    }
+
+    if (browseBtn && fileInput) {
+      browseBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        fileInput.click();
+      });
+    }
+
+    if (fileInput) {
+      fileInput.addEventListener('change', function () {
+        if (this.files && this.files.length > 0) {
+          processImageFile(this.files[0]);
+        }
+      });
+    }
+
+    if (searchUrlBtn && urlInput) {
+      searchUrlBtn.addEventListener('click', function () {
+        processImageUrl(urlInput.value);
+      });
+
+      urlInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          processImageUrl(urlInput.value);
+        }
+      });
+    }
+
+    // Global Clipboard Paste Listener (Ctrl+V / Cmd+V)
+    document.addEventListener('paste', function (e) {
+      if (!e.clipboardData || !e.clipboardData.items) return;
+      const items = e.clipboardData.items;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type && items[i].type.indexOf('image') !== -1) {
+          const blob = items[i].getAsFile();
+          if (blob) {
+            e.preventDefault();
+            openModal();
+            processImageFile(blob);
+            break;
+          }
+        }
+      }
+    });
+  }
+
   // Safe DOM ready initialization
   function initAll() {
     initTheme();
@@ -1184,6 +1441,7 @@
     initSettingsPage();
     initBookmarks();
     initTopicClusters();
+    initReverseImageSearch();
   }
 
   if (document.readyState === 'loading') {
