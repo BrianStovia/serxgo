@@ -623,10 +623,11 @@ func (h *Handler) ServeSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := map[string]interface{}{
-		"Categories": categorized,
-		"AllEngines": engine.FullEngineCatalog,
-		"SafeSearch": safeSearch,
-		"Saved":      r.URL.Query().Get("saved") == "1",
+		"Categories":   categorized,
+		"AllEngines":   engine.FullEngineCatalog,
+		"TotalEngines": len(engine.FullEngineCatalog),
+		"SafeSearch":   safeSearch,
+		"Saved":        r.URL.Query().Get("saved") == "1",
 	}
 	var buf bytes.Buffer
 	if err := h.templates.ExecuteTemplate(&buf, "settings.html", data); err != nil {

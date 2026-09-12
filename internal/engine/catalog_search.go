@@ -40,23 +40,23 @@ func executeCatalogEngineSearch(ctx context.Context, def EngineDefinition, req m
 		return searchVimeo(ctx, client, req.Query)
 	case "bilibili":
 		return searchBilibili(ctx, client, req.Query)
-	case "odysee", "peertube", "rumble", "bitchute", "google_videos", "bing_videos", "qwant_videos", "pixabay_videos", "fireball_videos", "vuhuv_videos", "sogou_videos", "naver_videos", "acfun", "iqiyi", "mediathekviewweb":
+	case "odysee", "peertube", "rumble", "bitchute", "google_videos", "bing_videos", "qwant_videos", "pixabay_videos", "fireball_videos", "vuhuv_videos", "sogou_videos", "naver_videos", "acfun", "iqiyi", "mediathekviewweb", "invidious", "piped", "tubearchivist", "ccc_media":
 		return searchVideoWeb(ctx, client, def.ID, req.Query)
 
 	// --- Image Engines ---
 	case "unsplash":
 		return searchUnsplash(ctx, client, req.Query, req.Page)
-	case "wikimedia_images", "openverse", "library_of_congress", "artic":
+	case "wikimedia_images", "openverse", "library_of_congress", "artic", "openclipart", "wikicommons":
 		return searchWikimediaImages(ctx, client, def.ID, req.Query, req.Page)
 	case "giphy", "imgur":
 		return searchGiphy(ctx, client, def.ID, req.Query)
-	case "pexels", "pixabay_images", "1x", "500px", "artstation":
+	case "pexels", "pixabay_images", "1x", "500px", "artstation", "deviantart", "wallhaven", "pixiv":
 		return searchUnsplash(ctx, client, req.Query, req.Page)
 	case "bing_images", "google_images", "google_cse_images", "mojeek_images", "qwant_images", "startpage_images", "yandex_images", "sogou_images", "naver_images", "baidu_images", "quark_images", "tusksearch_images", "flickr", "pinterest":
 		return searchDDGImageEngine(ctx, client, def.ID, req.Query, req.Page)
 
 	// --- News Engines ---
-	case "google_news", "bing_news", "duckduckgo_news", "reuters", "qwant_news", "wikinews", "startpage_news", "tagesschau", "ansa", "il_post", "naver_news", "sogou_wechat", "tusksearch_news":
+	case "google_news", "bing_news", "duckduckgo_news", "reuters", "qwant_news", "wikinews", "startpage_news", "tagesschau", "ansa", "il_post", "naver_news", "sogou_wechat", "tusksearch_news", "chinaso", "swisscows_news", "yahoo_news", "tonline":
 		return searchNewsWeb(ctx, client, def.ID, req.Query)
 
 	// --- IT / Code Engines ---
@@ -68,7 +68,7 @@ func executeCatalogEngineSearch(ctx context.Context, def EngineDefinition, req m
 		return searchDockerHub(ctx, client, req.Query, req.Page)
 	case "huggingface", "huggingface_datasets", "huggingface_spaces":
 		return searchHuggingFace(ctx, client, req.Query)
-	case "github", "stackoverflow", "npm", "pypi", "askubuntu", "superuser", "arch_linux_wiki", "gentoo", "nixos_wiki", "anaconda", "habrahabr", "mankier", "mdn", "microsoft_learn":
+	case "github", "stackoverflow", "npm", "pypi", "askubuntu", "superuser", "arch_linux_wiki", "gentoo", "nixos_wiki", "anaconda", "habrahabr", "mankier", "mdn", "microsoft_learn", "azure", "cachy_os", "cloudflareai", "crates", "discourse", "doku", "gitea", "github_code", "google_play", "lib_rs", "nvd", "pkg_go_dev", "repology", "selfhst", "stackexchange":
 		return searchITWeb(ctx, client, def.ID, req.Query)
 
 	// --- Science Engines ---
@@ -78,15 +78,15 @@ func executeCatalogEngineSearch(ctx context.Context, def EngineDefinition, req m
 		return searchOpenAlex(ctx, client, req.Query, req.Page)
 	case "semantic_scholar":
 		return searchSemanticScholar(ctx, client, req.Query, req.Page)
-	case "arxiv", "pubmed", "google_scholar", "wikispecies", "pdbe", "openairepublications":
+	case "arxiv", "pubmed", "google_scholar", "wikispecies", "pdbe", "openairepublications", "astrophysics_data_system", "base", "core", "europepmc", "mrs", "scanr_structures", "springer":
 		return searchScienceWeb(ctx, client, def.ID, req.Query)
 
 	// --- Files / Torrents ---
-	case "1337x", "nyaa", "solidtorrents", "annas_archive", "piratebay", "bt4g", "btdigg", "kickass", "tokyotoshokan":
+	case "1337x", "nyaa", "solidtorrents", "annas_archive", "piratebay", "bt4g", "btdigg", "kickass", "tokyotoshokan", "digbt", "torznab", "zlibrary":
 		return searchTorrentsWeb(ctx, client, def.ID, req.Query)
 
 	// --- Music ---
-	case "bandcamp", "soundcloud", "radio_browser", "deezer", "mixcloud", "yandex_music":
+	case "bandcamp", "soundcloud", "radio_browser", "deezer", "mixcloud", "yandex_music", "freesound", "spotify":
 		return searchMusicWeb(ctx, client, def.ID, req.Query)
 
 	// --- General / Specific ---
