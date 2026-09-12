@@ -139,12 +139,22 @@ chmod +x "${TMP_DIR}/searxgo"
 echo -e "${CYAN}➜ Installing binary to ${INSTALL_DIR}/searxgo...${RESET}"
 if [ -n "${USE_SUDO}" ]; then
     ${USE_SUDO} mkdir -p "${INSTALL_DIR}"
-    ${USE_SUDO} cp "${TMP_DIR}/searxgo" "${INSTALL_DIR}/searxgo"
-    ${USE_SUDO} chmod +x "${INSTALL_DIR}/searxgo"
+    if command -v install >/dev/null 2>&1; then
+        ${USE_SUDO} install -m 755 "${TMP_DIR}/searxgo" "${INSTALL_DIR}/searxgo"
+    else
+        ${USE_SUDO} rm -f "${INSTALL_DIR}/searxgo" 2>/dev/null || true
+        ${USE_SUDO} cp "${TMP_DIR}/searxgo" "${INSTALL_DIR}/searxgo"
+        ${USE_SUDO} chmod 755 "${INSTALL_DIR}/searxgo"
+    fi
 else
     mkdir -p "${INSTALL_DIR}"
-    cp "${TMP_DIR}/searxgo" "${INSTALL_DIR}/searxgo"
-    chmod +x "${INSTALL_DIR}/searxgo"
+    if command -v install >/dev/null 2>&1; then
+        install -m 755 "${TMP_DIR}/searxgo" "${INSTALL_DIR}/searxgo"
+    else
+        rm -f "${INSTALL_DIR}/searxgo" 2>/dev/null || true
+        cp "${TMP_DIR}/searxgo" "${INSTALL_DIR}/searxgo"
+        chmod 755 "${INSTALL_DIR}/searxgo"
+    fi
 fi
 
 # 5. Install Default settings.yml Configuration

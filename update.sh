@@ -154,25 +154,35 @@ fi
 
 chmod +x "${TMP_DIR}/searxgo"
 
-# 6. Backup existing binary before replacement
+# 6. Backup existing binary before replacement (using mv to release active inode)
 if [ -f "${INSTALL_PATH}" ]; then
     BACKUP_PATH="${INSTALL_PATH}.bak.$(date +%Y%m%d_%H%M%S)"
     echo -e "${CYAN}➜ Creating backup of current binary at ${BACKUP_PATH}...${RESET}"
     if [ -n "${USE_SUDO}" ]; then
-        ${USE_SUDO} cp "${INSTALL_PATH}" "${BACKUP_PATH}"
+        ${USE_SUDO} mv "${INSTALL_PATH}" "${BACKUP_PATH}"
     else
-        cp "${INSTALL_PATH}" "${BACKUP_PATH}"
+        mv "${INSTALL_PATH}" "${BACKUP_PATH}"
     fi
 fi
 
-# 7. Atomic update of executable binary
+# 7. Atomic installation of new executable binary
 echo -e "${CYAN}➜ Installing new binary to ${INSTALL_PATH}...${RESET}"
 if [ -n "${USE_SUDO}" ]; then
-    ${USE_SUDO} cp "${TMP_DIR}/searxgo" "${INSTALL_PATH}"
-    ${USE_SUDO} chmod +x "${INSTALL_PATH}"
+    if command -v install >/dev/null 2>&1; then
+        ${USE_SUDO} install -m 755 "${TMP_DIR}/searxgo" "${INSTALL_PATH}"
+    else
+        ${USE_SUDO} rm -f "${INSTALL_PATH}" 2>/dev/null || true
+        ${USE_SUDO} cp "${TMP_DIR}/searxgo" "${INSTALL_PATH}"
+        ${USE_SUDO} chmod 755 "${INSTALL_PATH}"
+    fi
 else
-    cp "${TMP_DIR}/searxgo" "${INSTALL_PATH}"
-    chmod +x "${INSTALL_PATH}"
+    if command -v install >/dev/null 2>&1; then
+        install -m 755 "${TMP_DIR}/searxgo" "${INSTALL_PATH}"
+    else
+        rm -f "${INSTALL_PATH}" 2>/dev/null || true
+        cp "${TMP_DIR}/searxgo" "${INSTALL_PATH}"
+        chmod 755 "${INSTALL_PATH}"
+    fi
 fi
 
 # 8. Check and update configuration template if available (preserve user settings)
