@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{if .Query}}{{.Query}} - {{end}}Split-Screen Dual Search - SearXGo</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>">
+</head>
+<body>
+  <header class="results-header">
+    <div class="container">
+      <div class="header-top">
+        <a href="/" class="logo-compact">SearXGo <span style="font-size:0.75rem; color:var(--accent-primary); font-weight:600;">[Split]</span></a>
+        
+        <div class="header-search">
+          <form class="search-form" action="/split" method="GET" autocomplete="off">
+            <div class="search-box-wrapper">
+              <div class="search-box">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input 
+                  type="search" 
+                  name="q" 
+                  class="search-input" 
+                  placeholder="Compare two engines simultaneously..." 
+                  value="{{.Query}}" 
+                  required 
+                  spellcheck="false"
+                />
+                <div class="search-actions">
+                  <button type="submit" class="btn-search">
+                    <span>Compare</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="header-nav">
+          <a href="/search?q={{urlquery .Query}}" class="nav-btn" title="Back to Unified Search">
+            <span>🌐 Unified Search</span>
+          </a>
+          <a href="/settings" class="nav-btn" title="Preferences">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    {{if .Query}}
+      <div class="split-screen-container">
+        <!-- Panel Left (Engine A) -->
+        <section class="split-panel">
+          <div class="split-panel-header">
+            <div class="split-panel-title">
+              <span>🔵 Panel A:</span>
+              <span style="color:var(--accent-primary);">{{.EngineA}}</span>
+            </div>
+            <form action="/split" method="GET">
+              <input type="hidden" name="q" value="{{.Query}}">
+              <input type="hidden" name="engine_b" value="{{.EngineB}}">
+              <select name="engine_a" class="split-panel-select" onchange="this.form.submit()">
+                <option value="duckduckgo" {{if eq .EngineA "duckduckgo"}}selected{{end}}>DuckDuckGo</option>
+                <option value="google" {{if eq .EngineA "google"}}selected{{end}}>Google</option>
+                <option value="brave" {{if eq .EngineA "brave"}}selected{{end}}>Brave</option>
+                <option value="qwant" {{if eq .EngineA "qwant"}}selected{{end}}>Qwant</option>
+                <option value="startpage" {{if eq .EngineA "startpage"}}selected{{end}}>Startpage</option>
+                <option value="yandex" {{if eq .EngineA "yandex"}}selected{{end}}>Yandex</option>
+                <option value="swisscows" {{if eq .EngineA "swisscows"}}selected{{end}}>Swisscows</option>
+                <option value="breach" {{if eq .EngineA "breach"}}selected{{end}}>Data Breach OSINT</option>
+                <option value="pastes" {{if eq .EngineA "pastes"}}selected{{end}}>Paste Dumps</option>
+                <option value="web3" {{if eq .EngineA "web3"}}selected{{end}}>Web3 &amp; IPFS</option>
+                <option value="github" {{if eq .EngineA "github"}}selected{{end}}>GitHub</option>
+                <option value="wikipedia" {{if eq .EngineA "wikipedia"}}selected{{end}}>Wikipedia</option>
+              </select>
+            </form>
+          </div>
+
+          <div class="split-results-list">
+            {{range $idx, $item := .ResultsA}}
+              <article class="result-item" style="margin-bottom:0.75rem;">
+                <div class="result-url-wrap">
+                  <span class="result-url">{{$item.PrettyURL}}</span>
+                </div>
+                <h3 class="result-title" style="font-size:1.05rem;">
+                  <a href="{{$item.URL}}" target="_blank" rel="noreferrer noopener">{{$item.Title}}</a>
+                </h3>
+                <div class="result-snippet" style="font-size:0.85rem;">{{$item.Content}}</div>
+              </article>
+            {{else}}
+              <div class="no-results">No results from {{.EngineA}}.</div>
+            {{end}}
+          </div>
+        </section>
+
+        <!-- Panel Right (Engine B) -->
+        <section class="split-panel">
+          <div class="split-panel-header">
+            <div class="split-panel-title">
+              <span>🟣 Panel B:</span>
+              <span style="color:var(--accent-secondary, #a855f7);">{{.EngineB}}</span>
+            </div>
+            <form action="/split" method="GET">
+              <input type="hidden" name="q" value="{{.Query}}">
+              <input type="hidden" name="engine_a" value="{{.EngineA}}">
+              <select name="engine_b" class="split-panel-select" onchange="this.form.submit()">
+                <option value="brave" {{if eq .EngineB "brave"}}selected{{end}}>Brave</option>
+                <option value="duckduckgo" {{if eq .EngineB "duckduckgo"}}selected{{end}}>DuckDuckGo</option>
+                <option value="google" {{if eq .EngineB "google"}}selected{{end}}>Google</option>
+                <option value="qwant" {{if eq .EngineB "qwant"}}selected{{end}}>Qwant</option>
+                <option value="startpage" {{if eq .EngineB "startpage"}}selected{{end}}>Startpage</option>
+                <option value="yandex" {{if eq .EngineB "yandex"}}selected{{end}}>Yandex</option>
+                <option value="swisscows" {{if eq .EngineB "swisscows"}}selected{{end}}>Swisscows</option>
+                <option value="breach" {{if eq .EngineB "breach"}}selected{{end}}>Data Breach OSINT</option>
+                <option value="pastes" {{if eq .EngineB "pastes"}}selected{{end}}>Paste Dumps</option>
+                <option value="web3" {{if eq .EngineB "web3"}}selected{{end}}>Web3 &amp; IPFS</option>
+                <option value="github" {{if eq .EngineB "github"}}selected{{end}}>GitHub</option>
+                <option value="wikipedia" {{if eq .EngineB "wikipedia"}}selected{{end}}>Wikipedia</option>
+              </select>
+            </form>
+          </div>
+
+          <div class="split-results-list">
+            {{range $idx, $item := .ResultsB}}
+              <article class="result-item" style="margin-bottom:0.75rem;">
+                <div class="result-url-wrap">
+                  <span class="result-url">{{$item.PrettyURL}}</span>
+                </div>
+                <h3 class="result-title" style="font-size:1.05rem;">
+                  <a href="{{$item.URL}}" target="_blank" rel="noreferrer noopener">{{$item.Title}}</a>
+                </h3>
+                <div class="result-snippet" style="font-size:0.85rem;">{{$item.Content}}</div>
+              </article>
+            {{else}}
+              <div class="no-results">No results from {{.EngineB}}.</div>
+            {{end}}
+          </div>
+        </section>
+      </div>
+    {{else}}
+      <div style="text-align:center; padding: 4rem 1rem;">
+        <h2 style="font-size:1.8rem; margin-bottom:1rem;">⚖️ Split-Screen Dual Search</h2>
+        <p style="color:var(--text-secondary); max-width:600px; margin:0 auto 2rem;">
+          Compare results between any two search engines side-by-side to audit censorship, ranking bias, and index coverage.
+        </p>
+      </div>
+    {{end}}
+  </main>
+</body>
+</html>

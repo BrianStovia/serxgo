@@ -56,7 +56,13 @@ func (s *InstantService) FindInstantAnswers(ctx context.Context, query string, c
 		return answers
 	}
 
-	// 5. Check Wikipedia Summary Infobox for definitions / entity lookups
+	// 5. Check Network OSINT & Security Intelligence (DNS, SSL, Headers, WHOIS, Subdomains, CVE)
+	if netAns := CheckNetworkOSINTQuery(ctx, q); netAns != nil {
+		answers = append(answers, *netAns)
+		return answers
+	}
+
+	// 6. Check Wikipedia Summary Infobox for definitions / entity lookups
 	if infoAns := s.checkWikipediaSummary(ctx, q); infoAns != nil {
 		answers = append(answers, *infoAns)
 	}

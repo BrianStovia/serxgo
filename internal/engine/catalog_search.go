@@ -112,6 +112,8 @@ func executeCatalogEngineSearch(ctx context.Context, def EngineDefinition, req m
 		return NewPastesEngine().Search(ctx, req)
 	case "breach":
 		return NewBreachEngine().Search(ctx, req)
+	case "web3":
+		return NewWeb3Engine().Search(ctx, req)
 	case "marginalia":
 		return searchMarginalia(ctx, client, req.Query)
 	case "wiby":

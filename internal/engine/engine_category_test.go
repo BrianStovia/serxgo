@@ -100,6 +100,11 @@ func TestEngineCategorization(t *testing.T) {
 	if brc.Name() != "breach" || !brc.DefaultOn() {
 		t.Errorf("BreachEngine metadata mismatch: %v", brc.Name())
 	}
+
+	w3 := NewWeb3Engine()
+	if w3.Name() != "web3" || !w3.DefaultOn() {
+		t.Errorf("Web3Engine metadata mismatch: %v", w3.Name())
+	}
 }
 
 func TestExtractBingURL(t *testing.T) {

@@ -579,6 +579,9 @@ var engineBangs = map[string]string{
 	"!rentry": "pastes",
 	"!dump": "pastes",
 	"!dumps": "pastes",
+	"!web3": "web3",
+	"!ipfs": "web3",
+	"!arweave": "web3",
 }
 
 // Direct bang URL templates (for !bang!)
@@ -614,6 +617,8 @@ var directBangURLs = map[string]string{
 	"!pastebin!":  "https://pastebin.com/search?q=%s",
 	"!intelx!":    "https://intelx.io/?s=%s",
 	"!rentry!":    "https://rentry.co/%s",
+	"!ipfs!":      "https://ipfs.io/ipfs/%s",
+	"!arweave!":   "https://viewblock.io/arweave/tx/%s",
 }
 
 // ParseBangs inspects raw query for bangs (!g, !yt, !images) and language modifiers (:en, :id)

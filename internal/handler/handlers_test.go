@@ -84,4 +84,22 @@ func TestHTTPHandlers(t *testing.T) {
 	if recHealth.Code != http.StatusOK {
 		t.Errorf("GET /healthz returned status %d; want %d", recHealth.Code, http.StatusOK)
 	}
+
+	// 7. Test Split Screen /split
+	recSplit := httptest.NewRecorder()
+	reqSplit := httptest.NewRequest("GET", "/split?q=test", nil)
+	mux.ServeHTTP(recSplit, reqSplit)
+
+	if recSplit.Code != http.StatusOK {
+		t.Errorf("GET /split returned status %d; want %d", recSplit.Code, http.StatusOK)
+	}
+
+	// 8. Test Watchdog /watchdog
+	recWatch := httptest.NewRecorder()
+	reqWatch := httptest.NewRequest("GET", "/watchdog?q=golang", nil)
+	mux.ServeHTTP(recWatch, reqWatch)
+
+	if recWatch.Code != http.StatusOK {
+		t.Errorf("GET /watchdog returned status %d; want %d", recWatch.Code, http.StatusOK)
+	}
 }

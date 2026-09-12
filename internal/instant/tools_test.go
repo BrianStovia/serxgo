@@ -79,3 +79,20 @@ func TestBreachInstant(t *testing.T) {
 	}
 }
 
+func TestNetworkOSINT(t *testing.T) {
+	ctx := context.Background()
+
+	// 1. DNS query
+	dnsAns := CheckNetworkOSINTQuery(ctx, "dns: google.com")
+	if dnsAns == nil || !strings.Contains(dnsAns.Title, "google.com") {
+		t.Fatalf("Expected DNS records for google.com, got: %+v", dnsAns)
+	}
+
+	// 2. CVE query fallback
+	cveAns := CheckNetworkOSINTQuery(ctx, "cve: CVE-2021-44228")
+	if cveAns == nil || !strings.Contains(cveAns.Title, "CVE-2021-44228") {
+		t.Fatalf("Expected CVE report for CVE-2021-44228, got: %+v", cveAns)
+	}
+}
+
+

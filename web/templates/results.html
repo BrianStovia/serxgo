@@ -53,6 +53,9 @@
         </div>
 
         <div class="header-nav">
+          <a href="/split?q={{urlquery .Response.Query}}" class="nav-btn" title="Split-Screen Dual Engine Comparison">
+            <span>⚖️ Split</span>
+          </a>
           <button type="button" class="nav-btn btn-open-bookmarks" title="Saved Bookmarks">
             <span>🔖 Bookmarks</span>
             <span class="bookmark-counter" style="display:none; background:var(--accent-primary); color:white; border-radius:10px; padding:1px 6px; font-size:0.7rem; font-weight:700;">0</span>
@@ -308,9 +311,15 @@
                     <img src="/proxy/image?url={{urlquery $fav}}" class="site-favicon" onerror="this.style.display='none'" alt="" />
                   {{end}}
                   <span class="result-url">{{$item.PrettyURL}}</span>
-                  {{if $item.CachedURL}}
-                    <a href="{{$item.CachedURL}}" target="_blank" rel="noreferrer noopener" class="cached-link" title="View cached snapshot on Wayback Machine">[Cached]</a>
-                  {{end}}
+                  <div class="archive-dropdown-wrap">
+                    <button type="button" class="btn-archive-dropdown" title="View historical web archives & snapshots">🕰️ Archive ▾</button>
+                    <div class="archive-menu">
+                      <a href="https://web.archive.org/web/*/{{$item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">🏛️ Wayback Machine</a>
+                      <a href="https://archive.is/{{$item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">📜 Archive.today</a>
+                      <a href="https://webcache.googleusercontent.com/search?q=cache:{{$item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">⚡ Google Cache</a>
+                      <a href="https://ghostarchive.org/search?term={{$item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">👻 Ghostarchive</a>
+                    </div>
+                  </div>
                   {{if $item.MagnetURL}}
                     <button type="button" class="btn-magnet" data-magnet="{{$item.MagnetURL}}" title="Copy Magnet Link">🧲 Copy Magnet</button>
                   {{end}}

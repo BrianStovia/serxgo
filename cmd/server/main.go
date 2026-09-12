@@ -84,6 +84,9 @@ func main() {
 	engine.DefaultRegistry.Register(engine.NewPastesEngine())
 	engine.DefaultRegistry.Register(engine.NewBreachEngine())
 
+	// Web3 & Decentralized P2P
+	engine.DefaultRegistry.Register(engine.NewWeb3Engine())
+
 	// 1.1 Register All 260 Engines from priv.au / SearXNG Catalog
 	engine.RegisterAllCatalogEngines(engine.DefaultRegistry)
 

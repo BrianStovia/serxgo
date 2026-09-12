@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 
 	"searxgo/internal/aggregator"
 	"searxgo/internal/bangs"
@@ -127,6 +128,9 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /status", h.ServeAPIStats)
 	mux.HandleFunc("GET /engine_descriptions.json", h.ServeEngineDescriptions)
 	mux.HandleFunc("GET /engines", h.ServeEngineDescriptions)
+	mux.HandleFunc("GET /split", h.ServeSplit)
+	mux.HandleFunc("GET /watchdog", h.ServeWatchdog)
+	mux.HandleFunc("GET /api/watchdog", h.ServeWatchdog)
 
 	// Privacy Proxy
 	mux.HandleFunc("GET /proxy/image", h.imageProxy.ServeHTTP)
@@ -826,5 +830,89 @@ func SecurityHeadersMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+func (h *Handler) ServeSplit(w http.ResponseWriter, r *http.Request) {
+	q := strings.TrimSpace(r.URL.Query().Get("q"))
+	engineA := r.URL.Query().Get("engine_a")
+	if engineA == "" {
+		engineA = "duckduckgo"
+	}
+	engineB := r.URL.Query().Get("engine_b")
+	if engineB == "" {
+		engineB = "brave"
+	}
+
+	var resultsA, resultsB []models.SearchResult
+	if q != "" {
+		var wg sync.WaitGroup
+		wg.Add(2)
+
+		go func() {
+			defer wg.Done()
+			reqA := models.SearchRequest{
+				Query:          q,
+				Category:       models.CategoryGeneral,
+				Page:           1,
+				PageSize:       15,
+				EnabledEngines: []string{engineA},
+			}
+			respA, err := h.aggregator.Search(r.Context(), reqA)
+			if err == nil && respA != nil {
+				resultsA = respA.Results
+			}
+		}()
+
+		go func() {
+			defer wg.Done()
+			reqB := models.SearchRequest{
+				Query:          q,
+				Category:       models.CategoryGeneral,
+				Page:           1,
+				PageSize:       15,
+				EnabledEngines: []string{engineB},
+			}
+			respB, err := h.aggregator.Search(r.Context(), reqB)
+			if err == nil && respB != nil {
+				resultsB = respB.Results
+			}
+		}()
+
+		wg.Wait()
+	}
+
+	data := map[string]interface{}{
+		"Query":    q,
+		"EngineA":  engineA,
+		"EngineB":  engineB,
+		"ResultsA": resultsA,
+		"ResultsB": resultsB,
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "split.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	buf.WriteTo(w)
+}
+
+func (h *Handler) ServeWatchdog(w http.ResponseWriter, r *http.Request) {
+	req := h.parseSearchRequest(r)
+	if req.Query == "" {
+		http.Error(w, "Query parameter 'q' is required for watchdog feed", http.StatusBadRequest)
+		return
+	}
+
+	format := strings.ToLower(r.URL.Query().Get("format"))
+	if format == "json" {
+		h.ServeAPI(w, r)
+		return
+	}
+
+	// Serve as RSS 2.0 Webhook / Notification Feed
+	h.ServeRSS(w, r, req)
+}
+
 
 
