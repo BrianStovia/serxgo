@@ -241,4 +241,33 @@ engines:
     timeout: 3.5
     weight: 1.2
 
+  - name: wikileaks
+    engine: wikileaks
+    shortcut: wl
+    categories: [general, files, other]
+    timeout: 3.5
+    weight: 1.35
+
+  - name: ransomware
+    engine: ransomware
+    shortcut: ransom
+    categories: [general, it, other]
+    timeout: 3.5
+    weight: 1.3
+
+  - name: telegram_leaks
+    engine: telegram_leaks
+    shortcut: tg
+    categories: [general, social, files]
+    timeout: 3.5
+    weight: 1.3
+
+  - name: exploits
+    engine: exploits
+    shortcut: exploit
+    categories: [it, general, other]
+    timeout: 3.5
+    weight: 1.35
+
+
 

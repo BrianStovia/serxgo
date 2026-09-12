@@ -177,6 +177,11 @@ SearXGo supports complete SearXNG advanced search query syntax:
 ### 2. Engine Bangs & Direct Redirects
 - `!leak target company` ➔ Search Data Breach OSINT & Security Compromises
 - `!pastes credentials` ➔ Search Pastebin, Rentry, Ghostbin, Dumpz public dumps
+- `!wl diplomatic cables` ➔ Search WikiLeaks, DDoSecrets, and Cryptome leaks
+- `!ransom victim monitor` ➔ Search Ransomware victim disclosures (RansomLook, Ransomware.live, DarkFeed)
+- `!tg osint dumps` ➔ Search Public Telegram channels & t.me breach disclosure dumps
+- `!exploit zero-day cve` ➔ Search Exploit-DB, Packet Storm, Sploitus, and 0-Day advisories
+- `!web3 ipfs hash` ➔ Search Web3 decentralized storage (IPFS & Arweave)
 - `!qw privacy browser` ➔ Search Qwant (European index)
 - `!sp zero knowledge` ➔ Search Startpage (Google-grade results)
 - `!eco reforestation` ➔ Search Ecosia (Green search)
@@ -191,6 +196,12 @@ SearXGo supports complete SearXNG advanced search query syntax:
 - `!so goroutine leak` ➔ Search StackOverflow
 - `!arx gravitational waves` ➔ Search arXiv papers
 - `!ddg privacy tools` ➔ Search DuckDuckGo
+- `!wl! leaks` ➔ **Direct Jump:** Navigates to WikiLeaks search
+- `!ddos! disclosures` ➔ **Direct Jump:** Navigates to DDoSecrets search
+- `!sploitus! CVE-2024` ➔ **Direct Jump:** Navigates to Sploitus Exploit search
+- `!exploit! CVE-2024` ➔ **Direct Jump:** Navigates to Exploit-DB search
+- `!packetstorm! tools` ➔ **Direct Jump:** Navigates to Packet Storm Security search
+- `!tgstat! osint` ➔ **Direct Jump:** Navigates to TGStat Telegram search
 - `!hibp! user@domain.com` ➔ **Direct Jump:** Navigates to HaveIBeenPwned lookup
 - `!intelx! leak search` ➔ **Direct Jump:** Navigates to Intelligence X search
 - `!pastebin! query` ➔ **Direct Jump:** Navigates to Pastebin search

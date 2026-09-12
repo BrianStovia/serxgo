@@ -83,6 +83,10 @@ func main() {
 	// Data Breach, Leaks & Public Paste Dumps
 	engine.DefaultRegistry.Register(engine.NewPastesEngine())
 	engine.DefaultRegistry.Register(engine.NewBreachEngine())
+	engine.DefaultRegistry.Register(engine.NewWikiLeaksEngine())
+	engine.DefaultRegistry.Register(engine.NewRansomwareEngine())
+	engine.DefaultRegistry.Register(engine.NewTelegramLeaksEngine())
+	engine.DefaultRegistry.Register(engine.NewExploitsEngine())
 
 	// Web3 & Decentralized P2P
 	engine.DefaultRegistry.Register(engine.NewWeb3Engine())

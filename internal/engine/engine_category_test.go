@@ -105,6 +105,26 @@ func TestEngineCategorization(t *testing.T) {
 	if w3.Name() != "web3" || !w3.DefaultOn() {
 		t.Errorf("Web3Engine metadata mismatch: %v", w3.Name())
 	}
+
+	wl := NewWikiLeaksEngine()
+	if wl.Name() != "wikileaks" || !wl.DefaultOn() {
+		t.Errorf("WikiLeaksEngine metadata mismatch: %v", wl.Name())
+	}
+
+	rn := NewRansomwareEngine()
+	if rn.Name() != "ransomware" || !rn.DefaultOn() {
+		t.Errorf("RansomwareEngine metadata mismatch: %v", rn.Name())
+	}
+
+	tg := NewTelegramLeaksEngine()
+	if tg.Name() != "telegram_leaks" || !tg.DefaultOn() {
+		t.Errorf("TelegramLeaksEngine metadata mismatch: %v", tg.Name())
+	}
+
+	exp := NewExploitsEngine()
+	if exp.Name() != "exploits" || !exp.DefaultOn() {
+		t.Errorf("ExploitsEngine metadata mismatch: %v", exp.Name())
+	}
 }
 
 func TestExtractBingURL(t *testing.T) {

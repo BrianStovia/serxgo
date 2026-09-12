@@ -149,6 +149,15 @@ func TestQueryExpansionAndClassification(t *testing.T) {
 	if !IsLeakOrBreachQuery("pwned password database dump") {
 		t.Errorf("Expected IsLeakOrBreachQuery to be true for 'pwned' query")
 	}
+	if !IsLeakOrBreachQuery("wikileaks diplomatic cables foia") {
+		t.Errorf("Expected IsLeakOrBreachQuery to be true for 'wikileaks' query")
+	}
+	if !IsLeakOrBreachQuery("ransomware victim darkfeed leak") {
+		t.Errorf("Expected IsLeakOrBreachQuery to be true for 'ransomware' query")
+	}
+	if !IsLeakOrBreachQuery("exploit-db 0day proof of concept") {
+		t.Errorf("Expected IsLeakOrBreachQuery to be true for 'exploit-db' query")
+	}
 	if !IsMediaOrVideoQuery("lagu lofi hip hop youtube") {
 		t.Errorf("Expected IsMediaOrVideoQuery to be true for 'lagu' query")
 	}

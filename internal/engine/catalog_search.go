@@ -112,6 +112,14 @@ func executeCatalogEngineSearch(ctx context.Context, def EngineDefinition, req m
 		return NewPastesEngine().Search(ctx, req)
 	case "breach":
 		return NewBreachEngine().Search(ctx, req)
+	case "wikileaks":
+		return NewWikiLeaksEngine().Search(ctx, req)
+	case "ransomware":
+		return NewRansomwareEngine().Search(ctx, req)
+	case "telegram_leaks":
+		return NewTelegramLeaksEngine().Search(ctx, req)
+	case "exploits":
+		return NewExploitsEngine().Search(ctx, req)
 	case "web3":
 		return NewWeb3Engine().Search(ctx, req)
 	case "marginalia":

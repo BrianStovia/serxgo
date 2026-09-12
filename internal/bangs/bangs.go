@@ -582,6 +582,28 @@ var engineBangs = map[string]string{
 	"!web3": "web3",
 	"!ipfs": "web3",
 	"!arweave": "web3",
+	"!wl": "wikileaks",
+	"!wikileaks": "wikileaks",
+	"!ddos": "wikileaks",
+	"!ddosecrets": "wikileaks",
+	"!cryptome": "wikileaks",
+	"!foia": "wikileaks",
+	"!ransom": "ransomware",
+	"!ransomware": "ransomware",
+	"!darkfeed": "ransomware",
+	"!ransomlook": "ransomware",
+	"!ransomlive": "ransomware",
+	"!tg": "telegram_leaks",
+	"!telegram": "telegram_leaks",
+	"!tgdump": "telegram_leaks",
+	"!tgstat": "telegram_leaks",
+	"!tme": "telegram_leaks",
+	"!exploit": "exploits",
+	"!exploits": "exploits",
+	"!sploitus": "exploits",
+	"!packetstorm": "exploits",
+	"!edb": "exploits",
+	"!cxsecurity": "exploits",
 }
 
 // Direct bang URL templates (for !bang!)
@@ -619,6 +641,13 @@ var directBangURLs = map[string]string{
 	"!rentry!":    "https://rentry.co/%s",
 	"!ipfs!":      "https://ipfs.io/ipfs/%s",
 	"!arweave!":   "https://viewblock.io/arweave/tx/%s",
+	"!wl!":        "https://wikileaks.org/wiki/%s",
+	"!wikileaks!": "https://wikileaks.org/wiki/%s",
+	"!ddos!":      "https://ddosecrets.com/wiki/Special:Search?search=%s",
+	"!sploitus!":  "https://sploitus.com/?query=%s",
+	"!exploit!":   "https://www.exploit-db.com/search?q=%s",
+	"!packetstorm!": "https://packetstormsecurity.com/search/?q=%s",
+	"!tgstat!":    "https://tgstat.com/search?q=%s",
 }
 
 // ParseBangs inspects raw query for bangs (!g, !yt, !images) and language modifiers (:en, :id)

@@ -56,6 +56,10 @@ var leakBreachKeywords = []string{
 	"bocor", "kebocoran", "peretasan", "kata sandi", "leak", "leaked", "breach",
 	"breached", "pwned", "database dump", "credentials", "pastebin", "rentry",
 	"dumpz", "data dump", "compromised", "dehashed", "haveibeenpwned",
+	"wikileaks", "ddosecrets", "cryptome", "foia", "ransomware", "darkfeed",
+	"ransomlook", "telegram leak", "tg dump", "t.me/s/", "exploit", "exploits",
+	"sploitus", "packetstorm", "exploit-db", "cve exploit", "0day", "zero-day",
+	"victim leak", "exfiltration",
 }
 
 var mediaVideoKeywords = []string{

@@ -144,7 +144,7 @@ func (a *Aggregator) Search(ctx context.Context, req models.SearchRequest) (*mod
 				additionalEngineNames = append(additionalEngineNames, "ahmia")
 			}
 			if IsLeakOrBreachQuery(req.Query) {
-				additionalEngineNames = append(additionalEngineNames, "breach", "pastes")
+				additionalEngineNames = append(additionalEngineNames, "breach", "pastes", "wikileaks", "ransomware", "telegram_leaks", "exploits")
 			}
 			if IsMediaOrVideoQuery(req.Query) {
 				additionalEngineNames = append(additionalEngineNames, "youtube")
