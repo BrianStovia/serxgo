@@ -143,4 +143,13 @@ func TestQueryExpansionAndClassification(t *testing.T) {
 	if !IsTorDeepWebQuery("onion hidden service darknet") {
 		t.Errorf("Expected IsTorDeepWebQuery to be true for onion query")
 	}
+	if !IsLeakOrBreachQuery("data bocor database kominfo") {
+		t.Errorf("Expected IsLeakOrBreachQuery to be true for 'data bocor' query")
+	}
+	if !IsLeakOrBreachQuery("pwned password database dump") {
+		t.Errorf("Expected IsLeakOrBreachQuery to be true for 'pwned' query")
+	}
+	if !IsMediaOrVideoQuery("lagu lofi hip hop youtube") {
+		t.Errorf("Expected IsMediaOrVideoQuery to be true for 'lagu' query")
+	}
 }

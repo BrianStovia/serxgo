@@ -24,6 +24,10 @@ var idToEnMap = map[string][]string{
 	"masalah":     {"issue", "error", "bug", "fix"},
 	"solusi":      {"solution", "fix", "troubleshoot"},
 	"unduh":       {"download", "install"},
+	"bocor":       {"leak", "breach", "data breach"},
+	"kebocoran":   {"data breach", "leak", "compromise"},
+	"peretasan":   {"hack", "cyber attack", "breach"},
+	"kata sandi":  {"password", "credentials"},
 }
 
 var techKeywords = []string{
@@ -46,6 +50,17 @@ var discussionKeywords = []string{
 
 var torDeepKeywords = []string{
 	"onion", "tor", "darknet", "deep web", "privacy", "anonymity", "hidden service",
+}
+
+var leakBreachKeywords = []string{
+	"bocor", "kebocoran", "peretasan", "kata sandi", "leak", "leaked", "breach",
+	"breached", "pwned", "database dump", "credentials", "pastebin", "rentry",
+	"dumpz", "data dump", "compromised", "dehashed", "haveibeenpwned",
+}
+
+var mediaVideoKeywords = []string{
+	"video", "lagu", "musik", "nonton", "film", "streaming", "clip", "song",
+	"trailer", "stream", "youtube", "podcast", "audio", "mv",
 }
 
 // GenerateQueryVariants produces bilingual and synonym-expanded query variations
@@ -139,6 +154,28 @@ func IsDiscussionQuery(q string) bool {
 func IsTorDeepWebQuery(q string) bool {
 	lower := strings.ToLower(q)
 	for _, kw := range torDeepKeywords {
+		if strings.Contains(lower, kw) {
+			return true
+		}
+	}
+	return false
+}
+
+// IsLeakOrBreachQuery returns true if natural language query targets data leaks, breaches, or dumps
+func IsLeakOrBreachQuery(q string) bool {
+	lower := strings.ToLower(q)
+	for _, kw := range leakBreachKeywords {
+		if strings.Contains(lower, kw) {
+			return true
+		}
+	}
+	return false
+}
+
+// IsMediaOrVideoQuery returns true if query targets videos, songs, or streaming media
+func IsMediaOrVideoQuery(q string) bool {
+	lower := strings.ToLower(q)
+	for _, kw := range mediaVideoKeywords {
 		if strings.Contains(lower, kw) {
 			return true
 		}

@@ -143,6 +143,12 @@ func (a *Aggregator) Search(ctx context.Context, req models.SearchRequest) (*mod
 			if IsTorDeepWebQuery(req.Query) {
 				additionalEngineNames = append(additionalEngineNames, "ahmia")
 			}
+			if IsLeakOrBreachQuery(req.Query) {
+				additionalEngineNames = append(additionalEngineNames, "breach", "pastes")
+			}
+			if IsMediaOrVideoQuery(req.Query) {
+				additionalEngineNames = append(additionalEngineNames, "youtube")
+			}
 
 			for _, name := range additionalEngineNames {
 				if !crossEnginesMap[name] {
