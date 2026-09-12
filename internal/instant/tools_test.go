@@ -56,3 +56,26 @@ func TestTools(t *testing.T) {
 		t.Errorf("Reverse test failed, got: %+v", revAns)
 	}
 }
+
+func TestBreachInstant(t *testing.T) {
+	ctx := context.Background()
+
+	// 1. Email query card
+	ansEmail := CheckBreachQuery(ctx, "breach: test@example.com")
+	if ansEmail == nil || !strings.Contains(ansEmail.Title, "test@example.com") {
+		t.Fatalf("Expected breach card for test@example.com, got: %+v", ansEmail)
+	}
+
+	// 2. Direct email input
+	ansDirect := CheckBreachQuery(ctx, "security-alert@company.org")
+	if ansDirect == nil || !strings.Contains(ansDirect.Title, "security-alert@company.org") {
+		t.Fatalf("Expected breach card for security-alert@company.org, got: %+v", ansDirect)
+	}
+
+	// 3. Format leak number
+	numStr := formatLeakNumber(1234567)
+	if numStr != "1,234,567" {
+		t.Fatalf("Expected 1,234,567, got %s", numStr)
+	}
+}
+

@@ -567,6 +567,18 @@ var engineBangs = map[string]string{
 	"!yt": "youtube",
 	"!zapmeta": "zapmeta",
 	"!zpm": "zapmeta",
+	"!breach": "breach",
+	"!leak": "breach",
+	"!leaks": "breach",
+	"!hibp": "breach",
+	"!pwned": "breach",
+	"!intelx": "breach",
+	"!pastes": "pastes",
+	"!paste": "pastes",
+	"!pastebin": "pastes",
+	"!rentry": "pastes",
+	"!dump": "pastes",
+	"!dumps": "pastes",
 }
 
 // Direct bang URL templates (for !bang!)
@@ -598,6 +610,10 @@ var directBangURLs = map[string]string{
 	"!br!":        "https://search.brave.com/search?q=%s",
 	"!bd!":        "https://www.baidu.com/s?wd=%s",
 	"!yd!":        "https://yandex.com/search/?text=%s",
+	"!hibp!":      "https://haveibeenpwned.com/unifiedsearch/%s",
+	"!pastebin!":  "https://pastebin.com/search?q=%s",
+	"!intelx!":    "https://intelx.io/?s=%s",
+	"!rentry!":    "https://rentry.co/%s",
 }
 
 // ParseBangs inspects raw query for bangs (!g, !yt, !images) and language modifiers (:en, :id)

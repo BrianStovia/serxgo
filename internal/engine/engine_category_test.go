@@ -90,6 +90,16 @@ func TestEngineCategorization(t *testing.T) {
 	if ah.Name() != "ahmia" || !ah.DefaultOn() {
 		t.Errorf("AhmiaEngine metadata mismatch: %v", ah.Name())
 	}
+
+	pst := NewPastesEngine()
+	if pst.Name() != "pastes" || !pst.DefaultOn() {
+		t.Errorf("PastesEngine metadata mismatch: %v", pst.Name())
+	}
+
+	brc := NewBreachEngine()
+	if brc.Name() != "breach" || !brc.DefaultOn() {
+		t.Errorf("BreachEngine metadata mismatch: %v", brc.Name())
+	}
 }
 
 func TestExtractBingURL(t *testing.T) {

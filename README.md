@@ -22,15 +22,17 @@
 
 ## 🌟 Key Features
 
+- 🔓 **Data Breach OSINT & Public Dump Scrapers**: Native scrapers for leaked credentials archives, security incident disclosures, and public dump sites (*Pastebin, Ghostbin, Rentry, JustPaste, Dumpz, GitHub Gists*).
+- 🛡️ **Zero-Knowledge K-Anonymity Breach Verifier**: Instant client password & account compromise verification using SHA-1 5-character prefix queries (`pwned: password`, `breach: email@domain.com`).
 - ⚡ **Pure Golang & Single Static Binary**: Zero external runtime dependencies (no Python, no Redis, no Node.js). Consumes <30MB RAM idle with instant sub-second startup.
-- 🚀 **260+ Search Engines Across 9 Categories**: Native scrapers and API integrations covering *General, Images, Videos, IT & Code, Science & Academic, News, Social, Files & Torrents, Music, and Maps*.
+- 🚀 **262+ Search Engines Across 10 Categories**: Native scrapers and API integrations covering *General, Images, Videos, IT & Code, Science & Academic, News, Social, Files & Torrents, Music, and Maps*.
 - 🧠 **Smart Semantic Topic Clustering**: Automatically classifies search results into dynamic topics (*Docs & Specs, Code & Repos, Discussions, Media, Research, News, Tools*) with zero-latency client-side filtering.
 - 🛡️ **Zero-Censorship & Unfiltered Defaults**: Default `SafeSearch=Off` for unfiltered upstream aggregation without keyword filtering or censorship.
 - 📱 **Progressive Web App (PWA) & Offline Mode**: Installable on Android, iOS, Windows, and macOS with Service Worker offline caching.
 - 🔖 **Private Client-side Bookmarks & Workspace**: Save searches and pin results directly to browser `localStorage` with JSON export and zero server footprint.
 - 🏎️ **SSRF-Safe Image Proxy**: Built-in HMAC SHA-256 authenticated image and thumbnail caching proxy that shields user IP addresses from upstream CDNs.
 - 🧹 **Surveillance Tracker Stripper**: Automatically purges UTM tags, Facebook click IDs (`fbclid`), Google click IDs (`gclid`), and tracking parameters.
-- 📐 **Instant Answer Engine**: Built-in math evaluator, currency converter, live weather, hash generators, Base64 encoder/decoder, and interactive Leaflet / OpenStreetMap maps.
+- 📐 **Instant Answer Engine**: Built-in math evaluator, currency converter, live weather, hash generators, Base64 encoder/decoder, K-Anonymity breach checker, and interactive Leaflet / OpenStreetMap maps.
 - 📊 **Real-time Telemetry & Prometheus Metrics**: Live engine response times, reliability scoring, and OpenMetrics at `/stats` and `/metrics`.
 - 🔌 **Comprehensive Export & Feeds**: JSON REST API, RSS 2.0 feeds, CSV export, and RFC OpenSearch XML autocompleter.
 
@@ -42,8 +44,10 @@
 | :--- | :---: | :---: |
 | **Runtime & Dependencies** | Python 3.10+ + Redis + UWSGI | **Single Static Binary (Zero DB)** |
 | **Memory Footprint (Idle)** | ~180MB - 350MB | **< 30MB RAM** |
-| **Engine Catalog** | 260 Engines across 9 categories | **260 Engines (100% Parity)** |
-| **Query Bangs (`!gh`, `!yt`)** | 499 Bangs | **499 Bangs + Direct Redirects (`!yt!`)** |
+| **Engine Catalog** | 260 Engines across 9 categories | **262+ Engines (Full Parity + Leaks/Breaches)** |
+| **Data Breach OSINT & Dumps** | ❌ None native | ** Native Paste Dumps & Breach Scrapers** |
+| **Zero-Knowledge Breach Verifier** | ❌ None | ** K-Anonymity SHA-1 Range Lookups** |
+| **Query Bangs (`!gh`, `!yt`, `!leak`)** | 499 Bangs | **500+ Bangs + Direct Redirects (`!yt!`, `!hibp!`)** |
 | **Smart Topic Clustering** | ❌ Not available | ** Dynamic 8-Cluster Engine** |
 | **PWA & Offline Installation** | Partial | ** Full Web Manifest + Service Worker** |
 | **Private Client Workspace** | ❌ Not available | ** LocalStorage Bookmarks + Export** |
@@ -163,6 +167,8 @@ SearXGo supports complete SearXNG advanced search query syntax:
 | `!maps` | OpenStreetMap POI | `!maps tokyo tower` |
 
 ### 2. Engine Bangs & Direct Redirects
+- `!leak target company` ➔ Search Data Breach OSINT & Security Compromises
+- `!pastes credentials` ➔ Search Pastebin, Rentry, Ghostbin, Dumpz public dumps
 - `!qw privacy browser` ➔ Search Qwant (European index)
 - `!sp zero knowledge` ➔ Search Startpage (Google-grade results)
 - `!eco reforestation` ➔ Search Ecosia (Green search)
@@ -177,6 +183,9 @@ SearXGo supports complete SearXNG advanced search query syntax:
 - `!so goroutine leak` ➔ Search StackOverflow
 - `!arx gravitational waves` ➔ Search arXiv papers
 - `!ddg privacy tools` ➔ Search DuckDuckGo
+- `!hibp! user@domain.com` ➔ **Direct Jump:** Navigates to HaveIBeenPwned lookup
+- `!intelx! leak search` ➔ **Direct Jump:** Navigates to Intelligence X search
+- `!pastebin! query` ➔ **Direct Jump:** Navigates to Pastebin search
 - `!qw! privacy` ➔ **Direct Jump:** Immediately navigates to `https://www.qwant.com/?q=privacy`
 - `!sp! security` ➔ **Direct Jump:** Immediately navigates to `https://www.startpage.com/sp/search?query=security`
 - `!gh! golang` ➔ **Direct Jump:** Immediately navigates to `https://github.com/search?q=golang`

@@ -219,3 +219,18 @@ engines:
     categories: [maps]
     timeout: 3.0
     weight: 1.5
+
+  - name: pastes
+    engine: pastes
+    shortcut: pst
+    categories: [general, files, it]
+    timeout: 3.5
+    weight: 1.25
+
+  - name: breach
+    engine: breach
+    shortcut: brc
+    categories: [general, it, other]
+    timeout: 3.5
+    weight: 1.3
+

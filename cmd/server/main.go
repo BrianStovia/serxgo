@@ -80,6 +80,10 @@ func main() {
 	// Maps & Geolocation
 	engine.DefaultRegistry.Register(engine.NewOpenStreetMapEngine())
 
+	// Data Breach, Leaks & Public Paste Dumps
+	engine.DefaultRegistry.Register(engine.NewPastesEngine())
+	engine.DefaultRegistry.Register(engine.NewBreachEngine())
+
 	// 1.1 Register All 260 Engines from priv.au / SearXNG Catalog
 	engine.RegisterAllCatalogEngines(engine.DefaultRegistry)
 

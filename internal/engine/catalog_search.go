@@ -108,6 +108,10 @@ func executeCatalogEngineSearch(ctx context.Context, def EngineDefinition, req m
 		return NewAhmiaEngine().Search(ctx, req)
 	case "wolframalpha":
 		return NewWolframAlphaEngine().Search(ctx, req)
+	case "pastes":
+		return NewPastesEngine().Search(ctx, req)
+	case "breach":
+		return NewBreachEngine().Search(ctx, req)
 	case "marginalia":
 		return searchMarginalia(ctx, client, req.Query)
 	case "wiby":

@@ -50,7 +50,13 @@ func (s *InstantService) FindInstantAnswers(ctx context.Context, query string, c
 		return answers
 	}
 
-	// 3. Check Wikipedia Summary Infobox for definitions / entity lookups
+	// 4. Check Data Breach & Password Leak Verification (K-Anonymity)
+	if breachAns := CheckBreachQuery(ctx, q); breachAns != nil {
+		answers = append(answers, *breachAns)
+		return answers
+	}
+
+	// 5. Check Wikipedia Summary Infobox for definitions / entity lookups
 	if infoAns := s.checkWikipediaSummary(ctx, q); infoAns != nil {
 		answers = append(answers, *infoAns)
 	}
