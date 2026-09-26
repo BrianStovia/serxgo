@@ -54,7 +54,7 @@ echo "🪐 SearXGo - Uninstaller for Linux & macOS"
 echo "=================================================================="
 echo -e "${RESET}"
 
-# 1. Check Privilege Requirements
+# 1. Setup Privilege Escalation Runner
 USE_SUDO=""
 if [ "$(id -u)" -ne 0 ]; then
     if command -v sudo >/dev/null 2>&1; then
@@ -64,6 +64,16 @@ if [ "$(id -u)" -ne 0 ]; then
         CONFIG_DIR="${HOME}/.config/searxgo"
     fi
 fi
+
+run_elevated() {
+    if [ "$(id -u)" -eq 0 ]; then
+        "$@"
+    elif [ -n "${USE_SUDO}" ]; then
+        ${USE_SUDO} "$@"
+    else
+        "$@"
+    fi
+}
 
 # 2. Confirmation prompt if running interactively
 if [ "$AUTO_YES" = false ] && [ -t 0 ]; then
@@ -95,19 +105,14 @@ fi
 if command -v systemctl >/dev/null 2>&1; then
     if systemctl is-active --quiet searxgo.service 2>/dev/null || [ -f "${SYSTEMD_SERVICE}" ]; then
         echo -e "${CYAN}➜ Stopping and disabling systemd service (searxgo.service)...${RESET}"
-        if [ -n "${USE_SUDO}" ]; then
-            ${USE_SUDO} systemctl stop searxgo.service 2>/dev/null || true
-            ${USE_SUDO} systemctl disable searxgo.service 2>/dev/null || true
-            if [ -f "${SYSTEMD_SERVICE}" ]; then
-                echo -e "${CYAN}➜ Removing ${SYSTEMD_SERVICE}...${RESET}"
-                ${USE_SUDO} rm -f "${SYSTEMD_SERVICE}"
-                ${USE_SUDO} rm -rf "/etc/systemd/system/searxgo.service.d" 2>/dev/null || true
-                ${USE_SUDO} systemctl daemon-reload
-                ${USE_SUDO} systemctl reset-failed 2>/dev/null || true
-            fi
-        else
-            systemctl stop searxgo.service 2>/dev/null || true
-            systemctl disable searxgo.service 2>/dev/null || true
+        run_elevated systemctl stop searxgo.service 2>/dev/null || true
+        run_elevated systemctl disable searxgo.service 2>/dev/null || true
+        if [ -f "${SYSTEMD_SERVICE}" ]; then
+            echo -e "${CYAN}➜ Removing ${SYSTEMD_SERVICE}...${RESET}"
+            run_elevated rm -f "${SYSTEMD_SERVICE}"
+            run_elevated rm -rf "/etc/systemd/system/searxgo.service.d" 2>/dev/null || true
+            run_elevated systemctl daemon-reload
+            run_elevated systemctl reset-failed 2>/dev/null || true
         fi
         echo -e "${GREEN}✓ Systemd service removed successfully.${RESET}"
     fi
@@ -116,11 +121,7 @@ fi
 # 4. Stop any lingering searxgo process
 echo -e "${CYAN}➜ Checking for running searxgo processes...${RESET}"
 if command -v pkill >/dev/null 2>&1; then
-    if [ -n "${USE_SUDO}" ]; then
-        ${USE_SUDO} pkill -x searxgo 2>/dev/null || true
-    else
-        pkill -x searxgo 2>/dev/null || true
-    fi
+    run_elevated pkill -x searxgo 2>/dev/null || true
 fi
 
 # 5. Remove Executable Binary
@@ -142,11 +143,7 @@ fi
 for bin in "${TARGET_BINS[@]}"; do
     if [ -f "$bin" ]; then
         echo -e "  Removing: ${bin}"
-        if [ -n "${USE_SUDO}" ]; then
-            ${USE_SUDO} rm -f "$bin"
-        else
-            rm -f "$bin"
-        fi
+        run_elevated rm -f "$bin"
         BINARY_FOUND=true
     fi
 done
@@ -163,23 +160,17 @@ if [ "$PURGE" = true ]; then
     for cfg in "${CONFIG_DIR}" "/etc/searxgo" "${HOME}/.config/searxgo"; do
         if [ -d "$cfg" ]; then
             echo -e "  Purging: ${cfg}"
-            if [ -n "${USE_SUDO}" ]; then
-                ${USE_SUDO} rm -rf "$cfg"
-            else
-                rm -rf "$cfg"
-            fi
+            run_elevated rm -rf "$cfg"
         fi
     done
 
     # Remove system user if exists
     if id -u "${SYSTEM_USER}" >/dev/null 2>&1; then
         echo -e "${CYAN}➜ Removing system user '${SYSTEM_USER}'...${RESET}"
-        if [ -n "${USE_SUDO}" ]; then
-            if command -v deluser >/dev/null 2>&1; then
-                ${USE_SUDO} deluser --system "${SYSTEM_USER}" 2>/dev/null || true
-            elif command -v userdel >/dev/null 2>&1; then
-                ${USE_SUDO} userdel -r "${SYSTEM_USER}" 2>/dev/null || ${USE_SUDO} userdel "${SYSTEM_USER}" 2>/dev/null || true
-            fi
+        if command -v deluser >/dev/null 2>&1; then
+            run_elevated deluser --system "${SYSTEM_USER}" 2>/dev/null || true
+        elif command -v userdel >/dev/null 2>&1; then
+            run_elevated userdel -r "${SYSTEM_USER}" 2>/dev/null || run_elevated userdel "${SYSTEM_USER}" 2>/dev/null || true
         fi
         echo -e "${GREEN}✓ System user removed.${RESET}"
     fi

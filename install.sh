@@ -48,7 +48,7 @@ esac
 
 echo -e "${CYAN}➜ Detected Platform:${RESET} ${BOLD}${OS}/${TARGET_ARCH}${RESET}"
 
-# 2. Require root for system installation or fallback to user local bin
+# 2. Setup Privilege Escalation Runner
 USE_SUDO=""
 if [ "$(id -u)" -ne 0 ]; then
     if command -v sudo >/dev/null 2>&1; then
@@ -59,6 +59,16 @@ if [ "$(id -u)" -ne 0 ]; then
         mkdir -p "${INSTALL_DIR}" "${CONFIG_DIR}"
     fi
 fi
+
+run_elevated() {
+    if [ "$(id -u)" -eq 0 ]; then
+        "$@"
+    elif [ -n "${USE_SUDO}" ]; then
+        ${USE_SUDO} "$@"
+    else
+        "$@"
+    fi
+}
 
 # 3. Determine installation method: Prebuilt Binary or Local Build
 BINARY_NAME="searxgo-linux-${TARGET_ARCH}"
@@ -135,58 +145,74 @@ fi
 
 chmod +x "${TMP_DIR}/searxgo"
 
-# 4. Install Binary
+# 4. Install Executable Binary
 echo -e "${CYAN}➜ Installing binary to ${INSTALL_DIR}/searxgo...${RESET}"
-if [ -n "${USE_SUDO}" ]; then
-    ${USE_SUDO} mkdir -p "${INSTALL_DIR}"
-    if command -v install >/dev/null 2>&1; then
-        ${USE_SUDO} install -m 755 "${TMP_DIR}/searxgo" "${INSTALL_DIR}/searxgo"
-    else
-        ${USE_SUDO} rm -f "${INSTALL_DIR}/searxgo" 2>/dev/null || true
-        ${USE_SUDO} cp "${TMP_DIR}/searxgo" "${INSTALL_DIR}/searxgo"
-        ${USE_SUDO} chmod 755 "${INSTALL_DIR}/searxgo"
-    fi
+run_elevated mkdir -p "${INSTALL_DIR}"
+if command -v install >/dev/null 2>&1; then
+    run_elevated install -m 755 "${TMP_DIR}/searxgo" "${INSTALL_DIR}/searxgo"
 else
-    mkdir -p "${INSTALL_DIR}"
-    if command -v install >/dev/null 2>&1; then
-        install -m 755 "${TMP_DIR}/searxgo" "${INSTALL_DIR}/searxgo"
-    else
-        rm -f "${INSTALL_DIR}/searxgo" 2>/dev/null || true
-        cp "${TMP_DIR}/searxgo" "${INSTALL_DIR}/searxgo"
-        chmod 755 "${INSTALL_DIR}/searxgo"
-    fi
+    run_elevated rm -f "${INSTALL_DIR}/searxgo" 2>/dev/null || true
+    run_elevated cp "${TMP_DIR}/searxgo" "${INSTALL_DIR}/searxgo"
+    run_elevated chmod 755 "${INSTALL_DIR}/searxgo"
 fi
 
 # 5. Install Default settings.yml Configuration
 echo -e "${CYAN}➜ Setting up configuration in ${CONFIG_DIR}/settings.yml...${RESET}"
-if [ -n "${USE_SUDO}" ]; then
-    ${USE_SUDO} mkdir -p "${CONFIG_DIR}"
-    if [ -f "./settings.yml" ]; then
-        ${USE_SUDO} cp "./settings.yml" "${CONFIG_DIR}/settings.yml"
-    else
-        ${USE_SUDO} curl -fsSL "https://raw.githubusercontent.com/${REPO}/main/settings.yml" -o "${CONFIG_DIR}/settings.yml" || true
-    fi
+run_elevated mkdir -p "${CONFIG_DIR}"
+if [ -f "./settings.yml" ]; then
+    run_elevated cp "./settings.yml" "${CONFIG_DIR}/settings.yml"
 else
-    mkdir -p "${CONFIG_DIR}"
-    if [ -f "./settings.yml" ]; then
-        cp "./settings.yml" "${CONFIG_DIR}/settings.yml"
-    else
-        curl -fsSL "https://raw.githubusercontent.com/${REPO}/main/settings.yml" -o "${CONFIG_DIR}/settings.yml" || true
+    if [ ! -f "${CONFIG_DIR}/settings.yml" ]; then
+        run_elevated curl -fsSL "https://raw.githubusercontent.com/${REPO}/main/settings.yml" -o "${CONFIG_DIR}/settings.yml" || true
     fi
 fi
 
-# 6. Systemd Service Setup (Linux only with root or sudo)
-if [ "$OS" = "linux" ] && command -v systemctl >/dev/null 2>&1 && { [ "$(id -u)" -eq 0 ] || [ -n "${USE_SUDO}" ]; }; then
+# 6. Stop any existing running instance to release port
+if command -v pkill >/dev/null 2>&1; then
+    run_elevated pkill -x searxgo 2>/dev/null || true
+    sleep 1
+fi
+
+# 7. Systemd Service Setup (Linux with root or sudo privileges)
+HAS_ADMIN_PRIVILEGE=false
+if [ "$(id -u)" -eq 0 ] || [ -n "${USE_SUDO}" ]; then
+    HAS_ADMIN_PRIVILEGE=true
+fi
+
+SYSTEMD_AVAILABLE=false
+if [ "$OS" = "linux" ] && command -v systemctl >/dev/null 2>&1 && [ "$HAS_ADMIN_PRIVILEGE" = true ]; then
+    if [ -d /run/systemd/system ] || systemctl is-system-running >/dev/null 2>&1 || [ -f "${SYSTEMD_SERVICE}" ]; then
+        SYSTEMD_AVAILABLE=true
+    fi
+fi
+
+if [ "$SYSTEMD_AVAILABLE" = true ]; then
     echo -e "${CYAN}➜ Configuring systemd service at ${SYSTEMD_SERVICE}...${RESET}"
 
-    # Create unprivileged system user if not exists
-    if ! id -u searxgo >/dev/null 2>&1; then
-        ${USE_SUDO} useradd -r -s /bin/false -d "${CONFIG_DIR}" searxgo || true
+    # Setup unprivileged group and user
+    if ! getent group searxgo >/dev/null 2>&1; then
+        run_elevated groupadd -r searxgo 2>/dev/null || true
     fi
 
-    ${USE_SUDO} chown -R searxgo:searxgo "${CONFIG_DIR}" || true
+    if ! id -u searxgo >/dev/null 2>&1; then
+        run_elevated useradd -r -s /bin/false -d "${CONFIG_DIR}" -g searxgo searxgo 2>/dev/null || \
+        run_elevated useradd -r -s /bin/false -d "${CONFIG_DIR}" searxgo 2>/dev/null || true
+    fi
 
-    cat <<EOF | ${USE_SUDO} tee "${SYSTEMD_SERVICE}" >/dev/null
+    SERVICE_USER="searxgo"
+    if ! id -u searxgo >/dev/null 2>&1; then
+        SERVICE_USER="root"
+    fi
+
+    SERVICE_GROUP="searxgo"
+    if ! getent group searxgo >/dev/null 2>&1; then
+        SERVICE_GROUP="${SERVICE_USER}"
+    fi
+
+    run_elevated chown -R "${SERVICE_USER}:${SERVICE_GROUP}" "${CONFIG_DIR}" 2>/dev/null || true
+    run_elevated chmod -R 755 "${CONFIG_DIR}" 2>/dev/null || true
+
+    cat <<EOF | run_elevated tee "${SYSTEMD_SERVICE}" >/dev/null
 [Unit]
 Description=SearXGo Privacy Metasearch Aggregator
 After=network.target network-online.target
@@ -194,8 +220,8 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=searxgo
-Group=searxgo
+User=${SERVICE_USER}
+Group=${SERVICE_GROUP}
 WorkingDirectory=${CONFIG_DIR}
 ExecStart=${INSTALL_DIR}/searxgo -port ${PORT}
 Restart=always
@@ -210,13 +236,21 @@ ProtectHome=true
 WantedBy=multi-user.target
 EOF
 
-    ${USE_SUDO} systemctl daemon-reload
-    ${USE_SUDO} systemctl enable searxgo.service
-    ${USE_SUDO} systemctl restart searxgo.service
+    run_elevated systemctl daemon-reload
+    run_elevated systemctl enable searxgo.service
 
-    echo -e "${GREEN}${BOLD}✓ Systemd service installed and started!${RESET}"
-    echo -e "  Status: ${CYAN}systemctl status searxgo${RESET}"
-    echo -e "  Logs:   ${CYAN}journalctl -u searxgo -f${RESET}"
+    if run_elevated systemctl restart searxgo.service; then
+        echo -e "${GREEN}${BOLD}✓ Systemd service installed and started!${RESET}"
+        echo -e "  Status: ${CYAN}systemctl status searxgo${RESET}"
+        echo -e "  Logs:   ${CYAN}journalctl -u searxgo -f${RESET}"
+    else
+        echo -e "${YELLOW}⚠ Service unit created, but restart command reported an issue.${RESET}"
+        echo -e "  Check service logs with: ${CYAN}journalctl -u searxgo -n 25 --no-pager${RESET}"
+    fi
+else
+    echo -e "${YELLOW}ℹ Systemd init not active or non-root user.${RESET}"
+    echo -e "  You can run SearXGo in the background using:"
+    echo -e "    ${BOLD}nohup ${INSTALL_DIR}/searxgo -port ${PORT} > /var/log/searxgo.log 2>&1 &${RESET}"
 fi
 
 echo ""
