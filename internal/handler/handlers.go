@@ -27,10 +27,12 @@ import (
 	"searxgo/internal/aggregator"
 	"searxgo/internal/bangs"
 	"searxgo/internal/config"
+	"searxgo/internal/dorks"
 	"searxgo/internal/engine"
 	"searxgo/internal/instant"
 	"searxgo/internal/models"
 	"searxgo/internal/proxy"
+	"searxgo/internal/scrub"
 	"searxgo/internal/stats"
 	"searxgo/web"
 )
@@ -161,6 +163,15 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/reverse-image", h.ServeReverseImage)
 	mux.HandleFunc("POST /upload/image", h.ServeUploadImage)
 	mux.HandleFunc("GET /upload/image/{id}", h.ServeTempImage)
+
+	// Google Dorking Recon Suite
+	mux.HandleFunc("GET /dorks", h.ServeDorks)
+	mux.HandleFunc("GET /api/dorks", h.ServeAPIDorks)
+
+	// EXIF Metadata Stripper & Privacy Cleaner
+	mux.HandleFunc("GET /scrub", h.ServeScrub)
+	mux.HandleFunc("POST /api/scrub/inspect", h.ServeAPIScrubInspect)
+	mux.HandleFunc("POST /api/scrub/clean", h.ServeAPIScrubClean)
 
 	// Privacy Proxy
 	mux.HandleFunc("GET /proxy/image", h.imageProxy.ServeHTTP)
@@ -1272,6 +1283,181 @@ func (h *Handler) ServeReverseImage(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(resp)
 }
+
+// ServeDorks renders the Google Dorking and Recon Suite UI
+func (h *Handler) ServeDorks(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	target := strings.TrimSpace(r.URL.Query().Get("target"))
+	categories := dorks.GetAllCategories()
+
+	data := map[string]interface{}{
+		"Categories": categories,
+		"Target":     target,
+	}
+
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "dorks.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	buf.WriteTo(w)
+}
+
+// ServeAPIDorks provides structured JSON output for reconnaissance automation
+func (h *Handler) ServeAPIDorks(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	target := strings.TrimSpace(r.URL.Query().Get("target"))
+	categories := dorks.GetAllCategories()
+
+	type apiDorkItem struct {
+		dorks.DorkItem
+		ScopedQuery string `json:"scoped_query"`
+		GoogleURL   string `json:"google_url"`
+		SearxgoURL  string `json:"searxgo_url"`
+	}
+
+	type apiCategory struct {
+		ID          string        `json:"id"`
+		Name        string        `json:"name"`
+		Icon        string        `json:"icon"`
+		Description string        `json:"description"`
+		Dorks       []apiDorkItem `json:"dorks"`
+	}
+
+	var res []apiCategory
+	for _, cat := range categories {
+		var dorkItems []apiDorkItem
+		for _, d := range cat.Dorks {
+			dorkItems = append(dorkItems, apiDorkItem{
+				DorkItem:    d,
+				ScopedQuery: d.BuildQuery(target),
+				GoogleURL:   d.GoogleURL(target),
+				SearxgoURL:  d.SearxgoURL(target),
+			})
+		}
+		res = append(res, apiCategory{
+			ID:          cat.ID,
+			Name:        cat.Name,
+			Icon:        cat.Icon,
+			Description: cat.Description,
+			Dorks:       dorkItems,
+		})
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"target":     target,
+		"categories": res,
+	})
+}
+
+// ServeScrub renders the EXIF Metadata Stripper & Privacy Cleaner UI
+func (h *Handler) ServeScrub(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "scrub.html", nil); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	buf.WriteTo(w)
+}
+
+// ServeAPIScrubInspect inspects and extracts EXIF metadata and GPS coordinates
+func (h *Handler) ServeAPIScrubInspect(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 25*1024*1024)
+	if err := r.ParseMultipartForm(25 * 1024 * 1024); err != nil {
+		http.Error(w, `{"error":"File too large or invalid multipart form"}`, http.StatusBadRequest)
+		return
+	}
+
+	file, header, err := r.FormFile("image")
+	if err != nil {
+		file, header, err = r.FormFile("file")
+		if err != nil {
+			http.Error(w, `{"error":"No image provided"}`, http.StatusBadRequest)
+			return
+		}
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		http.Error(w, `{"error":"Failed to read file"}`, http.StatusInternalServerError)
+		return
+	}
+
+	report, err := scrub.InspectMetadata(data, header.Filename)
+	if err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusBadRequest)
+		return
+	}
+
+	json.NewEncoder(w).Encode(report)
+}
+
+// ServeAPIScrubClean purges all EXIF metadata and returns a clean sanitized image
+func (h *Handler) ServeAPIScrubClean(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 25*1024*1024)
+	if err := r.ParseMultipartForm(25 * 1024 * 1024); err != nil {
+		http.Error(w, `{"error":"File too large or invalid multipart form"}`, http.StatusBadRequest)
+		return
+	}
+
+	file, header, err := r.FormFile("image")
+	if err != nil {
+		file, header, err = r.FormFile("file")
+		if err != nil {
+			http.Error(w, `{"error":"No image provided"}`, http.StatusBadRequest)
+			return
+		}
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		http.Error(w, `{"error":"Failed to read file"}`, http.StatusInternalServerError)
+		return
+	}
+
+	cleanBytes, report, err := scrub.CleanImage(data, header.Filename)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	// Check if JSON response was requested or file download
+	format := strings.ToLower(r.URL.Query().Get("format"))
+	if format == "json" {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		report.CleanedDataB64 = base64.StdEncoding.EncodeToString(cleanBytes)
+		json.NewEncoder(w).Encode(report)
+		return
+	}
+
+	cleanFilename := "clean_" + header.Filename
+	if !strings.Contains(cleanFilename, ".") {
+		cleanFilename += ".jpg"
+	}
+
+	w.Header().Set("Content-Type", report.MimeType)
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, cleanFilename))
+	w.Header().Set("X-Saved-Percent", fmt.Sprintf("%.1f%%", report.SavedPercent))
+	w.Header().Set("X-Tags-Stripped", strconv.Itoa(report.TagsStripped))
+	w.Write(cleanBytes)
+}
+
 
 
 

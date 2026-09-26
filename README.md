@@ -22,6 +22,8 @@
 
 ## 🌟 Key Features
 
+- 🎯 **Google Dorking & Recon Suite (`/dorks`)**: Interactive target scoping and pre-built dork queries for finding exposed `.env` credentials, leaked database dumps, open directories, Jenkins/cPanel admin portals, and confidential documents.
+- 🛡️ **EXIF Metadata Stripper & Photo Sanitizer (`/scrub`)**: Deep inspection of hidden camera models, software traces, and GPS coordinates with interactive OpenStreetMap pinpointing. 1-click clean and purge all metadata before sharing.
 - 🌐 **Network OSINT & Security Suite**: Instant DNS records (A/AAAA/MX/TXT/NS), SSL/TLS certificate inspector, HTTP security headers audit, WHOIS/RDAP lookup, Subdomain crt.sh scanner, and CVE/OSV vulnerability tracker.
 - 📱 **Telegram OSINT & Leaks Intelligence Suite**: Live channel profiler (`tg: @channel` or `telegram: handle`) with avatar, subscriber count, bio, recent post previews, and multi-index leak scrapers (*t.me/s/, TGStat, Telemetr, Lyzem*).
 - 🕰️ **Multi-Archive Snapshot Preservation**: 1-click historical snapshots from *Wayback Machine, Archive.today, Google Cache, and Ghostarchive* directly on every result item.

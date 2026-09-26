@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recon & Google Dorks Suite - SearXGo</title>
+  <meta name="description" content="Interactive security reconnaissance, exposed credential finder, and Google dorking suite.">
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+  <style>
+    .dorks-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 4rem 1rem;
+    }
+    .recon-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .scope-bar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    }
+    .scope-input-wrapper {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .scope-input {
+      flex: 1;
+      min-width: 250px;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid var(--border-glass);
+      color: var(--text-primary);
+      padding: 0.65rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.95rem;
+    }
+    .scope-input:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+    }
+    .category-pills {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+    .cat-pill {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      color: var(--text-secondary);
+      padding: 0.45rem 0.95rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+    .cat-pill:hover, .cat-pill.active {
+      background: var(--accent-gradient);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 4px 14px rgba(99,102,241,0.3);
+    }
+    .dorks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+      gap: 1.1rem;
+    }
+    .dork-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-md);
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .dork-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(99,102,241,0.4);
+    }
+    .dork-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.5rem;
+    }
+    .dork-title {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--text-primary);
+    }
+    .severity-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+    }
+    .sev-high { background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+    .sev-medium { background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+    .sev-info { background: rgba(99,102,241,0.2); color: #818cf8; border: 1px solid rgba(99,102,241,0.3); }
+    .dork-desc {
+      font-size: 0.825rem;
+      color: var(--text-muted);
+      margin-bottom: 0.85rem;
+      line-height: 1.4;
+    }
+    .dork-query-box {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius-sm);
+      padding: 0.6rem 0.8rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.8rem;
+      color: #93c5fd;
+      word-break: break-all;
+      margin-bottom: 0.9rem;
+      position: relative;
+    }
+    .dork-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .action-btn {
+      padding: 0.4rem 0.75rem;
+      font-size: 0.775rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      text-decoration: none;
+      border: 1px solid var(--border-glass);
+      transition: all 0.15s ease;
+    }
+    .btn-searx {
+      background: var(--accent-gradient);
+      color: #fff;
+      border: none;
+    }
+    .btn-searx:hover {
+      box-shadow: 0 4px 12px rgba(99,102,241,0.35);
+    }
+    .btn-ext {
+      background: rgba(255,255,255,0.06);
+      color: var(--text-secondary);
+    }
+    .btn-ext:hover {
+      background: rgba(255,255,255,0.12);
+      color: var(--text-primary);
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+
+  <nav class="top-nav container">
+    <a href="/" class="nav-btn">
+      <span>🪐 Home</span>
+    </a>
+    <a href="/dorks" class="nav-btn active" style="color:var(--accent-primary); font-weight:700;">
+      <span>🎯 Dorks</span>
+    </a>
+    <a href="/scrub" class="nav-btn">
+      <span>🛡️ Scrub</span>
+    </a>
+    <a href="/stats" class="nav-btn">
+      <span>Telemetry</span>
+    </a>
+    <a href="/settings" class="nav-btn">
+      <span>Settings</span>
+    </a>
+  </nav>
+
+  <div class="dorks-container">
+    <div class="recon-header">
+      <div class="brand-badge" style="margin-bottom:0.75rem;">
+        <span class="engine-dot" style="background:#ef4444;"></span>
+        <span>Security OSINT &bull; Google Dorking Recon Suite</span>
+      </div>
+      <h1 class="brand-title" style="font-size:2.2rem; margin-bottom:0.4rem;">Security Dorking Recon</h1>
+      <p class="brand-tagline">Automate target scoping, discover exposed databases, open directories, and confidential records.</p>
+    </div>
+
+    <!-- Target Scope Bar -->
+    <div class="scope-bar-card">
+      <div style="font-weight:700; font-size:0.9rem; margin-bottom:0.6rem; color:var(--text-primary); display:flex; align-items:center; gap:0.4rem;">
+        <span>🎯 Target Domain Scope</span>
+        <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">(Prepend site:target.com across all dorks)</span>
+      </div>
+      <div class="scope-input-wrapper">
+        <input type="text" id="target-scope" class="scope-input" placeholder="e.g. example.com, target.org, or sub.company.com" value="{{.Target}}">
+        <button type="button" id="btn-apply-scope" class="btn-search" style="padding:0.65rem 1.25rem; font-size:0.875rem;">
+          Apply Target Scope
+        </button>
+        <button type="button" id="btn-clear-scope" class="action-btn btn-ext" style="padding:0.65rem 1rem; font-size:0.875rem;">
+          Clear Scope
+        </button>
+        <input type="text" id="filter-keyword" class="scope-input" placeholder="Filter dorks by keyword..." style="max-width:260px;">
+      </div>
+    </div>
+
+    <!-- Category Filter Tabs -->
+    <div class="category-pills">
+      <button type="button" class="cat-pill active" data-cat="all">
+        <span>🌐 All Categories</span>
+      </button>
+      {{range .Categories}}
+      <button type="button" class="cat-pill" data-cat="{{.ID}}">
+        <span>{{.Icon}} {{.Name}}</span>
+      </button>
+      {{end}}
+    </div>
+
+    <!-- Dorks Grid -->
+    <div class="dorks-grid" id="dorks-grid">
+      {{range .Categories}}
+        {{$catID := .ID}}
+        {{range .Dorks}}
+        <div class="dork-card" data-cat="{{$catID}}" data-base-query="{{.Query}}">
+          <div>
+            <div class="dork-header">
+              <div class="dork-title">{{.Title}}</div>
+              <span class="severity-badge sev-{{.Severity}}">{{.Severity}}</span>
+            </div>
+            <div class="dork-desc">{{.Description}}</div>
+            <div class="dork-query-box">
+              <span class="rendered-query">{{.Query}}</span>
+            </div>
+          </div>
+          <div class="dork-actions">
+            <a href="/search?q={{.Query}}&category=general" class="action-btn btn-searx btn-run-searx" title="Execute multi-engine search in SearXGo">
+              <span>🔍 Search SearXGo</span>
+            </a>
+            <a href="https://www.google.com/search?q={{.Query}}" target="_blank" rel="noopener noreferrer" class="action-btn btn-ext btn-run-google" title="Search directly on Google">
+              <span>Google ↗</span>
+            </a>
+            <button type="button" class="action-btn btn-ext btn-copy-dork" title="Copy query to clipboard">
+              <span>📋 Copy</span>
+            </button>
+          </div>
+        </div>
+        {{end}}
+      {{end}}
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    (function() {
+      const scopeInput = document.getElementById('target-scope');
+      const applyBtn = document.getElementById('btn-apply-scope');
+      const clearBtn = document.getElementById('btn-clear-scope');
+      const filterInput = document.getElementById('filter-keyword');
+      const pills = document.querySelectorAll('.cat-pill');
+      const cards = document.querySelectorAll('.dork-card');
+
+      function updateQueries() {
+        const rawTarget = scopeInput.value.trim().replace(/^https?:\/\//i, '').split('/')[0];
+        cards.forEach(card => {
+          const baseQ = card.dataset.baseQuery;
+          let finalQ = baseQ;
+          if (rawTarget && !baseQ.toLowerCase().includes('site:')) {
+            finalQ = 'site:' + rawTarget + ' ' + baseQ;
+          }
+          card.querySelector('.rendered-query').textContent = finalQ;
+          const searxLink = card.querySelector('.btn-run-searx');
+          const googleLink = card.querySelector('.btn-run-google');
+          if (searxLink) searxLink.href = '/search?q=' + encodeURIComponent(finalQ) + '&category=general';
+          if (googleLink) googleLink.href = 'https://www.google.com/search?q=' + encodeURIComponent(finalQ);
+        });
+      }
+
+      applyBtn.addEventListener('click', updateQueries);
+      scopeInput.addEventListener('keydown', e => { if (e.key === 'Enter') updateQueries(); });
+
+      clearBtn.addEventListener('click', function() {
+        scopeInput.value = '';
+        updateQueries();
+      });
+
+      // Category filter
+      pills.forEach(pill => {
+        pill.addEventListener('click', function() {
+          pills.forEach(p => p.classList.remove('active'));
+          this.classList.add('active');
+          const selectedCat = this.dataset.cat;
+          filterCards();
+        });
+      });
+
+      // Keyword filter
+      filterInput.addEventListener('input', filterCards);
+
+      function filterCards() {
+        const activeCat = document.querySelector('.cat-pill.active')?.dataset.cat || 'all';
+        const kw = filterInput.value.toLowerCase().trim();
+
+        cards.forEach(card => {
+          const matchCat = activeCat === 'all' || card.dataset.cat === activeCat;
+          const text = card.textContent.toLowerCase();
+          const matchKw = !kw || text.includes(kw);
+          card.style.display = (matchCat && matchKw) ? 'flex' : 'none';
+        });
+      }
+
+      // Copy dork button
+      document.querySelectorAll('.btn-copy-dork').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const queryText = this.closest('.dork-card').querySelector('.rendered-query').textContent;
+          navigator.clipboard.writeText(queryText).then(() => {
+            const original = this.innerHTML;
+            this.innerHTML = '<span>✓ Copied!</span>';
+            setTimeout(() => { this.innerHTML = original; }, 1500);
+          });
+        });
+      });
+
+      // Initial check if target URL param was supplied
+      if (scopeInput.value.trim()) {
+        updateQueries();
+      }
+    })();
+  </script>
+</body>
+</html>

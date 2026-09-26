@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EXIF Privacy Scrub &amp; Metadata Cleaner - SearXGo</title>
+  <meta name="description" content="Inspect hidden GPS coordinates, camera specs, and device metadata. 1-click purge before sharing.">
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+  <style>
+    .scrub-container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 4rem 1rem;
+    }
+    .scrub-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .scrub-dropzone {
+      background: var(--bg-card);
+      border: 2px dashed var(--border-glass);
+      border-radius: var(--radius-lg);
+      padding: 3rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    }
+    .scrub-dropzone:hover, .scrub-dropzone.dragover {
+      border-color: var(--accent-primary);
+      background: rgba(99,102,241,0.06);
+      transform: scale(1.005);
+    }
+    .result-section {
+      display: none;
+      margin-top: 2rem;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .meta-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .meta-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+    }
+    .meta-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 0.35rem;
+    }
+    .meta-val {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      word-break: break-all;
+    }
+    .gps-alert-box {
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.35);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .meta-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+    }
+    .meta-table th, .meta-table td {
+      padding: 0.65rem 0.85rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-glass);
+    }
+    .meta-table th {
+      background: rgba(0,0,0,0.25);
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+
+  <nav class="top-nav container">
+    <a href="/" class="nav-btn">
+      <span>🪐 Home</span>
+    </a>
+    <a href="/dorks" class="nav-btn">
+      <span>🎯 Dorks</span>
+    </a>
+    <a href="/scrub" class="nav-btn active" style="color:var(--accent-primary); font-weight:700;">
+      <span>🛡️ Scrub</span>
+    </a>
+    <a href="/stats" class="nav-btn">
+      <span>Telemetry</span>
+    </a>
+    <a href="/settings" class="nav-btn">
+      <span>Settings</span>
+    </a>
+  </nav>
+
+  <div class="scrub-container">
+    <div class="scrub-header">
+      <div class="brand-badge" style="margin-bottom:0.75rem;">
+        <span class="engine-dot" style="background:#10b981;"></span>
+        <span>Zero-Telemetry &bull; Privacy EXIF Stripper</span>
+      </div>
+      <h1 class="brand-title" style="font-size:2.2rem; margin-bottom:0.4rem;">Photo Privacy &amp; EXIF Stripper</h1>
+      <p class="brand-tagline">Inspect sensitive GPS coordinates, device fingerprints, and timestamps. 1-click sanitize before sharing publicly.</p>
+    </div>
+
+    <!-- Upload Dropzone -->
+    <div class="scrub-dropzone" id="scrub-dropzone">
+      <input type="file" id="scrub-file-input" accept="image/*" style="display:none;">
+      <div style="margin-bottom:1rem;">
+        <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--accent-primary);">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          <path d="M9 12l2 2 4-4"></path>
+        </svg>
+      </div>
+      <div style="font-size:1.15rem; font-weight:700; margin-bottom:0.4rem;">
+        Drag &amp; drop an image here to inspect and scrub
+      </div>
+      <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1.25rem;">
+        Supports JPEG, PNG, WebP, GIF, or paste directly from clipboard (Ctrl+V)
+      </div>
+      <button type="button" class="btn-search" style="padding:0.6rem 1.4rem; font-size:0.875rem;">
+        Select Image File
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div id="scrub-loading" style="display:none; text-align:center; padding:3rem 0;">
+      <div class="infinite-spinner" style="margin:0 auto 1rem auto;"></div>
+      <div style="font-weight:600; font-size:1rem; color:var(--text-primary);">Inspecting EXIF chunks and parsing GPS coordinates...</div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="result-section" id="scrub-result">
+      <!-- GPS Warning Alert (if present) -->
+      <div class="gps-alert-box" id="gps-alert-box" style="display:none;">
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <span style="font-size:1.6rem;">🚨</span>
+          <div>
+            <div style="font-weight:700; color:#ef4444; font-size:0.95rem;">Precise GPS Location Data Detected!</div>
+            <div style="font-size:0.825rem; color:var(--text-secondary);" id="gps-coords-text">
+              Latitude: -, Longitude: -
+            </div>
+          </div>
+        </div>
+        <a id="btn-view-map" href="#" target="_blank" rel="noopener noreferrer" class="action-btn" style="background:#ef4444; color:#fff; border:none; padding:0.45rem 0.95rem; font-size:0.8rem; font-weight:600;">
+          📍 View on OpenStreetMap ↗
+        </a>
+      </div>
+
+      <!-- Quick Summary Cards -->
+      <div class="meta-cards-grid">
+        <div class="meta-card">
+          <div class="meta-label">Camera / Device</div>
+          <div class="meta-val" id="val-camera">None detected</div>
+        </div>
+        <div class="meta-card">
+          <div class="meta-label">Date Taken</div>
+          <div class="meta-val" id="val-date">None detected</div>
+        </div>
+        <div class="meta-card">
+          <div class="meta-label">Software / Editing Tool</div>
+          <div class="meta-val" id="val-software">None detected</div>
+        </div>
+        <div class="meta-card">
+          <div class="meta-label">Metadata Exposure</div>
+          <div class="meta-val" id="val-tags-count">0 tags found</div>
+        </div>
+      </div>
+
+      <!-- Action Banner: Download Sanitized File -->
+      <div style="background:var(--bg-card); border:1px solid var(--border-glass); border-radius:var(--radius-md); padding:1.25rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
+        <div>
+          <div style="font-weight:700; font-size:1.05rem; margin-bottom:0.25rem; color:var(--text-primary);">
+            Ready to Sanitize &amp; Purge All Metadata
+          </div>
+          <div style="font-size:0.825rem; color:var(--text-muted);">
+            Re-encodes image data with 100% stripped EXIF, GPS, camera serials, and thumbnail caches.
+          </div>
+        </div>
+        <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+          <button type="button" id="btn-download-clean" class="btn-search" style="padding:0.65rem 1.4rem; font-size:0.9rem; background:linear-gradient(135deg, #10b981 0%, #059669 100%);">
+            ⬇️ Download Clean Image
+          </button>
+          <button type="button" id="btn-send-reverse" class="action-btn btn-ext" style="padding:0.65rem 1rem; font-size:0.85rem;">
+            🔍 Reverse Search Clean Image
+          </button>
+        </div>
+      </div>
+
+      <!-- Raw Metadata Table -->
+      <div style="background:var(--bg-card); border:1px solid var(--border-glass); border-radius:var(--radius-md); padding:1.25rem;">
+        <div style="font-weight:700; font-size:0.95rem; margin-bottom:0.75rem; color:var(--text-primary);">
+          Raw Discovered Metadata Tags
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="meta-table">
+            <thead>
+              <tr>
+                <th style="width:35%;">Tag Name</th>
+                <th>Extracted Value</th>
+              </tr>
+            </thead>
+            <tbody id="raw-tags-tbody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Reset button -->
+      <div style="text-align:center; margin-top:2rem;">
+        <button type="button" id="btn-reset" class="action-btn btn-ext" style="padding:0.6rem 1.5rem; font-size:0.875rem;">
+          🔄 Inspect Another Image
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    (function() {
+      const dropzone = document.getElementById('scrub-dropzone');
+      const fileInput = document.getElementById('scrub-file-input');
+      const loading = document.getElementById('scrub-loading');
+      const resultSec = document.getElementById('scrub-result');
+      const gpsBox = document.getElementById('gps-alert-box');
+      const gpsCoordsText = document.getElementById('gps-coords-text');
+      const viewMapBtn = document.getElementById('btn-view-map');
+      const valCamera = document.getElementById('val-camera');
+      const valDate = document.getElementById('val-date');
+      const valSoftware = document.getElementById('val-software');
+      const valTagsCount = document.getElementById('val-tags-count');
+      const tagsTbody = document.getElementById('raw-tags-tbody');
+      const btnDownload = document.getElementById('btn-download-clean');
+      const btnReverse = document.getElementById('btn-send-reverse');
+      const btnReset = document.getElementById('btn-reset');
+
+      let currentFile = null;
+
+      dropzone.addEventListener('click', () => fileInput.click());
+      dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+      dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+      dropzone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          processFile(e.dataTransfer.files[0]);
+        }
+      });
+
+      fileInput.addEventListener('change', function() {
+        if (this.files && this.files.length > 0) {
+          processFile(this.files[0]);
+        }
+      });
+
+      document.addEventListener('paste', function(e) {
+        if (!e.clipboardData || !e.clipboardData.items) return;
+        for (let i = 0; i < e.clipboardData.items.length; i++) {
+          if (e.clipboardData.items[i].type.indexOf('image') !== -1) {
+            const blob = e.clipboardData.items[i].getAsFile();
+            if (blob) {
+              processFile(blob);
+              break;
+            }
+          }
+        }
+      });
+
+      function processFile(file) {
+        currentFile = file;
+        dropzone.style.display = 'none';
+        loading.style.display = 'block';
+        resultSec.style.display = 'none';
+
+        const formData = new FormData();
+        formData.append('image', file, file.name || 'image.jpg');
+
+        fetch('/api/scrub/inspect', {
+          method: 'POST',
+          body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+          loading.style.display = 'none';
+          resultSec.style.display = 'block';
+          renderReport(data);
+        })
+        .catch(err => {
+          loading.style.display = 'none';
+          dropzone.style.display = 'block';
+          alert('Failed to inspect image: ' + err.message);
+        });
+      }
+
+      function renderReport(report) {
+        // Camera
+        let cam = [];
+        if (report.camera_make) cam.push(report.camera_make);
+        if (report.camera_model) cam.push(report.camera_model);
+        valCamera.textContent = cam.length > 0 ? cam.join(' ') : 'None detected';
+
+        // Date
+        valDate.textContent = report.date_taken || 'None detected';
+
+        // Software
+        valSoftware.textContent = report.software || 'None detected';
+
+        // Tags count
+        const total = report.total_tags_found || 0;
+        valTagsCount.textContent = total + ' metadata tags found';
+        valTagsCount.style.color = total > 0 ? '#fbbf24' : '#10b981';
+
+        // GPS
+        if (report.has_gps) {
+          gpsBox.style.display = 'flex';
+          gpsCoordsText.textContent = 'Latitude: ' + report.latitude + ' | Longitude: ' + report.longitude;
+          viewMapBtn.href = report.maps_url || '#';
+        } else {
+          gpsBox.style.display = 'none';
+        }
+
+        // Raw Tags Table
+        tagsTbody.innerHTML = '';
+        const tags = report.raw_tags || {};
+        const keys = Object.keys(tags);
+        if (keys.length === 0) {
+          tagsTbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:var(--text-muted); padding:1.5rem;">No metadata or EXIF chunks found in this image. It is already clean!</td></tr>';
+        } else {
+          keys.sort().forEach(k => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td><strong>' + escapeHTML(k) + '</strong></td><td>' + escapeHTML(tags[k]) + '</td>';
+            tagsTbody.appendChild(tr);
+          });
+        }
+      }
+
+      function escapeHTML(str) {
+        return (str || '').toString().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      // Download Clean Image
+      btnDownload.addEventListener('click', function() {
+        if (!currentFile) return;
+        const originalText = btnDownload.innerHTML;
+        btnDownload.innerHTML = '<span>⏳ Sanitizing...</span>';
+        btnDownload.disabled = true;
+
+        const formData = new FormData();
+        formData.append('image', currentFile, currentFile.name || 'image.jpg');
+
+        fetch('/api/scrub/clean', {
+          method: 'POST',
+          body: formData
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('Sanitization failed');
+          return res.blob();
+        })
+        .then(blob => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = url;
+          a.download = 'clean_' + (currentFile.name || 'image.jpg');
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          btnDownload.innerHTML = '<span>✓ Downloaded!</span>';
+          setTimeout(() => {
+            btnDownload.innerHTML = originalText;
+            btnDownload.disabled = false;
+          }, 2000);
+        })
+        .catch(err => {
+          alert('Error cleaning image: ' + err.message);
+          btnDownload.innerHTML = originalText;
+          btnDownload.disabled = false;
+        });
+      });
+
+      // Send to Reverse Image Search
+      btnReverse.addEventListener('click', function() {
+        if (!currentFile) return;
+        const formData = new FormData();
+        formData.append('image', currentFile, currentFile.name || 'image.jpg');
+        fetch('/api/scrub/clean', { method: 'POST', body: formData })
+        .then(res => res.blob())
+        .then(cleanBlob => {
+          const cleanFile = new File([cleanBlob], 'clean_' + (currentFile.name || 'image.jpg'), { type: cleanBlob.type });
+          const uploadData = new FormData();
+          uploadData.append('image', cleanFile);
+          return fetch('/upload/image', { method: 'POST', body: uploadData });
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.url) {
+            window.location.href = '/?reverse_url=' + encodeURIComponent(data.url);
+          } else {
+            window.location.href = '/';
+          }
+        })
+        .catch(() => {
+          window.location.href = '/';
+        });
+      });
+
+      // Reset
+      btnReset.addEventListener('click', function() {
+        currentFile = null;
+        fileInput.value = '';
+        resultSec.style.display = 'none';
+        dropzone.style.display = 'block';
+      });
+    })();
+  </script>
+</body>
+</html>
