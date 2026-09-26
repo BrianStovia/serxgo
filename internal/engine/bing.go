@@ -55,7 +55,14 @@ func (e *BingEngine) Search(ctx context.Context, req models.SearchRequest) ([]mo
 		adlt = "moderate"
 	}
 
+	isID := req.Language == "id" || req.Country == "ID" || req.Region == "id" || IsIndonesianText(req.Query)
+
 	searchURL := fmt.Sprintf("https://www.bing.com/search?q=%s&count=15&adlt=%s", url.QueryEscape(req.Query), adlt)
+	if isID {
+		searchURL += "&setlang=id&cc=ID"
+	} else if req.Language != "" {
+		searchURL += fmt.Sprintf("&setlang=%s", url.QueryEscape(req.Language))
+	}
 	if req.Page > 1 {
 		searchURL += fmt.Sprintf("&first=%d", (req.Page-1)*15+1)
 	}
@@ -65,9 +72,13 @@ func (e *BingEngine) Search(ctx context.Context, req models.SearchRequest) ([]mo
 		return nil, err
 	}
 
+	acceptLang := "en-US,en;q=0.9"
+	if isID {
+		acceptLang = "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7"
+	}
 	httpReq.Header.Set("User-Agent", GetRandomUserAgent())
 	httpReq.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-	httpReq.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	httpReq.Header.Set("Accept-Language", acceptLang)
 	httpReq.Header.Set("Cookie", fmt.Sprintf("SRCHHPGUSR=ADLT=%s", strings.ToUpper(adlt)))
 
 	resp, err := e.client.Do(httpReq)

@@ -49,6 +49,8 @@ func (e *WikipediaEngine) Search(ctx context.Context, req models.SearchRequest) 
 	lang := "en"
 	if req.Language != "" {
 		lang = req.Language
+	} else if IsIndonesianText(req.Query) {
+		lang = "id"
 	}
 
 	apiURL := fmt.Sprintf("https://%s.wikipedia.org/w/api.php?action=query&list=search&srsearch=%s&utf8=1&format=json&srlimit=10",

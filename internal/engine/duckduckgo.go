@@ -60,7 +60,15 @@ func (e *DuckDuckGoEngine) searchWeb(ctx context.Context, req models.SearchReque
 	formData := url.Values{}
 	formData.Set("q", req.Query)
 	formData.Set("b", "")
-	formData.Set("kl", "wt-wt")
+
+	kl := "wt-wt"
+	isID := req.Language == "id" || req.Country == "ID" || req.Region == "id" || IsIndonesianText(req.Query)
+	if isID {
+		kl = "id-id"
+	} else if req.Language != "" && req.Country != "" {
+		kl = strings.ToLower(req.Country) + "-" + strings.ToLower(req.Language)
+	}
+	formData.Set("kl", kl)
 
 	switch req.TimeRange {
 	case "day":
@@ -91,10 +99,14 @@ func (e *DuckDuckGoEngine) searchWeb(ctx context.Context, req models.SearchReque
 		return nil, err
 	}
 
+	acceptLang := "en-US,en;q=0.9,id;q=0.8"
+	if isID {
+		acceptLang = "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7"
+	}
 	httpReq.Header.Set("User-Agent", GetRandomUserAgent())
 	httpReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	httpReq.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-	httpReq.Header.Set("Accept-Language", "en-US,en;q=0.9,id;q=0.8")
+	httpReq.Header.Set("Accept-Language", acceptLang)
 	httpReq.Header.Set("Referer", "https://html.duckduckgo.com/")
 
 	resp, err := e.client.Do(httpReq)

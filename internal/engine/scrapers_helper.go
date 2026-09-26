@@ -28,6 +28,34 @@ func GetRandomUserAgent() string {
 	return userAgents[r.Intn(len(userAgents))]
 }
 
+var idCommonTokens = map[string]bool{
+	"yang": true, "dan": true, "di": true, "dari": true, "ini": true,
+	"itu": true, "dengan": true, "untuk": true, "pada": true, "adalah": true,
+	"ke": true, "cara": true, "resep": true, "membuat": true, "apa": true,
+	"bagaimana": true, "harga": true, "tempat": true, "beli": true, "jual": true,
+	"berita": true, "terbaru": true, "terkini": true, "jadwal": true, "lokasi": true,
+	"apakah": true, "kapan": true, "siapa": true, "mengapa": true, "kenapa": true,
+	"bisa": true, "tidak": true, "sudah": true, "akan": true, "ada": true,
+	"hari": true, "tahun": true, "bulan": true, "indonesia": true, "jakarta": true,
+	"surabaya": true, "bandung": true, "medan": true, "bali": true, "masak": true,
+	"makanan": true, "wisata": true, "kuliner": true, "hotel": true, "murah": true,
+	"paling": true, "enak": true, "mudah": true, "bikin": true, "alamat": true,
+	"nomor": true, "daftar": true, "syarat": true, "biaya": true, "contoh": true,
+	"buku": true, "tips": true, "artikel": true, "portal": true, "informasi": true,
+}
+
+// IsIndonesianText checks if text contains clear Indonesian language tokens
+func IsIndonesianText(text string) bool {
+	fields := strings.Fields(strings.ToLower(text))
+	for _, f := range fields {
+		f = strings.Trim(f, ",.?!:;\"'()[]{}")
+		if idCommonTokens[f] {
+			return true
+		}
+	}
+	return false
+}
+
 // NewHTTPClient returns a privacy-preserving http.Client with connection pooling and timeouts
 func NewHTTPClient(timeout time.Duration) *http.Client {
 	transport := &http.Transport{

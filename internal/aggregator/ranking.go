@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unicode"
 
+	"searxgo/internal/engine"
 	"searxgo/internal/models"
 )
 
@@ -31,7 +32,8 @@ func CalculateInitialScores(results []models.SearchResult, engineWeight float64)
 // 2. Exact phrase and word-boundary title matching
 // 3. Navigational domain matching
 // 4. Term proximity and density in snippet
-// 5. Low-quality noise penalties
+// 5. Regional language & TLD (.id) localization
+// 6. Low-quality noise penalties
 func CalculateSearXNGScore(result *models.SearchResult, query string) float64 {
 	if len(result.Positions) == 0 {
 		return 0
@@ -65,12 +67,12 @@ func CalculateSearXNGScore(result *models.SearchResult, query string) float64 {
 	if queryLower != "" {
 		terms := strings.Fields(queryLower)
 
-		// 3.1 Exact Full Query Match in Title (Massive boost)
+		// 3.1 Exact Full Query Match in Title
 		if strings.Contains(titleLower, queryLower) {
-			score += 35.0
+			score += 22.0
 			// Extra boost if title begins with query
 			if strings.HasPrefix(strings.TrimSpace(titleLower), queryLower) {
-				score += 15.0
+				score += 8.0
 			}
 		}
 
@@ -82,9 +84,13 @@ func CalculateSearXNGScore(result *models.SearchResult, query string) float64 {
 			if strings.Contains(hostLower, queryLower) || strings.Contains(queryLower, hostLower) {
 				score += 25.0
 			}
+			// Educational / Government / Official domain boost
+			if strings.HasSuffix(hostLower, ".edu") || strings.HasSuffix(hostLower, ".gov") || strings.HasSuffix(hostLower, ".go.id") || strings.HasSuffix(hostLower, ".ac.id") {
+				score += 15.0
+			}
 		}
 
-		// 3.3 Exact Word Boundary Matching (Avoid false substring collisions)
+		// 3.3 Exact Word Boundary Matching (Title, URL, Content)
 		allTermsInTitle := true
 		termMatchesInTitle := 0
 		termMatchesInContent := 0
@@ -95,41 +101,58 @@ func CalculateSearXNGScore(result *models.SearchResult, query string) float64 {
 			}
 
 			if containsWordBoundary(titleLower, term) {
-				score += 8.0
+				score += 7.0
 				termMatchesInTitle++
 			} else if strings.Contains(titleLower, term) {
-				score += 4.0
+				score += 3.5
 				termMatchesInTitle++
 			} else {
 				allTermsInTitle = false
 			}
 
 			if containsWordBoundary(urlLower, term) || strings.Contains(urlLower, term) {
-				score += 4.0
+				score += 3.0
 			}
 
+			// Rich snippet matches (strong relevance signal)
 			if containsWordBoundary(contentLower, term) {
-				score += 2.5
+				score += 5.5
 				termMatchesInContent++
 			} else if strings.Contains(contentLower, term) {
-				score += 1.0
+				score += 2.5
 				termMatchesInContent++
 			}
 		}
 
 		// 3.4 All Terms Present Bonus
 		if len(terms) > 1 && allTermsInTitle {
-			score += 20.0
-		} else if len(terms) > 1 && (termMatchesInTitle+termMatchesInContent) >= len(terms) {
-			score += 10.0
+			score += 15.0
+		}
+		if len(terms) > 1 && termMatchesInContent >= len(terms) {
+			score += 18.0 // High quality snippet answering the query
 		}
 
-		// 3.5 Penalty for low-quality / empty results
+		// 3.5 Regional Indonesian Language & Domain Match Boost
+		if engine.IsIndonesianText(queryLower) {
+			if u, err := url.Parse(result.URL); err == nil {
+				h := strings.ToLower(u.Host)
+				if strings.HasSuffix(h, ".id") {
+					score += 35.0 // Top priority for authentic Indonesian sites (.id, .co.id, etc.)
+				}
+			}
+			if engine.IsIndonesianText(result.Title) || engine.IsIndonesianText(result.Content) {
+				score += 25.0 // Authentic Indonesian language content
+			} else if len(result.Content) > 25 && !engine.IsIndonesianText(result.Content) {
+				score -= 15.0 // Discourage completely foreign articles when query is Indonesian
+			}
+		}
+
+		// 3.6 Penalty for low-quality / empty results
 		if strings.TrimSpace(result.Title) == "" || strings.EqualFold(result.Title, "Untitled") {
 			score -= 50.0
 		}
-		if len(result.Content) < 10 {
-			score -= 5.0
+		if len(result.Content) < 15 {
+			score -= 10.0
 		}
 	}
 

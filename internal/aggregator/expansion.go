@@ -4,31 +4,6 @@ import (
 	"strings"
 )
 
-var idToEnMap = map[string][]string{
-	"cara":        {"how to", "guide"},
-	"membuat":     {"build", "create", "make"},
-	"belajar":     {"learn", "tutorial", "guide"},
-	"pemrograman": {"programming", "coding", "software"},
-	"arsitektur":  {"architecture", "design"},
-	"keamanan":    {"security", "cybersecurity"},
-	"jaringan":    {"network", "networking"},
-	"kinerja":     {"performance", "benchmark"},
-	"algoritma":   {"algorithm", "data structure"},
-	"basis data":  {"database", "storage"},
-	"gratis":      {"free", "open source"},
-	"terbaik":     {"best", "top", "comparison"},
-	"berita":      {"news", "update"},
-	"jurnal":      {"paper", "research", "journal"},
-	"penelitian":  {"research", "study"},
-	"kecerdasan":  {"artificial intelligence", "AI", "machine learning"},
-	"masalah":     {"issue", "error", "bug", "fix"},
-	"solusi":      {"solution", "fix", "troubleshoot"},
-	"unduh":       {"download", "install"},
-	"bocor":       {"leak", "breach", "data breach"},
-	"kebocoran":   {"data breach", "leak", "compromise"},
-	"peretasan":   {"hack", "cyber attack", "breach"},
-	"kata sandi":  {"password", "credentials"},
-}
 
 var techKeywords = []string{
 	"golang", "python", "javascript", "typescript", "rust", "c++", "docker", "kubernetes",
@@ -53,13 +28,11 @@ var torDeepKeywords = []string{
 }
 
 var leakBreachKeywords = []string{
-	"bocor", "kebocoran", "peretasan", "kata sandi", "leak", "leaked", "breach",
-	"breached", "pwned", "database dump", "credentials", "pastebin", "rentry",
-	"dumpz", "data dump", "compromised", "dehashed", "haveibeenpwned",
-	"wikileaks", "ddosecrets", "cryptome", "foia", "ransomware", "darkfeed",
-	"ransomlook", "telegram leak", "tg dump", "t.me/s/", "exploit", "exploits",
-	"sploitus", "packetstorm", "exploit-db", "cve exploit", "0day", "zero-day",
-	"victim leak", "exfiltration",
+	"kebocoran data", "data bocor", "peretasan data", "data breach", "databreach",
+	"database dump", "dump database", "leaked database", "leaked credentials",
+	"haveibeenpwned", "dehashed", "pastebin dump", "ransomware", "wikileaks",
+	"telegram leak", "tg dump", "cve exploit", "zero-day exploit", "0day",
+	"exploit-db", "victim leak", "exfiltration", "pwned",
 }
 
 var mediaVideoKeywords = []string{
@@ -67,58 +40,22 @@ var mediaVideoKeywords = []string{
 	"trailer", "stream", "youtube", "podcast", "audio", "mv",
 }
 
-// GenerateQueryVariants produces bilingual and synonym-expanded query variations
+// GenerateQueryVariants produces clean query variations without artificial language translation
 func GenerateQueryVariants(rawQuery string) []string {
 	q := strings.TrimSpace(rawQuery)
 	if q == "" {
 		return nil
 	}
 
-	lower := strings.ToLower(q)
-	words := strings.Fields(lower)
-	if len(words) == 0 {
-		return nil
-	}
-
-	var variants []string
-	seen := make(map[string]bool)
-	seen[lower] = true
-
-	// 1. Indonesian to English translation variant
-	translatedWords := make([]string, len(words))
-	hasTranslation := false
-
-	for i, word := range words {
-		if synonyms, ok := idToEnMap[word]; ok && len(synonyms) > 0 {
-			translatedWords[i] = synonyms[0]
-			hasTranslation = true
-		} else {
-			translatedWords[i] = word
+	// If query is enclosed in quotes, provide unquoted variation
+	if (strings.HasPrefix(q, "\"") && strings.HasSuffix(q, "\"")) || (strings.HasPrefix(q, "'") && strings.HasSuffix(q, "'")) {
+		trimmed := strings.Trim(q, "\"'")
+		if trimmed != "" && trimmed != q {
+			return []string{trimmed}
 		}
 	}
 
-	if hasTranslation {
-		tQuery := strings.Join(translatedWords, " ")
-		if !seen[tQuery] {
-			seen[tQuery] = true
-			variants = append(variants, tQuery)
-		}
-	}
-
-	// 2. Phrase matching (e.g. "cara membuat" -> "how to build")
-	for idPhrase, enPhrases := range idToEnMap {
-		if strings.Contains(lower, idPhrase) {
-			for _, en := range enPhrases {
-				replaced := strings.ReplaceAll(lower, idPhrase, en)
-				if !seen[replaced] {
-					seen[replaced] = true
-					variants = append(variants, replaced)
-				}
-			}
-		}
-	}
-
-	return variants
+	return nil
 }
 
 // IsTechnicalQuery returns true if query matches programming or developer topics

@@ -114,20 +114,10 @@ func TestAggregatorSearchAndFallback(t *testing.T) {
 }
 
 func TestQueryExpansionAndClassification(t *testing.T) {
-	// 1. Test bilingual expansion
-	variants := GenerateQueryVariants("belajar pemrograman")
-	if len(variants) == 0 {
-		t.Errorf("Expected query variants for 'belajar pemrograman'")
-	}
-	foundTutorial := false
-	for _, v := range variants {
-		if v == "learn programming" || v == "tutorial programming" || v == "guide programming" {
-			foundTutorial = true
-			break
-		}
-	}
-	if !foundTutorial {
-		t.Errorf("Expected translated English variant, got %v", variants)
+	// 1. Test query unquoting variation
+	variants := GenerateQueryVariants("\"belajar pemrograman\"")
+	if len(variants) == 0 || variants[0] != "belajar pemrograman" {
+		t.Errorf("Expected unquoted variant 'belajar pemrograman', got %v", variants)
 	}
 
 	// 2. Test query domain classification

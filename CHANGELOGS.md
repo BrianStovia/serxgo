@@ -29,6 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Cron Schedule Explainer**: Translates 5-field cron expressions into human-readable schedules with next run approximations.
   - **Linux Chmod Permission Calculator**: Converts octal permissions (`755`, `644`) to symbolic (`rwxr-xr-x`) and breakdowns for Owner, Group, and Public.
   - **Go Regex Syntax Validator**: Tests and validates regular expressions on-the-fly with group/class breakdowns.
+- 🎯 **Search Relevance & Precision Overhaul**:
+  - **Dynamic Localization & Region Detection**: DuckDuckGo, Bing, Brave, and Wikipedia automatically adapt region (`kl=id-id`, `mkt=id-ID`, `Accept-Language: id-ID`) when querying in Indonesian.
+  - **Disabled Artificial Cross-Language Translation**: Natural user queries are searched as-is without inserting distorted English synonyms.
+  - **Eliminated False-Positive Breach Dumps**: General everyday words (like "bocor", "masalah") no longer trigger security ransomware/leak scrapers.
+  - **Authentic Domain & Snippet Ranking Boost**: Upgraded scoring algorithm with +35.0 boost for authentic local domains (`.id`), +25.0 boost for language matching, and higher weight on snippet density over keyword-stuffed titles.
 
 ## [v1.0.0] - 2026-09-05
 

@@ -54,7 +54,12 @@ func (e *BraveEngine) Search(ctx context.Context, req models.SearchRequest) ([]m
 		safeParam = "moderate"
 	}
 
+	isID := req.Language == "id" || req.Country == "ID" || req.Region == "id" || IsIndonesianText(req.Query)
+
 	searchURL := fmt.Sprintf("https://search.brave.com/search?q=%s&source=web&safesearch=%s", url.QueryEscape(req.Query), safeParam)
+	if isID {
+		searchURL += "&country=ID"
+	}
 	if req.Page > 1 {
 		searchURL += fmt.Sprintf("&offset=%d", (req.Page-1)*20)
 	}
@@ -64,9 +69,13 @@ func (e *BraveEngine) Search(ctx context.Context, req models.SearchRequest) ([]m
 		return nil, err
 	}
 
+	acceptLang := "en-US,en;q=0.9"
+	if isID {
+		acceptLang = "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7"
+	}
 	httpReq.Header.Set("User-Agent", GetRandomUserAgent())
 	httpReq.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-	httpReq.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	httpReq.Header.Set("Accept-Language", acceptLang)
 
 	resp, err := e.client.Do(httpReq)
 	if err != nil {
