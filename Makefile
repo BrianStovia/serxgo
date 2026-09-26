@@ -1,4 +1,4 @@
-.PHONY: build build-linux build-linux-arm64 build-darwin build-darwin-arm64 build-windows build-all run test clean docker-build docker-run
+.PHONY: build build-linux build-linux-arm64 build-darwin build-darwin-arm64 build-windows build-all run test clean docker-build docker-run uninstall
 
 DIST_DIR=dist
 BINARY_NAME=searxgo
@@ -45,3 +45,6 @@ docker-build:
 
 docker-run:
 	docker run -p 8184:8184 --name searxgo --rm searxgo:latest
+
+uninstall:
+	bash uninstall.sh

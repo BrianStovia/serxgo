@@ -91,6 +91,20 @@ curl -fsSL https://raw.githubusercontent.com/BrianStovia/serxgo/main/update.sh |
 irm https://raw.githubusercontent.com/BrianStovia/serxgo/main/update.ps1 | iex
 ```
 
+### 🗑️ 1-Line Automated Uninstaller
+
+**Linux & macOS (Service Deactivation & Binary Removal):**
+```bash
+curl -fsSL https://raw.githubusercontent.com/BrianStovia/serxgo/main/uninstall.sh | bash
+# Or to purge all configuration (/etc/searxgo) and user:
+curl -fsSL https://raw.githubusercontent.com/BrianStovia/serxgo/main/uninstall.sh | bash -s -- --purge
+```
+
+**Windows (PowerShell Auto-Uninstall):**
+```powershell
+irm https://raw.githubusercontent.com/BrianStovia/serxgo/main/uninstall.ps1 | iex
+```
+
 ---
 
 ### 1. Run from Precompiled Binaries

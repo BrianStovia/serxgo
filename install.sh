@@ -175,8 +175,8 @@ else
     fi
 fi
 
-# 6. Systemd Service Setup (Linux only with root/sudo)
-if [ "$OS" = "linux" ] && command -v systemctl >/dev/null 2>&1 && [ -n "${USE_SUDO}" ]; then
+# 6. Systemd Service Setup (Linux only with root or sudo)
+if [ "$OS" = "linux" ] && command -v systemctl >/dev/null 2>&1 && { [ "$(id -u)" -eq 0 ] || [ -n "${USE_SUDO}" ]; }; then
     echo -e "${CYAN}➜ Configuring systemd service at ${SYSTEMD_SERVICE}...${RESET}"
 
     # Create unprivileged system user if not exists
