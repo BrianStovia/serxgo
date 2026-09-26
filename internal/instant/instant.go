@@ -44,6 +44,12 @@ func (s *InstantService) FindInstantAnswers(ctx context.Context, query string, c
 		return answers
 	}
 
+	// 2.1 Check Developer Power Tools (JWT, Cron, Chmod, Regex)
+	if devAns := CheckDevTools(q); devAns != nil {
+		answers = append(answers, *devAns)
+		return answers
+	}
+
 	// 3. Check Open Access DOI Query
 	if doiAns := plugins.CheckDOIQuery(q, "oadoi.org"); doiAns != nil {
 		answers = append(answers, *doiAns)

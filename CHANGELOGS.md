@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.3.0] - 2026-09-27
+
+### 🚀 Major New Capabilities
+- 🔍 **All-in-One Domain Recon & Security Auditor (`/recon`)**:
+  - Full domain security inspection suite with SSL/TLS certificate validity checks and expiry countdown.
+  - HTTP Security Headers compliance evaluation with automated letter grade scoring (`A+` to `F`).
+  - Authoritative DNS resolution (A, AAAA, MX, NS, TXT) with SPF and DMARC mail protection verification.
+  - Web server fingerprinting and technology stack detection (Nginx, Apache, Cloudflare, WordPress, Next.js, etc.).
+  - Search query instant trigger (`recon: example.com`, `audit example.com`).
+- 🎬 **Ad-Free Floating Video & Music Mini-Player**:
+  - Picture-in-Picture floating media player with minimize, expand, and close states.
+  - Supports privacy-focused YouTube embeds (`youtube-nocookie.com`), Vimeo, and Dailymotion.
+  - 1-click `▶️ Play` button added to video and media search results.
+- 📖 **Distraction-Free Clean Reader Mode (`/reader?url=...`)**:
+  - Pure Go article extractor using `golang.org/x/net/html` that parses main content and metadata (reading time, author, title).
+  - Sanitizes and purges tracking scripts, inline ads, and cookie banners.
+  - Modern reading UI with light/dark/sepia theme toggles, serif/sans typography, font size controls, and reading progress bar.
+- 🧰 **Developer Instant Power Cards**:
+  - **JWT Decoder & Inspector**: Validates token format, decodes header & claims payloads, checks expiration timestamps.
+  - **Cron Schedule Explainer**: Translates 5-field cron expressions into human-readable schedules with next run approximations.
+  - **Linux Chmod Permission Calculator**: Converts octal permissions (`755`, `644`) to symbolic (`rwxr-xr-x`) and breakdowns for Owner, Group, and Public.
+  - **Go Regex Syntax Validator**: Tests and validates regular expressions on-the-fly with group/class breakdowns.
+
 ## [v1.0.0] - 2026-09-05
 
 ### 🚀 Major Highlights

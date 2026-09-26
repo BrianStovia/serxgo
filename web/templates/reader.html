@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-font="sans">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{if .Article.Title}}{{.Article.Title}} - {{end}}Reader View - SearXGo</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
+  <style>
+    :root {
+      --reader-max-width: 740px;
+      --reader-font-size: 1.15rem;
+      --reader-line-height: 1.8;
+    }
+    html[data-font="serif"] .reader-content {
+      font-family: Charter, 'Bitstream Charter', 'Sitka Text', Cambria, serif;
+    }
+    html[data-font="sans"] .reader-content {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    html[data-theme="sepia"] {
+      --bg-primary: #fbf0d9;
+      --bg-card: #f4e3c3;
+      --text-primary: #5f4b32;
+      --text-secondary: #7f684e;
+      --text-muted: #9c8366;
+      --border-glass: rgba(95, 75, 50, 0.15);
+    }
+    html[data-theme="light"] {
+      --bg-primary: #ffffff;
+      --bg-card: #f8fafc;
+      --text-primary: #0f172a;
+      --text-secondary: #334155;
+      --text-muted: #64748b;
+      --border-glass: rgba(0, 0, 0, 0.1);
+    }
+    .reading-progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 3px;
+      background: var(--accent-gradient);
+      width: 0%;
+      z-index: 100;
+      transition: width 0.1s ease;
+    }
+    .reader-toolbar {
+      position: sticky;
+      top: 1rem;
+      max-width: var(--reader-max-width);
+      margin: 1rem auto 2rem auto;
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-md);
+      padding: 0.6rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(16px);
+      z-index: 50;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .reader-container {
+      max-width: var(--reader-max-width);
+      margin: 0 auto;
+      padding: 0 1.25rem 6rem 1.25rem;
+    }
+    .reader-header {
+      margin-bottom: 2.5rem;
+      border-bottom: 1px solid var(--border-glass);
+      padding-bottom: 1.5rem;
+    }
+    .reader-title {
+      font-size: 2.4rem;
+      font-weight: 800;
+      line-height: 1.25;
+      color: var(--text-primary);
+      margin-bottom: 1rem;
+    }
+    .reader-meta-row {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+    .reader-content {
+      font-size: var(--reader-font-size);
+      line-height: var(--reader-line-height);
+      color: var(--text-primary);
+    }
+    .reader-content p {
+      margin-bottom: 1.4rem;
+    }
+    .reader-content h2, .reader-content h3 {
+      margin: 2rem 0 1rem 0;
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+    .reader-content blockquote {
+      border-left: 4px solid var(--accent-primary);
+      padding-left: 1.25rem;
+      margin: 1.5rem 0;
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+    .reader-content pre {
+      background: rgba(0,0,0,0.3);
+      padding: 1rem;
+      border-radius: var(--radius-sm);
+      overflow-x: auto;
+      margin: 1.5rem 0;
+    }
+    .tool-btn {
+      background: transparent;
+      border: 1px solid var(--border-glass);
+      color: var(--text-secondary);
+      border-radius: 4px;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.15s ease;
+    }
+    .tool-btn:hover {
+      background: rgba(255,255,255,0.08);
+      color: var(--text-primary);
+    }
+  </style>
+</head>
+<body>
+  <div class="reading-progress-bar" id="progress-bar"></div>
+
+  <!-- Reader Floating Controls Toolbar -->
+  <div class="reader-toolbar">
+    <div style="display:flex; gap:0.5rem; align-items:center;">
+      <a href="javascript:history.back()" class="tool-btn" title="Back to Search">
+        <span>← Back</span>
+      </a>
+      <span style="color:var(--border-glass); height:16px; border-left:1px solid currentColor;"></span>
+      <button type="button" class="tool-btn" id="btn-font-toggle" title="Switch Font">
+        <span id="font-name-label">Serif</span>
+      </button>
+      <button type="button" class="tool-btn" id="btn-font-minus" title="Decrease font size">A-</button>
+      <button type="button" class="tool-btn" id="btn-font-plus" title="Increase font size">A+</button>
+    </div>
+
+    <div style="display:flex; gap:0.5rem; align-items:center;">
+      <button type="button" class="tool-btn" data-theme-set="dark" title="Dark Theme">🌙</button>
+      <button type="button" class="tool-btn" data-theme-set="sepia" title="Sepia Paper Theme">📜</button>
+      <button type="button" class="tool-btn" data-theme-set="light" title="Light Theme">☀️</button>
+      <a href="{{.Article.URL}}" target="_blank" rel="noopener noreferrer" class="tool-btn" title="Open Original URL">
+        <span>Original ↗</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="reader-container">
+    {{if .Error}}
+      <div style="text-align:center; padding:4rem 0;">
+        <div style="font-size:3rem; margin-bottom:1rem;">⚠️</div>
+        <h2 style="margin-bottom:0.5rem; color:var(--text-primary);">Could Not Load Clean Reader View</h2>
+        <p style="color:var(--text-muted); margin-bottom:1.5rem;">{{.Error}}</p>
+        <a href="{{.TargetURL}}" target="_blank" rel="noopener noreferrer" class="btn-search" style="padding:0.6rem 1.4rem;">
+          Open Original Article ↗
+        </a>
+      </div>
+    {{else}}
+      <div class="reader-header">
+        <h1 class="reader-title">{{.Article.Title}}</h1>
+        <div class="reader-meta-row">
+          {{if .Article.SiteName}}<span>🌐 <strong>{{.Article.SiteName}}</strong></span>{{else if .Article.Domain}}<span>🌐 <strong>{{.Article.Domain}}</strong></span>{{end}}
+          {{if .Article.Author}}<span>✍️ {{.Article.Author}}</span>{{end}}
+          {{if .Article.PublishedDate}}<span>📅 {{.Article.PublishedDate}}</span>{{end}}
+          <span>⏱️ {{.Article.ReadTimeMin}} min read ({{.Article.WordCount}} words)</span>
+        </div>
+      </div>
+
+      <div class="reader-content" id="reader-body">
+        {{safe .Article.ContentHTML}}
+      </div>
+    {{end}}
+  </div>
+
+  <script>
+    (function() {
+      // Reading Progress Bar
+      window.addEventListener('scroll', function() {
+        const h = document.documentElement;
+        const b = document.body;
+        const st = 'scrollTop';
+        const sh = 'scrollHeight';
+        const percent = ((h[st]||b[st]) / ((h[sh]||b[sh]) - h.clientHeight)) * 100;
+        document.getElementById('progress-bar').style.width = percent + '%';
+      });
+
+      // Font Toggle
+      const fontBtn = document.getElementById('btn-font-toggle');
+      const fontLabel = document.getElementById('font-name-label');
+      if (fontBtn) {
+        fontBtn.addEventListener('click', function() {
+          const current = document.documentElement.getAttribute('data-font') || 'sans';
+          const next = current === 'sans' ? 'serif' : 'sans';
+          document.documentElement.setAttribute('data-font', next);
+          fontLabel.textContent = next === 'sans' ? 'Serif' : 'Sans';
+        });
+      }
+
+      // Font Size
+      let currentSize = 1.15;
+      const plusBtn = document.getElementById('btn-font-plus');
+      const minusBtn = document.getElementById('btn-font-minus');
+      if (plusBtn && minusBtn) {
+        plusBtn.addEventListener('click', function() {
+          if (currentSize < 1.6) {
+            currentSize += 0.1;
+            document.documentElement.style.setProperty('--reader-font-size', currentSize + 'rem');
+          }
+        });
+        minusBtn.addEventListener('click', function() {
+          if (currentSize > 0.9) {
+            currentSize -= 0.1;
+            document.documentElement.style.setProperty('--reader-font-size', currentSize + 'rem');
+          }
+        });
+      }
+
+      // Theme Toggles
+      document.querySelectorAll('[data-theme-set]').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const theme = this.dataset.themeSet;
+          document.documentElement.setAttribute('data-theme', theme);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

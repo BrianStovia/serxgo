@@ -32,6 +32,8 @@ import (
 	"searxgo/internal/instant"
 	"searxgo/internal/models"
 	"searxgo/internal/proxy"
+	"searxgo/internal/reader"
+	"searxgo/internal/recon"
 	"searxgo/internal/scrub"
 	"searxgo/internal/stats"
 	"searxgo/web"
@@ -65,6 +67,13 @@ func NewHandler(cfg *config.Config, agg *aggregator.Aggregator) (*Handler, error
 		"add": func(a, b int) int { return a + b },
 		"sub": func(a, b int) int { return a - b },
 		"safe": func(s string) template.HTML { return template.HTML(s) },
+		"isMediaURL": func(u string) bool {
+			lower := strings.ToLower(u)
+			return strings.Contains(lower, "youtube.com") || strings.Contains(lower, "youtu.be") ||
+				strings.Contains(lower, "vimeo.com") || strings.Contains(lower, "dailymotion.com") ||
+				strings.HasSuffix(lower, ".mp4") || strings.HasSuffix(lower, ".webm") ||
+				strings.HasSuffix(lower, ".mp3") || strings.HasSuffix(lower, ".ogg")
+		},
 		"extractDomain": func(rawURL string) string {
 			raw := strings.TrimPrefix(rawURL, "https://")
 			raw = strings.TrimPrefix(raw, "http://")
@@ -172,6 +181,14 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /scrub", h.ServeScrub)
 	mux.HandleFunc("POST /api/scrub/inspect", h.ServeAPIScrubInspect)
 	mux.HandleFunc("POST /api/scrub/clean", h.ServeAPIScrubClean)
+
+	// Domain Recon & Security Auditor
+	mux.HandleFunc("GET /recon", h.ServeRecon)
+	mux.HandleFunc("GET /api/recon", h.ServeAPIRecon)
+
+	// Clean Reader View
+	mux.HandleFunc("GET /reader", h.ServeReader)
+	mux.HandleFunc("GET /api/reader", h.ServeAPIReader)
 
 	// Privacy Proxy
 	mux.HandleFunc("GET /proxy/image", h.imageProxy.ServeHTTP)
@@ -1457,6 +1474,86 @@ func (h *Handler) ServeAPIScrubClean(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Tags-Stripped", strconv.Itoa(report.TagsStripped))
 	w.Write(cleanBytes)
 }
+
+// ServeRecon renders the All-in-One Domain Recon & Security Auditor UI
+func (h *Handler) ServeRecon(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	target := strings.TrimSpace(r.URL.Query().Get("target"))
+	data := map[string]interface{}{
+		"Target": target,
+	}
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "recon.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	buf.WriteTo(w)
+}
+
+// ServeAPIRecon runs automated security audit on target domain
+func (h *Handler) ServeAPIRecon(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	target := strings.TrimSpace(r.URL.Query().Get("target"))
+	if target == "" {
+		http.Error(w, `{"error":"Parameter 'target' is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	report, err := recon.AuditDomain(r.Context(), target)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	json.NewEncoder(w).Encode(report)
+}
+
+// ServeReader renders clean, ad-free article reader view
+func (h *Handler) ServeReader(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	rawURL := strings.TrimSpace(r.URL.Query().Get("url"))
+	if rawURL == "" {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+
+	art, err := reader.ExtractArticle(r.Context(), rawURL)
+	data := map[string]interface{}{
+		"Article":   art,
+		"TargetURL": rawURL,
+	}
+	if err != nil {
+		data["Error"] = err.Error()
+	}
+
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "reader.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	buf.WriteTo(w)
+}
+
+// ServeAPIReader provides clean article text and metadata in JSON format
+func (h *Handler) ServeAPIReader(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	rawURL := strings.TrimSpace(r.URL.Query().Get("url"))
+	if rawURL == "" {
+		http.Error(w, `{"error":"Parameter 'url' is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	art, err := reader.ExtractArticle(r.Context(), rawURL)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	json.NewEncoder(w).Encode(art)
+}
+
 
 
 

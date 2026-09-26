@@ -1426,6 +1426,62 @@
     });
   }
 
+  // --- Ad-Free Floating Video & Audio Mini-Player ---
+  function initFloatingPlayer() {
+    const player = document.getElementById('floating-media-player');
+    if (!player) return;
+
+    const iframe = document.getElementById('player-iframe');
+    const titleEl = document.getElementById('player-title');
+    const closeBtn = document.getElementById('btn-player-close');
+    const minBtn = document.getElementById('btn-player-minimize');
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function() {
+        if (iframe) iframe.src = '';
+        player.style.display = 'none';
+      });
+    }
+
+    if (minBtn) {
+      minBtn.addEventListener('click', function() {
+        player.classList.toggle('minimized');
+      });
+    }
+
+    function getEmbedURL(rawUrl) {
+      const ytMatch = rawUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{11})/i);
+      if (ytMatch && ytMatch[1]) {
+        return 'https://www.youtube-nocookie.com/embed/' + ytMatch[1] + '?autoplay=1';
+      }
+      const vimeoMatch = rawUrl.match(/vimeo\.com\/(?:video\/)?(\d+)/i);
+      if (vimeoMatch && vimeoMatch[1]) {
+        return 'https://player.vimeo.com/video/' + vimeoMatch[1] + '?autoplay=1';
+      }
+      const dailyMatch = rawUrl.match(/dailymotion\.com\/video\/([a-zA-Z0-9]+)/i);
+      if (dailyMatch && dailyMatch[1]) {
+        return 'https://www.dailymotion.com/embed/video/' + dailyMatch[1] + '?autoplay=1';
+      }
+      return rawUrl;
+    }
+
+    document.addEventListener('click', function(e) {
+      const btn = e.target.closest('.btn-play-trigger, .video-thumb-wrap');
+      if (btn) {
+        const url = btn.dataset.url || btn.dataset.videoUrl;
+        const title = btn.dataset.title || btn.dataset.videoTitle || 'Ad-Free Stream';
+        if (url && (url.includes('youtube') || url.includes('youtu.be') || url.includes('vimeo') || url.includes('dailymotion') || url.match(/\.(mp4|webm|mp3|ogg)(\?|$)/i))) {
+          e.preventDefault();
+          const embedUrl = getEmbedURL(url);
+          if (titleEl) titleEl.textContent = title;
+          if (iframe) iframe.src = embedUrl;
+          player.classList.remove('minimized');
+          player.style.display = 'block';
+        }
+      }
+    });
+  }
+
   // Safe DOM ready initialization
   function initAll() {
     initTheme();
@@ -1442,6 +1498,7 @@
     initBookmarks();
     initTopicClusters();
     initReverseImageSearch();
+    initFloatingPlayer();
   }
 
   if (document.readyState === 'loading') {

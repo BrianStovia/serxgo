@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Domain Recon &amp; Security Auditor - SearXGo</title>
+  <meta name="description" content="All-in-one domain security auditor, HTTP security headers score, SSL inspector, and tech stack sniffer.">
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
+  <style>
+    .recon-container {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 4rem 1rem;
+    }
+    .audit-bar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    }
+    .score-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem 2rem;
+      margin-bottom: 1.5rem;
+    }
+    .grade-badge-circle {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #fff;
+      box-shadow: 0 0 24px rgba(0,0,0,0.4);
+    }
+    .grade-A-plus, .grade-A { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .grade-B { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
+    .grade-C { background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%); }
+    .grade-D, .grade-F { background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); }
+
+    .recon-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.25rem;
+    }
+    .recon-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+    }
+    .recon-card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--border-glass);
+      padding-bottom: 0.5rem;
+    }
+    .prop-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.45rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 0.85rem;
+      gap: 0.75rem;
+    }
+    .prop-label {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .prop-val {
+      color: var(--text-primary);
+      font-weight: 600;
+      word-break: break-all;
+      text-align: right;
+    }
+    .badge-pass {
+      background: rgba(16,185,129,0.15);
+      color: #10b981;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.75rem;
+    }
+    .badge-fail {
+      background: rgba(239,68,68,0.15);
+      color: #ef4444;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.75rem;
+    }
+    .tech-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: rgba(99,102,241,0.15);
+      color: var(--accent-primary);
+      border: 1px solid rgba(99,102,241,0.3);
+      padding: 0.25rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin: 0.2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+
+  <nav class="top-nav container">
+    <a href="/" class="nav-btn"><span>🪐 Home</span></a>
+    <a href="/dorks" class="nav-btn"><span>🎯 Dorks</span></a>
+    <a href="/scrub" class="nav-btn"><span>🛡️ Scrub</span></a>
+    <a href="/recon" class="nav-btn active" style="color:var(--accent-primary); font-weight:700;"><span>🔍 Recon</span></a>
+    <a href="/stats" class="nav-btn"><span>Telemetry</span></a>
+    <a href="/settings" class="nav-btn"><span>Settings</span></a>
+  </nav>
+
+  <div class="recon-container">
+    <div style="text-align:center; margin-bottom:2rem;">
+      <div class="brand-badge" style="margin-bottom:0.75rem;">
+        <span class="engine-dot" style="background:#3b82f6;"></span>
+        <span>All-In-One Security Reconnaissance</span>
+      </div>
+      <h1 class="brand-title" style="font-size:2.2rem; margin-bottom:0.4rem;">Domain Threat Recon &amp; Security Auditor</h1>
+      <p class="brand-tagline">Audit HTTP security headers, TLS certificates, SPF/DMARC email defenses, and web technology stack.</p>
+    </div>
+
+    <!-- Domain Search Bar -->
+    <div class="audit-bar-card">
+      <form id="recon-form" style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+        <input type="text" id="target-domain" class="form-select" placeholder="Enter target domain (e.g. google.com, github.com, cloudflare.com)..." value="{{.Target}}" style="flex:1; min-width:260px; font-size:1rem; padding:0.75rem 1rem;">
+        <button type="submit" class="btn-search" style="padding:0.75rem 1.6rem; font-size:0.95rem; white-space:nowrap;">
+          🔍 Audit Domain
+        </button>
+      </form>
+    </div>
+
+    <!-- Loading State -->
+    <div id="recon-loading" style="display:none; text-align:center; padding:3rem 0;">
+      <div class="infinite-spinner" style="margin:0 auto 1rem auto;"></div>
+      <div style="font-weight:600; font-size:1rem; color:var(--text-primary);">Scanning SSL certificate, auditing HTTP headers, and querying DNS...</div>
+    </div>
+
+    <!-- Results Section -->
+    <div id="recon-results" style="display:none;">
+      <!-- Overall Security Score Banner -->
+      <div class="score-banner">
+        <div style="display:flex; align-items:center; gap:1.5rem;">
+          <div class="grade-badge-circle" id="grade-badge">A+</div>
+          <div>
+            <div style="font-size:1.4rem; font-weight:800; color:var(--text-primary); margin-bottom:0.25rem;" id="domain-title">example.com</div>
+            <div style="font-size:0.875rem; color:var(--text-muted);">
+              Security Posture Score: <strong style="color:var(--text-primary);" id="score-text">95 / 100</strong>
+              &bull; Response Time: <strong style="color:var(--accent-emerald);" id="rt-text">42 ms</strong>
+              &bull; Status: <strong style="color:var(--accent-primary);" id="status-text">200 OK</strong>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; gap:0.5rem;">
+          <a id="btn-visit" href="#" target="_blank" rel="noopener noreferrer" class="action-btn" style="background:rgba(255,255,255,0.08); color:#fff; border:none; padding:0.5rem 1rem;">
+            Visit Website ↗
+          </a>
+          <a id="btn-dork" href="#" class="action-btn" style="background:var(--accent-gradient); color:#fff; border:none; padding:0.5rem 1rem;">
+            🎯 Dork Target
+          </a>
+        </div>
+      </div>
+
+      <div class="recon-grid">
+        <!-- 1. HTTP Security Headers -->
+        <div class="recon-card" style="grid-column: span 1;">
+          <div class="recon-card-title">
+            <span>🛡️ HTTP Security Headers</span>
+          </div>
+          <div id="headers-list">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- 2. SSL/TLS Certificate -->
+        <div class="recon-card">
+          <div class="recon-card-title">
+            <span>🔒 SSL/TLS Certificate Health</span>
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">HTTPS Active</span>
+            <span class="prop-val" id="ssl-active">-</span>
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">Issuer</span>
+            <span class="prop-val" id="ssl-issuer">-</span>
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">Valid Until</span>
+            <span class="prop-val" id="ssl-valid-to">-</span>
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">Days Remaining</span>
+            <span class="prop-val" id="ssl-days-left">-</span>
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">TLS Protocol</span>
+            <span class="prop-val" id="ssl-proto">-</span>
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">Cipher Suite</span>
+            <span class="prop-val" id="ssl-cipher" style="font-size:0.75rem;">-</span>
+          </div>
+        </div>
+
+        <!-- 3. DNS & Mail Defenses -->
+        <div class="recon-card">
+          <div class="recon-card-title">
+            <span>📧 DNS &amp; Mail Defenses</span>
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">IPv4 Addresses</span>
+            <span class="prop-val" id="dns-ipv4">-</span>
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">Mail Servers (MX)</span>
+            <span class="prop-val" id="dns-mx">-</span>
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">Name Servers (NS)</span>
+            <span class="prop-val" id="dns-ns">-</span>
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">SPF Record</span>
+            <span class="prop-val" id="dns-spf">-</span>
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">DMARC Policy</span>
+            <span class="prop-val" id="dns-dmarc">-</span>
+          </div>
+        </div>
+
+        <!-- 4. Technology Stack Sniffer -->
+        <div class="recon-card">
+          <div class="recon-card-title">
+            <span>⚙️ Technology Stack &amp; Server</span>
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">Server Header</span>
+            <span class="prop-val" id="tech-server">-</span>
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">X-Powered-By</span>
+            <span class="prop-val" id="tech-powered">-</span>
+          </div>
+          <div style="margin-top:0.75rem;">
+            <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; font-weight:600;">Discovered Frameworks &amp; Infrastructure:</div>
+            <div id="tech-tags-box" style="display:flex; flex-wrap:wrap; gap:0.25rem;">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    (function() {
+      const form = document.getElementById('recon-form');
+      const input = document.getElementById('target-domain');
+      const loading = document.getElementById('recon-loading');
+      const results = document.getElementById('recon-results');
+
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const target = input.value.trim();
+        if (!target) return;
+        runAudit(target);
+      });
+
+      function runAudit(target) {
+        loading.style.display = 'block';
+        results.style.display = 'none';
+
+        fetch('/api/recon?target=' + encodeURIComponent(target))
+          .then(res => res.json())
+          .then(data => {
+            loading.style.display = 'none';
+            if (data.error) {
+              alert('Error: ' + data.error);
+              return;
+            }
+            results.style.display = 'block';
+            renderAudit(data);
+          })
+          .catch(err => {
+            loading.style.display = 'none';
+            alert('Scan error: ' + err.message);
+          });
+      }
+
+      function renderAudit(data) {
+        document.getElementById('domain-title').textContent = data.domain;
+        document.getElementById('score-text').textContent = data.security_score + ' / 100';
+        document.getElementById('rt-text').textContent = data.response_time_ms + ' ms';
+        document.getElementById('status-text').textContent = data.status_code ? data.status_code : 'N/A';
+        document.getElementById('btn-visit').href = data.final_url || ('https://' + data.domain);
+        document.getElementById('btn-dork').href = '/dorks?target=' + encodeURIComponent(data.domain);
+
+        // Grade Badge
+        const badge = document.getElementById('grade-badge');
+        badge.className = 'grade-badge-circle grade-' + (data.security_grade || 'C').replace('+', '-plus');
+        badge.textContent = data.security_grade || 'C';
+
+        // Headers
+        const hl = document.getElementById('headers-list');
+        hl.innerHTML = '';
+        const headers = data.headers || {};
+        for (const [name, item] of Object.entries(headers)) {
+          const row = document.createElement('div');
+          row.className = 'prop-row';
+          const badgeClass = item.present ? 'badge-pass' : 'badge-fail';
+          const badgeText = item.present ? 'PASS' : 'FAIL';
+          row.innerHTML = `
+            <div>
+              <div style="font-weight:600; color:var(--text-primary);">${name}</div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">${item.description}</div>
+            </div>
+            <div>
+              <span class="${badgeClass}">${badgeText}</span>
+            </div>
+          `;
+          hl.appendChild(row);
+        }
+
+        // SSL
+        document.getElementById('ssl-active').innerHTML = data.ssl_active ? '<span class="badge-pass">ACTIVE</span>' : '<span class="badge-fail">INACTIVE</span>';
+        document.getElementById('ssl-issuer').textContent = data.ssl_issuer || 'None';
+        document.getElementById('ssl-valid-to').textContent = data.ssl_valid_to || 'None';
+        document.getElementById('ssl-days-left').textContent = data.ssl_days_left ? data.ssl_days_left + ' days' : 'N/A';
+        document.getElementById('ssl-proto').textContent = data.tls_version || 'N/A';
+        document.getElementById('ssl-cipher').textContent = data.ssl_cipher || 'N/A';
+
+        // DNS
+        document.getElementById('dns-ipv4').textContent = (data.ipv4 || []).join(', ') || 'None';
+        document.getElementById('dns-mx').textContent = (data.mx || []).join(', ') || 'None';
+        document.getElementById('dns-ns').textContent = (data.ns || []).join(', ') || 'None';
+        document.getElementById('dns-spf').innerHTML = data.spf_configured ? '<span class="badge-pass">CONFIGURED</span>' : '<span class="badge-fail">MISSING</span>';
+        document.getElementById('dns-dmarc').innerHTML = data.dmarc_configured ? '<span class="badge-pass">CONFIGURED</span>' : '<span class="badge-fail">MISSING</span>';
+
+        // Tech Stack
+        document.getElementById('tech-server').textContent = data.server_header || 'Hidden';
+        document.getElementById('tech-powered').textContent = data.powered_by || 'None';
+        const tb = document.getElementById('tech-tags-box');
+        tb.innerHTML = '';
+        const techList = data.detected_tech || [];
+        if (techList.length === 0) {
+          tb.innerHTML = '<span style="color:var(--text-muted); font-size:0.85rem;">No obvious frameworks leaked in headers.</span>';
+        } else {
+          techList.forEach(t => {
+            const p = document.createElement('span');
+            p.className = 'tech-pill';
+            p.textContent = t;
+            tb.appendChild(p);
+          });
+        }
+      }
+
+      if (input.value.trim()) {
+        runAudit(input.value.trim());
+      }
+    })();
+  </script>
+</body>
+</html>

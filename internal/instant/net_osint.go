@@ -103,7 +103,7 @@ func cleanDomainInput(raw string) string {
 
 // 1. DNS Records Resolver
 func checkDNSRecords(ctx context.Context, domain string) *models.InstantAnswer {
-	resolver := &net.Resolver{PreferGo: true}
+	resolver := net.DefaultResolver
 	reqCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 

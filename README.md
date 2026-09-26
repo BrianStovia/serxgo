@@ -22,6 +22,10 @@
 
 ## 🌟 Key Features
 
+- 🔍 **All-in-One Domain Recon & Security Auditor (`/recon`)**: Full domain security audit engine that scans SSL/TLS certificates, grades HTTP security headers (`A+` to `F`), enumerates DNS (A, AAAA, MX, NS, TXT) and SPF/DMARC mail records, and fingerprints web servers and tech stacks.
+- 🎬 **Ad-Free Floating Video & Music Player**: Picture-in-Picture floating mini-player supporting YouTube (`youtube-nocookie.com`), Vimeo, Dailymotion, and raw media streams directly from search results without tracking or ad interruptions.
+- 📖 **Distraction-Free Clean Reader Mode (`/reader?url=...`)**: Strips advertisements, popups, and clutter from articles and news pages with customizable typography (Serif/Sans), theme modes (Dark, Sepia, Light), and reading progress indicators.
+- 🧰 **Developer Instant Power Cards**: Direct in-search tools for JWT token inspection (`jwt <token>`), Cron expression schedules (`cron */15 * * * *`), Linux Chmod permission calculators (`chmod 755`), and Go regular expression validators (`regex ^[a-z]+$`).
 - 🎯 **Google Dorking & Recon Suite (`/dorks`)**: Interactive target scoping and pre-built dork queries for finding exposed `.env` credentials, leaked database dumps, open directories, Jenkins/cPanel admin portals, and confidential documents.
 - 🛡️ **EXIF Metadata Stripper & Photo Sanitizer (`/scrub`)**: Deep inspection of hidden camera models, software traces, and GPS coordinates with interactive OpenStreetMap pinpointing. 1-click clean and purge all metadata before sharing.
 - 🌐 **Network OSINT & Security Suite**: Instant DNS records (A/AAAA/MX/TXT/NS), SSL/TLS certificate inspector, HTTP security headers audit, WHOIS/RDAP lookup, Subdomain crt.sh scanner, and CVE/OSV vulnerability tracker.

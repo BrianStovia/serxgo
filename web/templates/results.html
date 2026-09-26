@@ -59,6 +59,9 @@
         </div>
 
         <div class="header-nav">
+          <a href="/recon" class="nav-btn" title="Domain Security Recon & Auditor">
+            <span>🔍 Recon</span>
+          </a>
           <a href="/dorks" class="nav-btn" title="Recon & Dorks Suite">
             <span>🎯 Dorks</span>
           </a>
@@ -250,7 +253,7 @@
       <div class="video-grid">
         {{range .Response.Results}}
           <div class="video-card" data-clusters="{{.Clusters}}">
-            <div class="video-thumb-wrap" data-video-url="{{.VideoURL}}" data-video-title="{{.Title}}">
+            <div class="video-thumb-wrap btn-play-trigger" data-video-url="{{.VideoURL}}" data-video-title="{{.Title}}" data-url="{{.VideoURL}}" data-title="{{.Title}}" style="cursor:pointer;" title="Click to play in Floating Player">
               <img src="/proxy/image?url={{urlquery .Thumbnail}}" alt="{{.Title}}" class="video-thumb" loading="lazy" onerror="this.onerror=null; this.src='{{.Thumbnail}}';" />
               {{if .Duration}}
                 <span class="video-duration">{{.Duration}}</span>
@@ -261,7 +264,10 @@
               <h3 class="video-title">
                 <a href="{{.URL}}" target="{{if $.OpenInNewTab}}_blank{{else}}_self{{end}}" rel="noreferrer noopener">{{.Title}}</a>
               </h3>
-              <div class="video-channel">{{.Author}} &bull; {{.PrettyURL}}</div>
+              <div class="video-channel">
+                {{.Author}} &bull; {{.PrettyURL}}
+                <button type="button" class="btn-play-trigger" data-url="{{.VideoURL}}" data-title="{{.Title}}" style="margin-left:0.5rem;">▶️ Mini Player</button>
+              </div>
             </div>
           </div>
         {{else}}
@@ -323,6 +329,10 @@
                     <img src="/proxy/image?url={{urlquery $fav}}" class="site-favicon" onerror="this.style.display='none'" alt="" />
                   {{end}}
                   <span class="result-url">{{$item.PrettyURL}}</span>
+                  <a href="/reader?url={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="btn-reader-link" title="Open in Clean Distraction-Free Reader Mode">📖 Read</a>
+                  {{if isMediaURL $item.URL}}
+                    <button type="button" class="btn-play-trigger" data-url="{{$item.URL}}" data-title="{{$item.Title}}" title="Stream in Floating Mini-Player">▶️ Play</button>
+                  {{end}}
                   <div class="archive-dropdown-wrap">
                     <button type="button" class="btn-archive-dropdown" title="View historical web archives & snapshots">🕰️ Archive ▾</button>
                     <div class="archive-menu">
@@ -547,6 +557,23 @@
           <!-- Rendered dynamically -->
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Floating Ad-Free Video & Music Player -->
+  <div id="floating-media-player" class="floating-media-player" style="display:none;">
+    <div class="player-header">
+      <div class="player-title-box">
+        <span style="font-size: 0.95rem;">🎬</span>
+        <span class="player-title" id="player-title">Now Playing</span>
+      </div>
+      <div class="player-actions">
+        <button type="button" class="player-btn" id="btn-player-minimize" title="Minimize / Restore">─</button>
+        <button type="button" class="player-btn" id="btn-player-close" title="Close player">✕</button>
+      </div>
+    </div>
+    <div class="player-body" id="player-body">
+      <iframe id="player-iframe" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
     </div>
   </div>
 
