@@ -97,7 +97,7 @@ if [ -d "./.git" ] && [ -f "./cmd/server/main.go" ] && command -v go >/dev/null 
     CGO_ENABLED=0 go build -ldflags="-s -w" -o "${TMP_DIR}/searxgo" ./cmd/server
 # Option B: Download prebuilt binary from GitHub Releases / Raw Repo
 else
-    MAIN_DIST_URL="https://raw.githubusercontent.com/${REPO}/main/dist/${BINARY_NAME}"
+    MAIN_DIST_URL="https://raw.githubusercontent.com/${REPO}/main/dist/${BINARY_NAME}?t=$(date +%s)"
     RELEASE_URL="https://github.com/${REPO}/releases/latest/download/${BINARY_NAME}"
     
     DOWNLOADED=false

@@ -92,7 +92,7 @@ elif [ -f "./cmd/server/main.go" ] && command -v go >/dev/null 2>&1; then
     CGO_ENABLED=0 go build -ldflags="-s -w" -o "${TMP_DIR}/searxgo" ./cmd/server
 else
     echo -e "${YELLOW}➜ Downloading prebuilt binary for ${OS}/${TARGET_ARCH}...${RESET}"
-    MAIN_DIST_URL="https://raw.githubusercontent.com/${REPO}/main/dist/${BINARY_NAME}"
+    MAIN_DIST_URL="https://raw.githubusercontent.com/${REPO}/main/dist/${BINARY_NAME}?t=$(date +%s)"
     RELEASE_URL="https://github.com/${REPO}/releases/latest/download/${BINARY_NAME}"
     
     if command -v curl >/dev/null 2>&1; then
