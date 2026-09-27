@@ -103,7 +103,7 @@ func GenerateMirrors(targetURL string) []MirrorLink {
 var (
 	reScript     = regexp.MustCompile(`(?is)<script.*?>.*?</script>`)
 	reStyle      = regexp.MustCompile(`(?is)<style.*?>.*?</style>`)
-	rePaywallDiv = regexp.MustCompile(`(?is)<(div|aside|section)[^>]*(paywall|subscription|metered|gate|modal|overlay|ad-banner)[^>]*>.*?</\1>`)
+	rePaywallDiv = regexp.MustCompile(`(?is)<(?:div|aside|section)[^>]*(?:paywall|subscription|metered|gate|modal|overlay|ad-banner)[^>]*>.*?</(?:div|aside|section)>`)
 	reTitle      = regexp.MustCompile(`(?i)<title>(.*?)</title>`)
 	reH1         = regexp.MustCompile(`(?i)<h1[^>]*>(.*?)</h1>`)
 	reMetaAuthor = regexp.MustCompile(`(?i)<meta\s+name=["']author["']\s+content=["'](.*?)["']`)
