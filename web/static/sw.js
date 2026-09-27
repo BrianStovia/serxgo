@@ -1,5 +1,5 @@
 // SearXGo Service Worker for PWA & Offline Support
-const CACHE_NAME = 'searxgo-v2';
+const CACHE_NAME = 'searxgo-v4';
 const ASSETS_TO_CACHE = [
   '/',
   '/static/css/main.css',

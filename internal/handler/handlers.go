@@ -299,9 +299,13 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /proxy/image", h.imageProxy.ServeHTTP)
 	mux.HandleFunc("GET /image_proxy", h.imageProxy.ServeHTTP) // SearXNG official alias
 
-	// Static Assets
+	// Static Assets with Cache-Control headers to prevent stale CSS/JS
 	fileServer := http.FileServer(http.FS(web.StaticFS))
-	mux.Handle("GET /static/", fileServer)
+	mux.Handle("GET /static/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-cache, must-revalidate, max-age=0")
+		w.Header().Set("Pragma", "no-cache")
+		fileServer.ServeHTTP(w, r)
+	}))
 }
 
 func (h *Handler) ServeIndex(w http.ResponseWriter, r *http.Request) {

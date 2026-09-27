@@ -2305,9 +2305,40 @@
     }
   }
 
+  // Global Tools Nav Dropdown toggle handler
+  function initNavDropdowns() {
+    document.addEventListener('click', function (e) {
+      const trigger = e.target.closest('.nav-dropdown-trigger');
+      if (trigger) {
+        e.preventDefault();
+        e.stopPropagation();
+        const dropdown = trigger.closest('.nav-dropdown');
+        if (!dropdown) return;
+        const isOpen = dropdown.classList.contains('open');
+        document.querySelectorAll('.nav-dropdown.open').forEach(d => {
+          if (d !== dropdown) d.classList.remove('open');
+        });
+        dropdown.classList.toggle('open', !isOpen);
+        trigger.setAttribute('aria-expanded', !isOpen ? 'true' : 'false');
+        return;
+      }
+      if (!e.target.closest('.nav-dropdown-panel')) {
+        document.querySelectorAll('.nav-dropdown.open').forEach(d => {
+          d.classList.remove('open');
+          const t = d.querySelector('.nav-dropdown-trigger');
+          if (t) t.setAttribute('aria-expanded', 'false');
+        });
+      }
+    });
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', applyGoggles);
+    document.addEventListener('DOMContentLoaded', () => {
+      applyGoggles();
+      initNavDropdowns();
+    });
   } else {
     applyGoggles();
+    initNavDropdowns();
   }
 })();
