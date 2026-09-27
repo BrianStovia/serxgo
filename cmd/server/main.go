@@ -52,6 +52,9 @@ func main() {
 	engine.DefaultRegistry.Register(engine.NewAhmiaEngine())
 	engine.DefaultRegistry.Register(engine.NewWikipediaEngine())
 
+	// Images
+	engine.DefaultRegistry.Register(engine.NewBingImagesEngine())
+
 	// Videos & Media
 	engine.DefaultRegistry.Register(engine.NewYouTubeEngine())
 

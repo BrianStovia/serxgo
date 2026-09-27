@@ -228,14 +228,19 @@
       <!-- IMAGES GRID VIEW -->
       <div class="image-grid">
         {{range .Response.Results}}
+          {{$imgSrc := .Thumbnail}}
+          {{if not $imgSrc}}
+            {{$imgSrc = .ImageURL}}
+          {{end}}
+          {{if $imgSrc}}
           <div class="image-card" data-clusters="{{.Clusters}}">
             <a href="{{.URL}}" target="{{if $.OpenInNewTab}}_blank{{else}}_self{{end}}" rel="noreferrer noopener" class="image-thumb-wrap">
               <img 
-                src="/proxy/image?url={{urlquery .Thumbnail}}" 
+                src="/proxy/image?url={{urlquery $imgSrc}}" 
                 alt="{{.Title}}" 
                 class="image-thumb" 
                 loading="lazy"
-                onerror="this.onerror=null; this.src='{{.Thumbnail}}';"
+                onerror="this.onerror=null; this.src='{{$imgSrc}}';"
               />
             </a>
             <div class="image-info">
@@ -243,6 +248,7 @@
               <div class="image-source">{{.PrettyURL}}</div>
             </div>
           </div>
+          {{end}}
         {{else}}
           <div class="no-results">No images found for your query.</div>
         {{end}}

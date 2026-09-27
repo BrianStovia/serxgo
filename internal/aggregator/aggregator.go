@@ -313,7 +313,14 @@ func (a *Aggregator) Search(ctx context.Context, req models.SearchRequest) (*mod
 			queriedEngines[strings.ToLower(eng.Name())] = true
 		}
 
-		fallbackNames := []string{"brave", "duckduckgo", "qwant", "startpage", "mojeek", "yahoo", "yandex", "swisscows", "ahmia", "google", "bing", "wikipedia"}
+		var fallbackNames []string
+		if req.Category == models.CategoryImages {
+			fallbackNames = []string{"bing_images", "duckduckgo", "qwant", "unsplash", "wikimedia_images", "pexels"}
+		} else if req.Category == models.CategoryVideos {
+			fallbackNames = []string{"youtube", "vimeo", "dailymotion", "bilibili"}
+		} else {
+			fallbackNames = []string{"brave", "duckduckgo", "qwant", "startpage", "mojeek", "yahoo", "yandex", "swisscows", "ahmia", "google", "bing", "wikipedia"}
+		}
 		for _, name := range fallbackNames {
 			if !queriedEngines[name] {
 				if fe, ok := a.registry.GetByName(name); ok {
@@ -360,6 +367,23 @@ func (a *Aggregator) Search(ctx context.Context, req models.SearchRequest) (*mod
 			}
 			fwg.Wait()
 		}
+	}
+
+	// 4.9 Category Integrity: Filter out results that lack media thumbnails in Images mode
+	if req.Category == models.CategoryImages {
+		var validImages []models.SearchResult
+		for _, item := range allRawResults {
+			if item.Thumbnail != "" || item.ImageURL != "" {
+				if item.Thumbnail == "" {
+					item.Thumbnail = item.ImageURL
+				}
+				if item.ImageURL == "" {
+					item.ImageURL = item.Thumbnail
+				}
+				validImages = append(validImages, item)
+			}
+		}
+		allRawResults = validImages
 	}
 
 	// 5. Deduplicate and merge results

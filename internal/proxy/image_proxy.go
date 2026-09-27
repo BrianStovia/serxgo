@@ -132,9 +132,30 @@ func (p *ImageProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		http.Error(w, fmt.Sprintf("upstream returned status %d", resp.StatusCode), resp.StatusCode)
-		return
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
+		if resp.StatusCode == http.StatusForbidden {
+			resp.Body.Close()
+			reqRetry, errRetry := http.NewRequestWithContext(r.Context(), "GET", rawTarget, nil)
+			if errRetry == nil {
+				reqRetry.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
+				reqRetry.Header.Set("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
+				if respRetry, errDo := p.client.Do(reqRetry); errDo == nil && (respRetry.StatusCode == http.StatusOK || respRetry.StatusCode == http.StatusPartialContent) {
+					resp = respRetry
+				} else {
+					if respRetry != nil {
+						respRetry.Body.Close()
+					}
+					http.Error(w, "upstream returned status 403", http.StatusForbidden)
+					return
+				}
+			} else {
+				http.Error(w, "upstream returned status 403", http.StatusForbidden)
+				return
+			}
+		} else {
+			http.Error(w, fmt.Sprintf("upstream returned status %d", resp.StatusCode), resp.StatusCode)
+			return
+		}
 	}
 
 	contentType := resp.Header.Get("Content-Type")
