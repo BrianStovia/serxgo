@@ -35,6 +35,7 @@ import (
 	"searxgo/internal/instant"
 	"searxgo/internal/media"
 	"searxgo/internal/models"
+	"searxgo/internal/newshub"
 	"searxgo/internal/ping"
 	"searxgo/internal/proxy"
 	"searxgo/internal/qr"
@@ -76,6 +77,7 @@ type Handler struct {
 	pingService    *ping.Service
 	bypassService  *bypass.Service
 	mediaService   *media.Service
+	newsHubService *newshub.Service
 }
 
 func NewHandler(cfg *config.Config, agg *aggregator.Aggregator) (*Handler, error) {
@@ -152,6 +154,7 @@ func NewHandler(cfg *config.Config, agg *aggregator.Aggregator) (*Handler, error
 		pingService:    ping.NewService(),
 		bypassService:  bypass.NewService(),
 		mediaService:   media.NewService(),
+		newsHubService: newshub.NewService(),
 	}, nil
 }
 
@@ -265,6 +268,12 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	// QR Code & Wi-Fi Studio
 	mux.HandleFunc("GET /qr", h.ServeQR)
 	mux.HandleFunc("GET /api/qr/wifi", h.ServeAPIQRWiFi)
+
+	// World News Pulse (Live Global News Portals)
+	mux.HandleFunc("GET /news-hub", h.ServeNewsHub)
+	mux.HandleFunc("GET /pulse", h.ServeNewsHub)
+	mux.HandleFunc("GET /worldnews", h.ServeNewsHub)
+	mux.HandleFunc("GET /api/news-hub", h.ServeAPINewsHub)
 
 	// Search Goggles - Domain Block/Boost API
 	mux.HandleFunc("POST /api/goggles/validate", h.ServeAPIGogglesValidate)
@@ -2244,6 +2253,41 @@ func (h *Handler) ServeAPIQRWiFi(w http.ResponseWriter, r *http.Request) {
 		"payload": payload,
 	})
 }
+
+// ==============================================================================
+// 📰 World News Pulse Handlers
+// ==============================================================================
+
+func (h *Handler) ServeNewsHub(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	data := map[string]interface{}{}
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "newshub.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(buf.Bytes())
+}
+
+func (h *Handler) ServeAPINewsHub(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	topic := r.URL.Query().Get("topic")
+	query := r.URL.Query().Get("q")
+
+	articles, err := h.newsHubService.GetNews(r.Context(), topic, query)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"topic":    topic,
+		"count":    len(articles),
+		"articles": articles,
+	})
+}
+
 
 
 

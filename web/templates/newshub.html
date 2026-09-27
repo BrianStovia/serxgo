@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>World News Pulse - Live Global Portals - SearXGo</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📰</text></svg>">
+  <style>
+    .news-hero { text-align: center; margin-bottom: 24px; padding-top: 12px; }
+    .news-ticker-wrap { background: rgba(99, 102, 241, 0.1); border-top: 1px solid rgba(99, 102, 241, 0.2); border-bottom: 1px solid rgba(99, 102, 241, 0.2); padding: 8px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 24px; font-size: 0.85rem; overflow: hidden; border-radius: 8px; }
+    .ticker-badge { background: #ef4444; color: white; padding: 2px 8px; border-radius: 4px; font-weight: 800; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0; }
+    .ticker-content { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); font-weight: 600; }
+    .channel-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 24px; scrollbar-width: none; }
+    .channel-tabs::-webkit-scrollbar { display: none; }
+    .channel-btn { padding: 8px 18px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-muted); font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+    .channel-btn:hover, .channel-btn.active { background: var(--accent-primary); color: white; border-color: var(--accent-primary); }
+    .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+    .news-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s, border-color 0.2s; }
+    .news-card:hover { transform: translateY(-3px); border-color: var(--accent-primary); }
+    .news-card-img { width: 100%; height: 180px; object-fit: cover; background: #161b26; border-bottom: 1px solid var(--border-subtle); }
+    .news-card-body { padding: 18px; display: flex; flex-direction: column; flex: 1; }
+    .news-meta-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 0.78rem; }
+    .source-tag { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; color: var(--accent-primary); }
+    .time-tag { color: var(--text-muted); }
+    .news-card-title { font-size: 1.05rem; font-weight: 700; line-height: 1.4; margin-bottom: 10px; color: var(--text-main); text-decoration: none; }
+    .news-card-title:hover { color: var(--accent-primary); }
+    .news-card-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px; flex: 1; }
+    .news-card-actions { display: flex; gap: 6px; flex-wrap: wrap; border-top: 1px solid var(--border-subtle); padding-top: 12px; }
+    .action-pill { font-size: 0.75rem; padding: 3px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.06); color: var(--text-muted); border: 1px solid var(--border-subtle); transition: all 0.15s; }
+    .action-pill:hover { background: var(--accent-primary); color: white; border-color: var(--accent-primary); }
+    .search-filter-wrap { max-width: 480px; margin: 0 auto 24px; position: relative; }
+    .search-filter-input { width: 100%; padding: 10px 16px 10px 38px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 0.9rem; outline: none; box-sizing: border-box; }
+    .search-filter-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 0.9rem; color: var(--text-muted); pointer-events: none; }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="container header-container" style="display: flex; align-items: center; justify-content: space-between; position:relative; z-index:1000; overflow:visible;">
+      <a href="/" class="brand-logo" style="text-decoration: none; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 1.5rem;">📰</span>
+        <span style="font-size: 1.25rem; font-weight: 800; background: linear-gradient(135deg, #ef4444, #f59e0b); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">World News Pulse</span>
+      </a>
+
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <button type="button" id="btn-refresh" class="nav-btn" title="Refresh Live Feeds">
+          <span>🔄</span>
+          <span>Refresh</span>
+        </button>
+
+        <div class="nav-dropdown" id="tools-dropdown" style="position:relative;">
+          <button type="button" class="nav-btn nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false">
+            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            <span>Tools</span>
+            <svg class="dropdown-chevron" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="nav-dropdown-panel" role="menu">
+            <div class="dropdown-section-label">🔍 Intelligence</div>
+            <a href="/news-hub" class="dropdown-item"><span class="dropdown-item-icon">📰</span><div><div class="dropdown-item-title">World News Pulse</div><div class="dropdown-item-desc">Live global news portals</div></div></a>
+            <a href="/recon" class="dropdown-item"><span class="dropdown-item-icon">🔬</span><div><div class="dropdown-item-title">Domain Recon</div><div class="dropdown-item-desc">Security audit &amp; headers</div></div></a>
+            <a href="/tech" class="dropdown-item"><span class="dropdown-item-icon">⚡</span><div><div class="dropdown-item-title">Tech Inspector</div><div class="dropdown-item-desc">CMS &amp; server stack</div></div></a>
+            <a href="/dns" class="dropdown-item"><span class="dropdown-item-icon">📡</span><div><div class="dropdown-item-title">DNS Propagation</div><div class="dropdown-item-desc">Global DNS resolver check</div></div></a>
+            <a href="/ping" class="dropdown-item"><span class="dropdown-item-icon">⚡</span><div><div class="dropdown-item-title">Is It Down &amp; Ping</div><div class="dropdown-item-desc">Uptime &amp; port scanner</div></div></a>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-section-label">🛠️ Utilities</div>
+            <a href="/bypass" class="dropdown-item"><span class="dropdown-item-icon">🔓</span><div><div class="dropdown-item-title">Paywall Bypass</div><div class="dropdown-item-desc">Clean mirror article reader</div></div></a>
+            <a href="/media" class="dropdown-item"><span class="dropdown-item-icon">📥</span><div><div class="dropdown-item-title">Media Downloader</div><div class="dropdown-item-desc">Ad-free video &amp; audio extractor</div></div></a>
+            <a href="/reader" class="dropdown-item"><span class="dropdown-item-icon">📖</span><div><div class="dropdown-item-title">Reader View</div><div class="dropdown-item-desc">Distraction-free reading</div></div></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="max-width: 1100px; padding: 24px 16px 60px; margin: 0 auto;">
+    <!-- Breaking News Ticker -->
+    <div class="news-ticker-wrap">
+      <span class="ticker-badge">LIVE PULSE</span>
+      <span id="ticker-text" class="ticker-content">Loading breaking world headlines...</span>
+    </div>
+
+    <div class="news-hero">
+      <h1 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 8px;">Live Global News Portals</h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">Real-time curated breaking news from BBC, Reuters, Antara, Al Jazeera, The Verge, CNBC &amp; top world outlets.</p>
+    </div>
+
+    <!-- Keyword Filter -->
+    <div class="search-filter-wrap">
+      <span class="search-filter-icon">🔍</span>
+      <input type="text" id="news-search" class="search-filter-input" placeholder="Filter headlines by keyword (e.g. OpenAI, Gaza, IHSG, Apple)...">
+    </div>
+
+    <!-- Topic Tabs -->
+    <div class="channel-tabs" id="topic-tabs">
+      <button type="button" class="channel-btn active" data-category="all">🌟 All Headlines</button>
+      <button type="button" class="channel-btn" data-category="world">🌍 World News</button>
+      <button type="button" class="channel-btn" data-category="indonesia">🇮🇩 Indonesia Terkini</button>
+      <button type="button" class="channel-btn" data-category="tech">💻 Tech &amp; AI</button>
+      <button type="button" class="channel-btn" data-category="business">📈 Business &amp; Markets</button>
+      <button type="button" class="channel-btn" data-category="science">🔬 Science &amp; Space</button>
+      <button type="button" class="channel-btn" data-category="sports">⚽ Sports</button>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading" style="text-align: center; padding: 60px 0;">
+      <div class="spinner" style="margin: 0 auto 16px;"></div>
+      <p style="color: var(--text-muted);">Syncing live feeds from international news rooms...</p>
+    </div>
+
+    <!-- News Grid -->
+    <div class="news-grid" id="news-grid" style="display: none;"></div>
+
+    <div id="no-articles" style="display: none; text-align: center; padding: 60px 0; color: var(--text-muted);">
+      <h3>No news matching your filter</h3>
+      <p style="margin-top: 6px;">Try clearing the search box or selecting another topic.</p>
+    </div>
+  </main>
+
+  <script>
+    let currentCategory = 'all';
+    let allArticles = [];
+    const newsGrid = document.getElementById('news-grid');
+    const loading = document.getElementById('loading');
+    const noArticles = document.getElementById('no-articles');
+    const searchInput = document.getElementById('news-search');
+    const tickerText = document.getElementById('ticker-text');
+
+    // Topic tab switching
+    document.querySelectorAll('.channel-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.channel-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentCategory = btn.dataset.category;
+        loadNews();
+      });
+    });
+
+    document.getElementById('btn-refresh').addEventListener('click', () => {
+      loadNews(true);
+    });
+
+    searchInput.addEventListener('input', () => {
+      renderArticles();
+    });
+
+    async function loadNews(force = false) {
+      loading.style.display = 'block';
+      newsGrid.style.display = 'none';
+      noArticles.style.display = 'none';
+
+      try {
+        const url = `/api/news-hub?topic=${encodeURIComponent(currentCategory)}${force ? '&refresh=1' : ''}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        loading.style.display = 'none';
+
+        allArticles = data.articles || [];
+        if (allArticles.length > 0) {
+          tickerText.textContent = `${allArticles[0].source}: ${allArticles[0].title}`;
+        }
+        renderArticles();
+      } catch (err) {
+        loading.style.display = 'none';
+        alert('Failed to load news feeds');
+      }
+    }
+
+    function renderArticles() {
+      const q = searchInput.value.trim().toLowerCase();
+      let filtered = allArticles;
+
+      if (q) {
+        filtered = allArticles.filter(a => 
+          (a.title && a.title.toLowerCase().includes(q)) || 
+          (a.description && a.description.toLowerCase().includes(q)) ||
+          (a.source && a.source.toLowerCase().includes(q))
+        );
+      }
+
+      if (filtered.length === 0) {
+        newsGrid.style.display = 'none';
+        noArticles.style.display = 'block';
+        return;
+      }
+
+      noArticles.style.display = 'none';
+      newsGrid.style.display = 'grid';
+      newsGrid.innerHTML = '';
+
+      filtered.forEach(article => {
+        const card = document.createElement('article');
+        card.className = 'news-card';
+
+        let imgHTML = '';
+        if (article.image_url) {
+          imgHTML = `<img src="/proxy/image?url=${encodeURIComponent(article.image_url)}" class="news-card-img" alt="" loading="lazy" onerror="this.style.display='none'">`;
+        }
+
+        card.innerHTML = `
+          ${imgHTML}
+          <div class="news-card-body">
+            <div class="news-meta-row">
+              <span class="source-tag">${article.source_icon} ${escapeHtml(article.source)}</span>
+              <span class="time-tag">⏱️ ${article.time_ago || 'Recent'}</span>
+            </div>
+            <a href="${article.link}" target="_blank" rel="noopener noreferrer" class="news-card-title">${escapeHtml(article.title)}</a>
+            <div class="news-card-desc">${escapeHtml(article.description || '')}</div>
+            
+            <div class="news-card-actions">
+              <a href="/reader?url=${encodeURIComponent(article.link)}" target="_blank" class="action-pill" title="Read clean distraction-free">📖 Reader</a>
+              <a href="/bypass?url=${encodeURIComponent(article.link)}" target="_blank" class="action-pill" title="Bypass paywall & view mirror">🔓 Bypass</a>
+              <a href="/archive?url=${encodeURIComponent(article.link)}" target="_blank" class="action-pill" title="View historical snapshot">🕰️ Archive</a>
+              <a href="${article.link}" target="_blank" rel="noopener noreferrer" class="action-pill" title="Visit original portal">🌐 Source ↗</a>
+            </div>
+          </div>
+        `;
+        newsGrid.appendChild(card);
+      });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    // Auto-refresh feeds every 2 minutes
+    setInterval(() => {
+      loadNews();
+    }, 120000);
+
+    // Initial load
+    loadNews();
+
+    document.querySelectorAll('.nav-dropdown-trigger').forEach(trigger => {
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const parent = trigger.closest('.nav-dropdown');
+        parent.classList.toggle('open');
+      });
+    });
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
+    });
+  </script>
+</body>
+</html>
