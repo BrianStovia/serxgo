@@ -147,6 +147,19 @@ func CalculateSearXNGScore(result *models.SearchResult, query string) float64 {
 			}
 		}
 
+		// 3.55 Music & Audio richness bonus
+		if result.Category == models.CategoryMusic {
+			if result.AudioURL != "" {
+				score += 25.0 // Direct playable stream
+			}
+			if result.Thumbnail != "" {
+				score += 15.0 // Has album artwork
+			}
+			if result.Engine == "deezer" || result.Engine == "itunes" {
+				score += 20.0 // Official verified music metadata
+			}
+		}
+
 		// 3.6 Penalty for low-quality / empty results
 		if strings.TrimSpace(result.Title) == "" || strings.EqualFold(result.Title, "Untitled") {
 			score -= 50.0

@@ -13,7 +13,138 @@ import (
 )
 
 // ==============================================================================
-// 1. Apple iTunes Music & Audio Previews Engine (Free Official High-Res API)
+// 1. Deezer Global Music Engine (Ultra-accurate global catalog, MP3 previews & 500x500 HD art)
+// ==============================================================================
+
+type DeezerEngine struct {
+	client *http.Client
+}
+
+func NewDeezerEngine() *DeezerEngine {
+	return &DeezerEngine{
+		client: NewHTTPClient(6 * time.Second),
+	}
+}
+
+func (e *DeezerEngine) Name() string {
+	return "deezer"
+}
+
+func (e *DeezerEngine) DisplayName() string {
+	return "Deezer Music"
+}
+
+func (e *DeezerEngine) Categories() []models.Category {
+	return []models.Category{models.CategoryMusic}
+}
+
+func (e *DeezerEngine) DefaultOn() bool {
+	return true
+}
+
+func (e *DeezerEngine) Weight() float64 {
+	return 2.5 // Highest priority for exact song and artist matches
+}
+
+func (e *DeezerEngine) About() string {
+	return "Global music streaming catalog with over 90 million songs, HD album art, and direct MP3 audio previews."
+}
+
+func (e *DeezerEngine) Search(ctx context.Context, req models.SearchRequest) ([]models.SearchResult, error) {
+	apiURL := fmt.Sprintf("https://api.deezer.com/search?q=%s&limit=30", url.QueryEscape(req.Query))
+
+	httpReq, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	httpReq.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) SearXGo/1.0")
+
+	resp, err := e.client.Do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("deezer status %d", resp.StatusCode)
+	}
+
+	var data struct {
+		Data []struct {
+			ID       int64  `json:"id"`
+			Title    string `json:"title"`
+			Link     string `json:"link"`
+			Duration int    `json:"duration"`
+			Preview  string `json:"preview"`
+			Artist   struct {
+				Name string `json:"name"`
+			} `json:"artist"`
+			Album struct {
+				Title    string `json:"title"`
+				CoverBig string `json:"cover_big"`
+				CoverXL  string `json:"cover_xl"`
+			} `json:"album"`
+		} `json:"data"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return nil, err
+	}
+
+	var results []models.SearchResult
+	for _, item := range data.Data {
+		if item.Title == "" {
+			continue
+		}
+
+		thumb := item.Album.CoverBig
+		if thumb == "" {
+			thumb = item.Album.CoverXL
+		}
+
+		durationStr := ""
+		if item.Duration > 0 {
+			durationStr = fmt.Sprintf("%d:%02d", item.Duration/60, item.Duration%60)
+		}
+
+		contentParts := []string{fmt.Sprintf("Artist: %s", item.Artist.Name)}
+		if item.Album.Title != "" {
+			contentParts = append(contentParts, fmt.Sprintf("Album: %s", item.Album.Title))
+		}
+		if durationStr != "" {
+			contentParts = append(contentParts, fmt.Sprintf("Duration: %s", durationStr))
+		}
+
+		extra := map[string]string{
+			"Artist": item.Artist.Name,
+			"Album":  item.Album.Title,
+		}
+		if durationStr != "" {
+			extra["Duration"] = durationStr
+		}
+
+		results = append(results, models.SearchResult{
+			Title:     fmt.Sprintf("%s - %s", item.Artist.Name, item.Title),
+			URL:       item.Link,
+			PrettyURL: fmt.Sprintf("deezer.com/track/%d", item.ID),
+			Content:   strings.Join(contentParts, " • "),
+			Engine:    e.Name(),
+			Category:  models.CategoryMusic,
+			Thumbnail: thumb,
+			Author:    item.Artist.Name,
+			AudioURL:  item.Preview, // MP3 preview stream
+			Duration:  durationStr,
+			Extra:     extra,
+			Engines:   []string{e.Name()},
+			Score:     10.0,
+		})
+	}
+
+	return results, nil
+}
+
+// ==============================================================================
+// 2. Apple iTunes Music & Audio Previews Engine (Official Global Database)
 // ==============================================================================
 
 type ITunesEngine struct {
@@ -43,7 +174,7 @@ func (e *ITunesEngine) DefaultOn() bool {
 }
 
 func (e *ITunesEngine) Weight() float64 {
-	return 1.5
+	return 2.0
 }
 
 func (e *ITunesEngine) About() string {
@@ -94,7 +225,6 @@ func (e *ITunesEngine) Search(ctx context.Context, req models.SearchRequest) ([]
 			continue
 		}
 
-		// Convert artwork to crystal-clear 400x400 HD
 		thumb := strings.Replace(item.ArtworkURL100, "100x100bb.jpg", "400x400bb.jpg", 1)
 		if thumb == "" {
 			thumb = item.ArtworkURL100
@@ -103,11 +233,6 @@ func (e *ITunesEngine) Search(ctx context.Context, req models.SearchRequest) ([]
 		genre := item.PrimaryGenreName
 		if genre == "" {
 			genre = "Music"
-		}
-
-		year := ""
-		if len(item.ReleaseDate) >= 4 {
-			year = item.ReleaseDate[:4]
 		}
 
 		durationStr := ""
@@ -120,10 +245,9 @@ func (e *ITunesEngine) Search(ctx context.Context, req models.SearchRequest) ([]
 		if item.CollectionName != "" {
 			contentParts = append(contentParts, fmt.Sprintf("Album: %s", item.CollectionName))
 		}
-		if year != "" {
-			contentParts = append(contentParts, fmt.Sprintf("Released: %s", year))
+		if genre != "" {
+			contentParts = append(contentParts, fmt.Sprintf("Genre: %s", genre))
 		}
-		contentParts = append(contentParts, fmt.Sprintf("Genre: %s", genre))
 
 		targetWebURL := item.TrackViewURL
 		if targetWebURL == "" {
@@ -147,118 +271,11 @@ func (e *ITunesEngine) Search(ctx context.Context, req models.SearchRequest) ([]
 			Category:  models.CategoryMusic,
 			Thumbnail: thumb,
 			Author:    item.ArtistName,
-			AudioURL:  item.PreviewURL, // Direct playable high quality AAC audio stream
+			AudioURL:  item.PreviewURL, // AAC stream
 			Duration:  durationStr,
 			Extra:     extra,
 			Engines:   []string{e.Name()},
-		})
-	}
-
-	return results, nil
-}
-
-// ==============================================================================
-// 2. Radio Browser Global Streaming Radio Engine (40,000+ Stations)
-// ==============================================================================
-
-type RadioBrowserEngine struct {
-	client *http.Client
-}
-
-func NewRadioBrowserEngine() *RadioBrowserEngine {
-	return &RadioBrowserEngine{
-		client: NewHTTPClient(6 * time.Second),
-	}
-}
-
-func (e *RadioBrowserEngine) Name() string {
-	return "radio"
-}
-
-func (e *RadioBrowserEngine) DisplayName() string {
-	return "Radio Global"
-}
-
-func (e *RadioBrowserEngine) Categories() []models.Category {
-	return []models.Category{models.CategoryMusic}
-}
-
-func (e *RadioBrowserEngine) DefaultOn() bool {
-	return true
-}
-
-func (e *RadioBrowserEngine) Weight() float64 {
-	return 1.2
-}
-
-func (e *RadioBrowserEngine) About() string {
-	return "Community-driven database of 40,000+ online radio stations worldwide with direct audio streams."
-}
-
-func (e *RadioBrowserEngine) Search(ctx context.Context, req models.SearchRequest) ([]models.SearchResult, error) {
-	apiURL := fmt.Sprintf("https://de1.api.radio-browser.info/json/stations/byname/%s?limit=20", url.QueryEscape(req.Query))
-
-	httpReq, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
-	if err != nil {
-		return nil, err
-	}
-	httpReq.Header.Set("User-Agent", "SearXGo/1.0")
-
-	resp, err := e.client.Do(httpReq)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("radio-browser status %d", resp.StatusCode)
-	}
-
-	var stations []struct {
-		Name        string `json:"name"`
-		URLResolved string `json:"url_resolved"`
-		Homepage    string `json:"homepage"`
-		Favicon     string `json:"favicon"`
-		Country     string `json:"country"`
-		Tags        string `json:"tags"`
-		Bitrate     int    `json:"bitrate"`
-		Codec       string `json:"codec"`
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&stations); err != nil {
-		return nil, err
-	}
-
-	var results []models.SearchResult
-	for _, st := range stations {
-		if st.Name == "" || st.URLResolved == "" {
-			continue
-		}
-
-		infoParts := []string{"Live Radio Broadcast"}
-		if st.Country != "" {
-			infoParts = append(infoParts, st.Country)
-		}
-		if st.Codec != "" {
-			infoParts = append(infoParts, fmt.Sprintf("%s %dkbps", strings.ToUpper(st.Codec), st.Bitrate))
-		}
-
-		webURL := st.Homepage
-		if webURL == "" {
-			webURL = st.URLResolved
-		}
-
-		results = append(results, models.SearchResult{
-			Title:     fmt.Sprintf("📻 %s", strings.TrimSpace(st.Name)),
-			URL:       webURL,
-			PrettyURL: fmt.Sprintf("radio-browser.info • %s", st.Country),
-			Content:   strings.Join(infoParts, " • "),
-			Engine:    e.Name(),
-			Category:  models.CategoryMusic,
-			Thumbnail: st.Favicon,
-			Author:    st.Country,
-			AudioURL:  st.URLResolved, // Direct live radio stream
-			Engines:   []string{e.Name()},
+			Score:     9.0,
 		})
 	}
 
@@ -296,7 +313,7 @@ func (e *GeniusEngine) DefaultOn() bool {
 }
 
 func (e *GeniusEngine) Weight() float64 {
-	return 1.1
+	return 1.3
 }
 
 func (e *GeniusEngine) About() string {
@@ -364,14 +381,133 @@ func (e *GeniusEngine) Search(ctx context.Context, req models.SearchRequest) ([]
 				Title:     fmt.Sprintf("📜 %s - %s (Lyrics)", res.ArtistNames, res.Title),
 				URL:       res.URL,
 				PrettyURL: fmt.Sprintf("genius.com%s", res.URL),
-				Content:   fmt.Sprintf("View verified song lyrics, annotations, and meanings for '%s' by %s.", res.Title, res.ArtistNames),
+				Content:   fmt.Sprintf("Verified song lyrics & annotations for '%s' by %s on Genius.", res.Title, res.ArtistNames),
 				Engine:    e.Name(),
 				Category:  models.CategoryMusic,
 				Thumbnail: thumb,
 				Author:    res.ArtistNames,
 				Engines:   []string{e.Name()},
+				Score:     6.0,
 			})
 		}
+	}
+
+	return results, nil
+}
+
+// ==============================================================================
+// 4. Radio Browser Global Streaming Radio Engine
+// ==============================================================================
+
+type RadioBrowserEngine struct {
+	client *http.Client
+}
+
+func NewRadioBrowserEngine() *RadioBrowserEngine {
+	return &RadioBrowserEngine{
+		client: NewHTTPClient(6 * time.Second),
+	}
+}
+
+func (e *RadioBrowserEngine) Name() string {
+	return "radio"
+}
+
+func (e *RadioBrowserEngine) DisplayName() string {
+	return "Radio Global"
+}
+
+func (e *RadioBrowserEngine) Categories() []models.Category {
+	return []models.Category{models.CategoryMusic}
+}
+
+func (e *RadioBrowserEngine) DefaultOn() bool {
+	return true
+}
+
+func (e *RadioBrowserEngine) Weight() float64 {
+	return 0.8
+}
+
+func (e *RadioBrowserEngine) About() string {
+	return "Community-driven database of 40,000+ live radio stations worldwide."
+}
+
+func (e *RadioBrowserEngine) Search(ctx context.Context, req models.SearchRequest) ([]models.SearchResult, error) {
+	lowerQ := strings.ToLower(req.Query)
+	isRadioQuery := strings.Contains(lowerQ, "radio") || strings.Contains(lowerQ, "fm") || strings.Contains(lowerQ, "stream") || strings.Contains(lowerQ, "broadcast")
+
+	// Only query Radio Browser if query mentions radio, or limit to top 3 so it never drowns out actual songs
+	limit := 3
+	if isRadioQuery {
+		limit = 20
+	}
+
+	apiURL := fmt.Sprintf("https://de1.api.radio-browser.info/json/stations/byname/%s?limit=%d", url.QueryEscape(req.Query), limit)
+
+	httpReq, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	httpReq.Header.Set("User-Agent", "SearXGo/1.0")
+
+	resp, err := e.client.Do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("radio-browser status %d", resp.StatusCode)
+	}
+
+	var stations []struct {
+		Name        string `json:"name"`
+		URLResolved string `json:"url_resolved"`
+		Homepage    string `json:"homepage"`
+		Favicon     string `json:"favicon"`
+		Country     string `json:"country"`
+		Tags        string `json:"tags"`
+		Bitrate     int    `json:"bitrate"`
+		Codec       string `json:"codec"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&stations); err != nil {
+		return nil, err
+	}
+
+	var results []models.SearchResult
+	for _, st := range stations {
+		if st.Name == "" || st.URLResolved == "" {
+			continue
+		}
+
+		infoParts := []string{"Live Radio Broadcast"}
+		if st.Country != "" {
+			infoParts = append(infoParts, st.Country)
+		}
+		if st.Codec != "" {
+			infoParts = append(infoParts, fmt.Sprintf("%s %dkbps", strings.ToUpper(st.Codec), st.Bitrate))
+		}
+
+		webURL := st.Homepage
+		if webURL == "" {
+			webURL = st.URLResolved
+		}
+
+		results = append(results, models.SearchResult{
+			Title:     fmt.Sprintf("📻 %s (Live Radio)", strings.TrimSpace(st.Name)),
+			URL:       webURL,
+			PrettyURL: fmt.Sprintf("radio-browser.info • %s", st.Country),
+			Content:   strings.Join(infoParts, " • "),
+			Engine:    e.Name(),
+			Category:  models.CategoryMusic,
+			Thumbnail: st.Favicon,
+			Author:    st.Country,
+			AudioURL:  st.URLResolved,
+			Engines:   []string{e.Name()},
+			Score:     5.0,
+		})
 	}
 
 	return results, nil

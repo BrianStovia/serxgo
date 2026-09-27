@@ -78,8 +78,9 @@ func main() {
 	engine.DefaultRegistry.Register(engine.NewInternetArchiveEngine())
 
 	// Music & Lyrics
-	engine.DefaultRegistry.Register(engine.NewGeniusEngine())
+	engine.DefaultRegistry.Register(engine.NewDeezerEngine())
 	engine.DefaultRegistry.Register(engine.NewITunesEngine())
+	engine.DefaultRegistry.Register(engine.NewGeniusEngine())
 	engine.DefaultRegistry.Register(engine.NewRadioBrowserEngine())
 
 	// Maps & Geolocation

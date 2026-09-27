@@ -498,10 +498,7 @@
 
                       <!-- Native In-Browser Audio Player for Immediate Listening -->
                       {{if $item.AudioURL}}
-                        <audio controls preload="none" class="music-audio-bar">
-                          <source src="{{$item.AudioURL}}" type="audio/mp4">
-                          <source src="{{$item.AudioURL}}" type="audio/mpeg">
-                          <source src="{{$item.AudioURL}}" type="audio/aac">
+                        <audio controls preload="none" src="{{$item.AudioURL}}" class="music-audio-bar">
                           Your browser does not support audio playback.
                         </audio>
                       {{end}}
