@@ -123,6 +123,13 @@ func (a *Aggregator) Search(ctx context.Context, req models.SearchRequest) (*mod
 	} else {
 		availableEngines = a.registry.GetByCategory(req.Category)
 
+		// 2.0 Music Category Federation (Apple Music + Radio + Genius + YouTube Music)
+		if req.Category == models.CategoryMusic {
+			if ytEngine, ok := a.registry.GetByName("youtube"); ok {
+				availableEngines = append(availableEngines, ytEngine)
+			}
+		}
+
 		// 2.1 Cross-Category Federated Expansion for General Search
 		if req.Category == models.CategoryGeneral || req.CrossCategory {
 			crossEnginesMap := make(map[string]bool)

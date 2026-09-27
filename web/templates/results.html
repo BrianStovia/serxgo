@@ -467,70 +467,121 @@
           <div class="results-list">
             {{range $idx, $item := .Response.Results}}
               <article class="result-item" data-index="{{$idx}}" data-clusters="{{$item.Clusters}}">
-                <div class="result-url-wrap">
-                  {{$fav := faviconURL $.FaviconResolver $item.URL}}
-                  {{if $fav}}
-                    <img src="/proxy/image?url={{urlquery $fav}}" class="site-favicon" onerror="this.style.display='none'" alt="" />
-                  {{end}}
-                  <span class="result-url">{{$item.PrettyURL}}</span>
-                  <a href="/reader?url={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="btn-reader-link" title="Open in Clean Distraction-Free Reader Mode">📖 Read</a>
-                  <a href="/bypass?url={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="btn-reader-link" style="background:rgba(245, 158, 11, 0.15); border-color:rgba(245, 158, 11, 0.3); color:#f59e0b;" title="Bypass Paywall & Read Clean Mirror">🔓 Bypass</a>
-                  {{if isMediaURL $item.URL}}
-                    <button type="button" class="btn-play-trigger" data-url="{{$item.URL}}" data-title="{{$item.Title}}" title="Stream in Floating Mini-Player">▶️ Play</button>
-                    <a href="/media?url={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="btn-reader-link" style="background:rgba(16, 185, 129, 0.15); border-color:rgba(16, 185, 129, 0.3); color:#10b981;" title="Download Ad-Free MP4 Video">📥 Download</a>
-                  {{end}}
-                  <div class="archive-dropdown-wrap">
-                    <button type="button" class="btn-archive-dropdown" title="View historical web archives & snapshots">🕰️ Archive ▾</button>
-                    <div class="archive-menu">
-                      <a href="/bypass?url={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option" style="font-weight:700; color:#f59e0b;">🔓 Bypass Paywall Mirror</a>
-                      <a href="/archive?url={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option" style="font-weight:700; color:var(--accent-primary);">🕰️ SearXGo Time Machine</a>
-                      <a href="/tech?url={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">⚡ Inspect Tech Stack</a>
-                      <a href="/ping?target={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">⚡ Test Uptime &amp; Port Ping</a>
-                      <a href="https://web.archive.org/web/*/{{$item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">🏛️ Wayback Machine</a>
-                      <a href="https://archive.is/{{$item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">📜 Archive.today</a>
-                      <a href="https://webcache.googleusercontent.com/search?q=cache:{{$item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">⚡ Google Cache</a>
-                      <a href="https://ghostarchive.org/search?term={{$item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">👻 Ghostarchive</a>
+                {{if or (eq $.Response.Category "music") (eq $item.Category "music") $item.AudioURL}}
+                  <!-- Rich Music Card Layout -->
+                  <div class="music-result-wrap">
+                    {{if $item.Thumbnail}}
+                      <img src="/proxy/image?url={{urlquery $item.Thumbnail}}" class="music-card-thumb" alt="Album Art" loading="lazy" onerror="this.style.display='none'" />
+                    {{end}}
+                    <div class="music-result-content">
+                      <div class="result-url-wrap">
+                        <span class="music-badge">🎵 Music</span>
+                        <span class="result-url">{{$item.PrettyURL}}</span>
+                        {{if $item.AudioURL}}
+                          <a href="{{$item.AudioURL}}" target="_blank" download class="btn-reader-link" style="background:rgba(16, 185, 129, 0.15); border-color:rgba(16, 185, 129, 0.3); color:#10b981;" title="Download Audio File">📥 Download Audio</a>
+                        {{end}}
+                        <a href="/media?url={{urlquery $item.URL}}" target="_blank" class="btn-reader-link" title="Extract with Media Studio">📥 Media DL</a>
+                        <button type="button" class="btn-bookmark" data-url="{{$item.URL}}" data-title="{{$item.Title}}" data-engine="{{$item.Engine}}" title="Pin / Bookmark this track">🔖</button>
+                      </div>
+
+                      <h2 class="result-title" style="margin-top: 4px;">
+                        <a href="{{$item.URL}}" target="{{if $.OpenInNewTab}}_blank{{else}}_self{{end}}" rel="noreferrer noopener">{{$item.Title}}</a>
+                      </h2>
+
+                      {{if $item.Author}}
+                        <div class="music-artist-tag">🎤 {{$item.Author}} {{if $item.Duration}}• ⏱️ {{$item.Duration}}{{end}}</div>
+                      {{end}}
+
+                      <div class="result-snippet">
+                        {{$item.Content}}
+                      </div>
+
+                      <!-- Native In-Browser Audio Player for Immediate Listening -->
+                      {{if $item.AudioURL}}
+                        <audio controls preload="none" class="music-audio-bar">
+                          <source src="{{$item.AudioURL}}" type="audio/mp4">
+                          <source src="{{$item.AudioURL}}" type="audio/mpeg">
+                          <source src="{{$item.AudioURL}}" type="audio/aac">
+                          Your browser does not support audio playback.
+                        </audio>
+                      {{end}}
+
+                      <div class="result-footer">
+                        <div class="result-badges">
+                          {{range $item.Engines}}
+                            <span class="engine-badge">{{.}}</span>
+                          {{end}}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  {{if $item.MagnetURL}}
-                    <button type="button" class="btn-magnet" data-magnet="{{$item.MagnetURL}}" title="Copy Magnet Link">🧲 Copy Magnet</button>
-                  {{end}}
-                  <button type="button" class="btn-bookmark" data-url="{{$item.URL}}" data-title="{{$item.Title}}" data-engine="{{$item.Engine}}" title="Pin / Bookmark this result">🔖</button>
-                </div>
-                <h2 class="result-title">
-                  <a href="{{$item.URL}}" target="{{if $.OpenInNewTab}}_blank{{else}}_self{{end}}" rel="noreferrer noopener">{{$item.Title}}</a>
-                </h2>
-                <div class="result-snippet">
-                  {{$item.Content}}
-                </div>
-                <div class="result-footer">
-                  <div class="result-badges">
-                    {{range $item.Engines}}
-                      <span class="engine-badge">{{.}}</span>
+                {{else}}
+                  <!-- Standard Search Result Layout -->
+                  <div class="result-url-wrap">
+                    {{$fav := faviconURL $.FaviconResolver $item.URL}}
+                    {{if $fav}}
+                      <img src="/proxy/image?url={{urlquery $fav}}" class="site-favicon" onerror="this.style.display='none'" alt="" />
                     {{end}}
+                    <span class="result-url">{{$item.PrettyURL}}</span>
+                    <a href="/reader?url={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="btn-reader-link" title="Open in Clean Distraction-Free Reader Mode">📖 Read</a>
+                    <a href="/bypass?url={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="btn-reader-link" style="background:rgba(245, 158, 11, 0.15); border-color:rgba(245, 158, 11, 0.3); color:#f59e0b;" title="Bypass Paywall & Read Clean Mirror">🔓 Bypass</a>
+                    {{if isMediaURL $item.URL}}
+                      <button type="button" class="btn-play-trigger" data-url="{{$item.URL}}" data-title="{{$item.Title}}" title="Stream in Floating Mini-Player">▶️ Play</button>
+                      <a href="/media?url={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="btn-reader-link" style="background:rgba(16, 185, 129, 0.15); border-color:rgba(16, 185, 129, 0.3); color:#10b981;" title="Download Ad-Free MP4 Video">📥 Download</a>
+                    {{end}}
+                    <div class="archive-dropdown-wrap">
+                      <button type="button" class="btn-archive-dropdown" title="View historical web archives & snapshots">🕰️ Archive ▾</button>
+                      <div class="archive-menu">
+                        <a href="/bypass?url={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option" style="font-weight:700; color:#f59e0b;">🔓 Bypass Paywall Mirror</a>
+                        <a href="/archive?url={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option" style="font-weight:700; color:var(--accent-primary);">🕰️ SearXGo Time Machine</a>
+                        <a href="/tech?url={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">⚡ Inspect Tech Stack</a>
+                        <a href="/ping?target={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">⚡ Test Uptime &amp; Port Ping</a>
+                        <a href="https://web.archive.org/web/*/{{$item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">🏛️ Wayback Machine</a>
+                        <a href="https://archive.is/{{$item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">📜 Archive.today</a>
+                        <a href="https://webcache.googleusercontent.com/search?q=cache:{{$item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">⚡ Google Cache</a>
+                        <a href="https://ghostarchive.org/search?term={{$item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">👻 Ghostarchive</a>
+                      </div>
+                    </div>
+                    {{if $item.MagnetURL}}
+                      <button type="button" class="btn-magnet" data-magnet="{{$item.MagnetURL}}" title="Copy Magnet Link">🧲 Copy Magnet</button>
+                    {{end}}
+                    <button type="button" class="btn-bookmark" data-url="{{$item.URL}}" data-title="{{$item.Title}}" data-engine="{{$item.Engine}}" title="Pin / Bookmark this result">🔖</button>
+                  </div>
+                  <h2 class="result-title">
+                    <a href="{{$item.URL}}" target="{{if $.OpenInNewTab}}_blank{{else}}_self{{end}}" rel="noreferrer noopener">{{$item.Title}}</a>
+                  </h2>
+                  <div class="result-snippet">
+                    {{$item.Content}}
+                  </div>
+                  <div class="result-footer">
+                    <div class="result-badges">
+                      {{range $item.Engines}}
+                        <span class="engine-badge">{{.}}</span>
+                      {{end}}
 
-                    {{if $item.FileSize}}
-                      <span class="extra-pill">📦 {{$item.FileSize}}</span>
-                    {{end}}
-                    {{if gt $item.Seeders 0}}
-                      <span class="extra-pill" style="color:var(--accent-emerald);">▲ {{$item.Seeders}} seeds</span>
-                    {{end}}
+                      {{if $item.FileSize}}
+                        <span class="extra-pill">📦 {{$item.FileSize}}</span>
+                      {{end}}
+                      {{if gt $item.Seeders 0}}
+                        <span class="extra-pill" style="color:var(--accent-emerald);">▲ {{$item.Seeders}} seeds</span>
+                      {{end}}
 
-                    {{if $item.Extra}}
-                      <span class="result-extra">
-                        {{range $k, $v := $item.Extra}}
-                          {{if ne $k "Magnet"}}
-                            <span class="extra-pill"><strong>{{$k}}:</strong> {{$v}}</span>
+                      {{if $item.Extra}}
+                        <span class="result-extra">
+                          {{range $k, $v := $item.Extra}}
+                            {{if ne $k "Magnet"}}
+                              <span class="extra-pill"><strong>{{$k}}:</strong> {{$v}}</span>
+                            {{end}}
                           {{end}}
-                        {{end}}
-                      </span>
+                        </span>
+                      {{end}}
+                    </div>
+
+                    {{if $item.Author}}
+                      <span class="result-author">By {{$item.Author}}</span>
                     {{end}}
                   </div>
-
-                  {{if $item.Author}}
-                    <span class="result-author">By {{$item.Author}}</span>
-                  {{end}}
-                </div>
+                {{end}}
               </article>
             {{else}}
               <div class="no-results" style="padding: 3rem 0; text-align: center; color: var(--text-muted);">
