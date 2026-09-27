@@ -101,6 +101,20 @@
                   <div class="dropdown-item-desc">Historical snapshots &amp; dead link revive</div>
                 </div>
               </a>
+              <a href="/dns" class="dropdown-item" role="menuitem">
+                <span class="dropdown-item-icon">📡</span>
+                <div>
+                  <div class="dropdown-item-title">DNS Propagation</div>
+                  <div class="dropdown-item-desc">Global DNS resolver check</div>
+                </div>
+              </a>
+              <a href="/ping" class="dropdown-item" role="menuitem">
+                <span class="dropdown-item-icon">⚡</span>
+                <div>
+                  <div class="dropdown-item-title">Is It Down &amp; Ping</div>
+                  <div class="dropdown-item-desc">Uptime &amp; port scanner</div>
+                </div>
+              </a>
               <a href="/threat" class="dropdown-item" role="menuitem">
                 <span class="dropdown-item-icon">🛡️</span>
                 <div>
@@ -125,6 +139,34 @@
 
               <div class="dropdown-divider"></div>
               <div class="dropdown-section-label">🛠️ Utilities</div>
+              <a href="/bypass" class="dropdown-item" role="menuitem">
+                <span class="dropdown-item-icon">🔓</span>
+                <div>
+                  <div class="dropdown-item-title">Paywall Bypass</div>
+                  <div class="dropdown-item-desc">Clean mirror article reader</div>
+                </div>
+              </a>
+              <a href="/media" class="dropdown-item" role="menuitem">
+                <span class="dropdown-item-icon">📥</span>
+                <div>
+                  <div class="dropdown-item-title">Media Downloader</div>
+                  <div class="dropdown-item-desc">Ad-free video &amp; audio extractor</div>
+                </div>
+              </a>
+              <a href="/qr" class="dropdown-item" role="menuitem">
+                <span class="dropdown-item-icon">📱</span>
+                <div>
+                  <div class="dropdown-item-title">QR &amp; WiFi Studio</div>
+                  <div class="dropdown-item-desc">Generator &amp; scanner</div>
+                </div>
+              </a>
+              <a href="/reader" class="dropdown-item" role="menuitem">
+                <span class="dropdown-item-icon">📖</span>
+                <div>
+                  <div class="dropdown-item-title">Reader View</div>
+                  <div class="dropdown-item-desc">Clean distraction-free reading</div>
+                </div>
+              </a>
               <a href="/graph" class="dropdown-item" role="menuitem">
                 <span class="dropdown-item-icon">🕸️</span>
                 <div>
@@ -137,13 +179,6 @@
                 <div>
                   <div class="dropdown-item-title">EXIF Scrubber</div>
                   <div class="dropdown-item-desc">Strip metadata from images</div>
-                </div>
-              </a>
-              <a href="/reader" class="dropdown-item" role="menuitem">
-                <span class="dropdown-item-icon">📖</span>
-                <div>
-                  <div class="dropdown-item-title">Reader View</div>
-                  <div class="dropdown-item-desc">Clean distraction-free reading</div>
                 </div>
               </a>
               <a href="/split?q={{urlquery .Response.Query}}" class="dropdown-item" role="menuitem">
@@ -439,14 +474,18 @@
                   {{end}}
                   <span class="result-url">{{$item.PrettyURL}}</span>
                   <a href="/reader?url={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="btn-reader-link" title="Open in Clean Distraction-Free Reader Mode">📖 Read</a>
+                  <a href="/bypass?url={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="btn-reader-link" style="background:rgba(245, 158, 11, 0.15); border-color:rgba(245, 158, 11, 0.3); color:#f59e0b;" title="Bypass Paywall & Read Clean Mirror">🔓 Bypass</a>
                   {{if isMediaURL $item.URL}}
                     <button type="button" class="btn-play-trigger" data-url="{{$item.URL}}" data-title="{{$item.Title}}" title="Stream in Floating Mini-Player">▶️ Play</button>
+                    <a href="/media?url={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="btn-reader-link" style="background:rgba(16, 185, 129, 0.15); border-color:rgba(16, 185, 129, 0.3); color:#10b981;" title="Download Ad-Free MP4 Video">📥 Download</a>
                   {{end}}
                   <div class="archive-dropdown-wrap">
                     <button type="button" class="btn-archive-dropdown" title="View historical web archives & snapshots">🕰️ Archive ▾</button>
                     <div class="archive-menu">
+                      <a href="/bypass?url={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option" style="font-weight:700; color:#f59e0b;">🔓 Bypass Paywall Mirror</a>
                       <a href="/archive?url={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option" style="font-weight:700; color:var(--accent-primary);">🕰️ SearXGo Time Machine</a>
                       <a href="/tech?url={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">⚡ Inspect Tech Stack</a>
+                      <a href="/ping?target={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">⚡ Test Uptime &amp; Port Ping</a>
                       <a href="https://web.archive.org/web/*/{{$item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">🏛️ Wayback Machine</a>
                       <a href="https://archive.is/{{$item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">📜 Archive.today</a>
                       <a href="https://webcache.googleusercontent.com/search?q=cache:{{$item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">⚡ Google Cache</a>

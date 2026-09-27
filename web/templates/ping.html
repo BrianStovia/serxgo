@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{if .Target}}{{.Target}} - {{end}}Is It Down? &amp; Port Ping Tester - SearXGo</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <style>
+    .verdict-banner { border-radius: 16px; padding: 28px; text-align: center; margin-bottom: 24px; border: 1px solid transparent; transition: all 0.3s; }
+    .verdict-banner.up { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); }
+    .verdict-banner.down { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); }
+    .verdict-banner.degraded { background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); }
+    .verdict-title { font-size: 1.8rem; font-weight: 800; margin-bottom: 6px; }
+    .verdict-banner.up .verdict-title { color: #10b981; }
+    .verdict-banner.down .verdict-title { color: #ef4444; }
+    .verdict-banner.degraded .verdict-title { color: #f59e0b; }
+    .verdict-subtitle { font-size: 1rem; color: var(--text-muted); }
+    .stat-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .stat-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; }
+    .stat-card-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 6px; }
+    .stat-card-val { font-size: 1.3rem; font-weight: 700; color: var(--text-main); }
+    .port-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+    .port-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; display: flex; align-items: center; justify-content: space-between; }
+    .port-badge { font-size: 0.75rem; font-weight: 700; padding: 3px 8px; border-radius: 12px; }
+    .port-badge.open { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .port-badge.closed { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+    .port-badge.timeout { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="container header-container" style="display: flex; align-items: center; justify-content: space-between; position:relative; z-index:1000; overflow:visible;">
+      <a href="/" class="brand-logo" style="text-decoration: none; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 1.5rem;">⚡</span>
+        <span style="font-size: 1.25rem; font-weight: 800; background: linear-gradient(135deg, #10b981, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Is It Down?</span>
+      </a>
+
+      <div class="nav-dropdown" id="tools-dropdown" style="position:relative;">
+        <button type="button" class="nav-btn nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false">
+          <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          <span>Tools</span>
+          <svg class="dropdown-chevron" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="nav-dropdown-panel" role="menu">
+          <div class="dropdown-section-label">🔍 Intelligence</div>
+          <a href="/recon" class="dropdown-item"><span class="dropdown-item-icon">🔬</span><div><div class="dropdown-item-title">Domain Recon</div><div class="dropdown-item-desc">Security audit &amp; headers</div></div></a>
+          <a href="/tech" class="dropdown-item"><span class="dropdown-item-icon">⚡</span><div><div class="dropdown-item-title">Tech Inspector</div><div class="dropdown-item-desc">CMS &amp; server stack</div></div></a>
+          <a href="/subdomains" class="dropdown-item"><span class="dropdown-item-icon">🌐</span><div><div class="dropdown-item-title">Subdomain Finder</div><div class="dropdown-item-desc">CT Log asset discovery</div></div></a>
+          <a href="/dns" class="dropdown-item"><span class="dropdown-item-icon">📡</span><div><div class="dropdown-item-title">DNS Propagation</div><div class="dropdown-item-desc">Global DNS resolver check</div></div></a>
+          <a href="/ping" class="dropdown-item"><span class="dropdown-item-icon">⚡</span><div><div class="dropdown-item-title">Is It Down &amp; Ping</div><div class="dropdown-item-desc">Uptime &amp; port scanner</div></div></a>
+          <a href="/archive" class="dropdown-item"><span class="dropdown-item-icon">🕰️</span><div><div class="dropdown-item-title">Time Machine</div><div class="dropdown-item-desc">Wayback historical snapshot</div></div></a>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-section-label">🛠️ Utilities</div>
+          <a href="/bypass" class="dropdown-item"><span class="dropdown-item-icon">🔓</span><div><div class="dropdown-item-title">Paywall Bypass</div><div class="dropdown-item-desc">Clean mirror article reader</div></div></a>
+          <a href="/media" class="dropdown-item"><span class="dropdown-item-icon">📥</span><div><div class="dropdown-item-title">Media Downloader</div><div class="dropdown-item-desc">Ad-free video &amp; audio extractor</div></div></a>
+          <a href="/qr" class="dropdown-item"><span class="dropdown-item-icon">📱</span><div><div class="dropdown-item-title">QR &amp; WiFi Key</div><div class="dropdown-item-desc">Generator &amp; scanner</div></div></a>
+          <a href="/reader" class="dropdown-item"><span class="dropdown-item-icon">📖</span><div><div class="dropdown-item-title">Reader View</div><div class="dropdown-item-desc">Distraction-free reading</div></div></a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="max-width: 900px; padding: 40px 16px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 28px;">
+      <h1 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 8px;">Website Uptime &amp; Port Tester</h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">Check if a service is down just for you or everyone, measure latency, and scan standard TCP service ports.</p>
+      
+      <form id="ping-form" style="margin-top: 24px; display: flex; gap: 8px; justify-content: center; max-width: 600px; margin-left: auto; margin-right: auto;">
+        <input 
+          type="text" 
+          id="target-input" 
+          placeholder="e.g. reddit.com, api.github.com, 1.1.1.1" 
+          value="{{.Target}}"
+          required
+          style="flex: 1; padding: 12px 18px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 1rem; outline: none;"
+        >
+        <button type="submit" class="btn-search" style="padding: 0 24px; border-radius: 12px; background: #10b981; color: white; border: none; font-weight: 600; cursor: pointer;">
+          Test Status
+        </button>
+      </form>
+    </div>
+
+    <div id="loading" style="display: none; text-align: center; padding: 40px 0;">
+      <div class="spinner" style="margin: 0 auto 16px;"></div>
+      <p style="color: var(--text-muted);">Probing host HTTP response, SSL certificate &amp; network ports...</p>
+    </div>
+
+    <div id="results" style="display: none;">
+      <!-- Verdict Banner -->
+      <div id="verdict-banner" class="verdict-banner up">
+        <div id="verdict-title" class="verdict-title">🟢 It's Just You!</div>
+        <div id="verdict-subtitle" class="verdict-subtitle">reddit.com is online and responding normally from our global node.</div>
+      </div>
+
+      <!-- Quick Metrics -->
+      <div class="stat-cards-grid">
+        <div class="stat-card">
+          <div class="stat-card-label">HTTP Status</div>
+          <div class="stat-card-val" id="val-status">200 OK</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Latency / Ping</div>
+          <div class="stat-card-val" id="val-latency">42 ms</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">IP Address</div>
+          <div class="stat-card-val" id="val-ip" style="font-size: 1.05rem; font-family: ui-monospace, monospace;">151.101.1.140</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Server Header</div>
+          <div class="stat-card-val" id="val-server" style="font-size: 1.05rem;">cloudflare</div>
+        </div>
+      </div>
+
+      <!-- SSL Certificate Info -->
+      <div id="ssl-section" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+        <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 12px; display:flex; align-items:center; gap:8px;">
+          <span>🔒</span>
+          <span>SSL / TLS Certificate Health</span>
+        </h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; font-size: 0.9rem;">
+          <div><span style="color:var(--text-muted);">Issuer:</span> <strong id="ssl-issuer">-</strong></div>
+          <div><span style="color:var(--text-muted);">Expires:</span> <strong id="ssl-expires">-</strong></div>
+          <div><span style="color:var(--text-muted);">Validity:</span> <span id="ssl-days" class="port-badge open">Valid</span></div>
+        </div>
+      </div>
+
+      <!-- Common Ports Grid -->
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px;">
+        <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 14px; display:flex; align-items:center; gap:8px;">
+          <span>🔌</span>
+          <span>Port Reachability Scan</span>
+        </h3>
+        <div class="port-grid" id="port-grid"></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const targetInput = document.getElementById('target-input');
+    const form = document.getElementById('ping-form');
+    const loading = document.getElementById('loading');
+    const results = document.getElementById('results');
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      runPing();
+    });
+
+    async function runPing() {
+      const target = targetInput.value.trim();
+      if (!target) return;
+
+      loading.style.display = 'block';
+      results.style.display = 'none';
+
+      try {
+        const res = await fetch(`/api/ping?target=${encodeURIComponent(target)}`);
+        const data = await res.json();
+        loading.style.display = 'none';
+
+        if (data.error) {
+          alert('Error: ' + data.error);
+          return;
+        }
+
+        renderPing(data);
+      } catch (err) {
+        loading.style.display = 'none';
+        alert('Failed to connect to Ping API');
+      }
+    }
+
+    function renderPing(data) {
+      results.style.display = 'block';
+      const banner = document.getElementById('verdict-banner');
+      const vTitle = document.getElementById('verdict-title');
+      const vSub = document.getElementById('verdict-subtitle');
+
+      banner.className = 'verdict-banner ' + data.verdict.toLowerCase();
+      if (data.verdict === 'UP') {
+        vTitle.textContent = "🟢 It's Just You!";
+        vSub.textContent = `${data.host} is UP and responding normally (HTTP ${data.http_status_code || 200}) in ${data.http_latency_ms} ms.`;
+      } else if (data.verdict === 'DEGRADED') {
+        vTitle.textContent = "⚠️ Degraded / Slow";
+        vSub.textContent = `${data.host} responded with issues or HTTP ${data.http_status_code}. Response time: ${data.http_latency_ms} ms.`;
+      } else {
+        vTitle.textContent = "🔴 It's Down For Everyone!";
+        vSub.textContent = `${data.host} is completely unreachable from our server. ${data.error_message || 'Connection timed out.'}`;
+      }
+
+      document.getElementById('val-status').textContent = data.http_status_text || (data.is_up ? 'Online' : 'Unreachable');
+      document.getElementById('val-latency').textContent = data.http_latency_ms + ' ms';
+      document.getElementById('val-ip').textContent = data.resolved_ip || 'N/A';
+      document.getElementById('val-server').textContent = data.server_header || 'Hidden / Custom';
+
+      // SSL
+      const sslSec = document.getElementById('ssl-section');
+      if (data.tls_cert) {
+        sslSec.style.display = 'block';
+        document.getElementById('ssl-issuer').textContent = data.tls_cert.issuer || 'N/A';
+        document.getElementById('ssl-expires').textContent = data.tls_cert.valid_to || 'N/A';
+        const badge = document.getElementById('ssl-days');
+        if (data.tls_cert.is_expired) {
+          badge.className = 'port-badge closed';
+          badge.textContent = 'EXPIRED';
+        } else {
+          badge.className = 'port-badge open';
+          badge.textContent = `${data.tls_cert.days_remaining} days remaining`;
+        }
+      } else {
+        sslSec.style.display = 'none';
+      }
+
+      // Ports
+      const pGrid = document.getElementById('port-grid');
+      pGrid.innerHTML = '';
+      if (data.port_results) {
+        data.port_results.forEach(p => {
+          const div = document.createElement('div');
+          div.className = 'port-card';
+          let bClass = 'closed';
+          if (p.is_open) bClass = 'open';
+          else if (p.status === 'TIMEOUT') bClass = 'timeout';
+
+          div.innerHTML = `
+            <div>
+              <div style="font-weight:700; font-size:0.9rem;">${p.port} (${p.service})</div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">${p.latency_ms} ms</div>
+            </div>
+            <span class="port-badge ${bClass}">${p.status}</span>
+          `;
+          pGrid.appendChild(div);
+        });
+      }
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const qTarget = urlParams.get('target');
+    if (qTarget) {
+      targetInput.value = qTarget;
+      runPing();
+    }
+
+    document.querySelectorAll('.nav-dropdown-trigger').forEach(trigger => {
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const parent = trigger.closest('.nav-dropdown');
+        parent.classList.toggle('open');
+      });
+    });
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
+    });
+  </script>
+</body>
+</html>

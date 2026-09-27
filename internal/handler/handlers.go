@@ -27,12 +27,17 @@ import (
 	"searxgo/internal/aggregator"
 	"searxgo/internal/archive"
 	"searxgo/internal/bangs"
+	"searxgo/internal/bypass"
 	"searxgo/internal/config"
+	"searxgo/internal/dns"
 	"searxgo/internal/dorks"
 	"searxgo/internal/engine"
 	"searxgo/internal/instant"
+	"searxgo/internal/media"
 	"searxgo/internal/models"
+	"searxgo/internal/ping"
 	"searxgo/internal/proxy"
+	"searxgo/internal/qr"
 	"searxgo/internal/reader"
 	"searxgo/internal/recon"
 	"searxgo/internal/scrub"
@@ -67,6 +72,10 @@ type Handler struct {
 	archiveClient  *archive.ArchiveClient
 	techInspector  *tech.Inspector
 	subFinder      *subdomains.Finder
+	dnsService     *dns.Service
+	pingService    *ping.Service
+	bypassService  *bypass.Service
+	mediaService   *media.Service
 }
 
 func NewHandler(cfg *config.Config, agg *aggregator.Aggregator) (*Handler, error) {
@@ -135,6 +144,10 @@ func NewHandler(cfg *config.Config, agg *aggregator.Aggregator) (*Handler, error
 		archiveClient:  archive.NewArchiveClient(),
 		techInspector:  tech.NewInspector(),
 		subFinder:      subdomains.NewFinder(),
+		dnsService:     dns.NewService(),
+		pingService:    ping.NewService(),
+		bypassService:  bypass.NewService(),
+		mediaService:   media.NewService(),
 	}, nil
 }
 
@@ -227,6 +240,27 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	// Subdomain Enumeration via CT Logs
 	mux.HandleFunc("GET /subdomains", h.ServeSubdomains)
 	mux.HandleFunc("GET /api/subdomains", h.ServeAPISubdomains)
+
+	// Global DNS Propagation & Records
+	mux.HandleFunc("GET /dns", h.ServeDNS)
+	mux.HandleFunc("GET /api/dns", h.ServeAPIDNS)
+
+	// Is It Down & Port Ping Tester
+	mux.HandleFunc("GET /ping", h.ServePing)
+	mux.HandleFunc("GET /uptime", h.ServePing)
+	mux.HandleFunc("GET /api/ping", h.ServeAPIPing)
+
+	// Paywall Bypass & Clean Mirror
+	mux.HandleFunc("GET /bypass", h.ServeBypass)
+	mux.HandleFunc("GET /api/bypass", h.ServeAPIBypass)
+
+	// Ad-Free Media & Video Downloader
+	mux.HandleFunc("GET /media", h.ServeMedia)
+	mux.HandleFunc("GET /api/media", h.ServeAPIMedia)
+
+	// QR Code & Wi-Fi Studio
+	mux.HandleFunc("GET /qr", h.ServeQR)
+	mux.HandleFunc("GET /api/qr/wifi", h.ServeAPIQRWiFi)
 
 	// Search Goggles - Domain Block/Boost API
 	mux.HandleFunc("POST /api/goggles/validate", h.ServeAPIGogglesValidate)
@@ -2018,6 +2052,195 @@ func (h *Handler) ServeAPISubdomains(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(report)
 }
+
+// ==============================================================================
+// 🌐 DNS Propagation Handlers
+// ==============================================================================
+
+func (h *Handler) ServeDNS(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	domain := r.URL.Query().Get("domain")
+	data := map[string]interface{}{
+		"Domain": domain,
+	}
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "dns.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(buf.Bytes())
+}
+
+func (h *Handler) ServeAPIDNS(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	domain := r.URL.Query().Get("domain")
+	recordType := r.URL.Query().Get("type")
+	if strings.TrimSpace(domain) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "domain parameter is required"})
+		return
+	}
+
+	report, err := h.dnsService.CheckPropagation(r.Context(), domain, recordType)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	json.NewEncoder(w).Encode(report)
+}
+
+// ==============================================================================
+// ⚡ Is It Down & Port Ping Tester Handlers
+// ==============================================================================
+
+func (h *Handler) ServePing(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	target := r.URL.Query().Get("target")
+	data := map[string]interface{}{
+		"Target": target,
+	}
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "ping.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(buf.Bytes())
+}
+
+func (h *Handler) ServeAPIPing(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	target := r.URL.Query().Get("target")
+	if strings.TrimSpace(target) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "target parameter is required"})
+		return
+	}
+
+	report, err := h.pingService.Check(r.Context(), target)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	json.NewEncoder(w).Encode(report)
+}
+
+// ==============================================================================
+// 🔓 Paywall Bypass Handlers
+// ==============================================================================
+
+func (h *Handler) ServeBypass(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	targetURL := r.URL.Query().Get("url")
+	data := map[string]interface{}{
+		"TargetURL": targetURL,
+	}
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "bypass.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(buf.Bytes())
+}
+
+func (h *Handler) ServeAPIBypass(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	targetURL := r.URL.Query().Get("url")
+	if strings.TrimSpace(targetURL) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "url parameter is required"})
+		return
+	}
+
+	article, err := h.bypassService.ExtractClean(r.Context(), targetURL)
+	if err != nil {
+		// Even if direct extraction fails, return the multi-mirror links!
+		mirrors := bypass.GenerateMirrors(targetURL)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"target_url": targetURL,
+			"mirrors":    mirrors,
+			"error":      err.Error(),
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(article)
+}
+
+// ==============================================================================
+// 📥 Media Extractor Handlers
+// ==============================================================================
+
+func (h *Handler) ServeMedia(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	targetURL := r.URL.Query().Get("url")
+	data := map[string]interface{}{
+		"TargetURL": targetURL,
+	}
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "media.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(buf.Bytes())
+}
+
+func (h *Handler) ServeAPIMedia(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	targetURL := r.URL.Query().Get("url")
+	if strings.TrimSpace(targetURL) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "url parameter is required"})
+		return
+	}
+
+	result, err := h.mediaService.Extract(r.Context(), targetURL)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	json.NewEncoder(w).Encode(result)
+}
+
+// ==============================================================================
+// 📱 QR Studio Handlers
+// ==============================================================================
+
+func (h *Handler) ServeQR(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	data := map[string]interface{}{}
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "qr.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(buf.Bytes())
+}
+
+func (h *Handler) ServeAPIQRWiFi(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	ssid := r.URL.Query().Get("ssid")
+	pass := r.URL.Query().Get("pass")
+	enc := r.URL.Query().Get("enc")
+	hidden := r.URL.Query().Get("hidden") == "true"
+
+	payload := qr.FormatWiFiPayload(qr.WiFiConfig{
+		SSID:       ssid,
+		Password:   pass,
+		Encryption: enc,
+		Hidden:     hidden,
+	})
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"payload": payload,
+	})
+}
+
 
 
 

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{if .TargetURL}}{{.TargetURL}} - {{end}}Paywall Bypass &amp; Clean Mirror - SearXGo</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔓</text></svg>">
+  <style>
+    .mirror-pills-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-top: 18px; }
+    .mirror-pill { display: flex; align-items: center; gap: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; text-decoration: none; color: var(--text-main); transition: all 0.2s; }
+    .mirror-pill:hover { border-color: var(--accent-primary); transform: translateY(-2px); background: rgba(99, 102, 241, 0.08); }
+    .mirror-icon { font-size: 1.5rem; }
+    .article-container { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 36px 40px; margin-top: 32px; line-height: 1.8; font-size: 1.05rem; }
+    .article-header { border-bottom: 1px solid var(--border-subtle); padding-bottom: 24px; margin-bottom: 28px; }
+    .article-title { font-size: 2rem; font-weight: 800; line-height: 1.3; margin-bottom: 12px; }
+    .article-meta { display: flex; gap: 16px; color: var(--text-muted); font-size: 0.85rem; flex-wrap: wrap; }
+    .article-body p { margin-bottom: 1.4rem; }
+    .article-body img { max-width: 100%; height: auto; border-radius: 8px; margin: 16px 0; }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="container header-container" style="display: flex; align-items: center; justify-content: space-between; position:relative; z-index:1000; overflow:visible;">
+      <a href="/" class="brand-logo" style="text-decoration: none; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 1.5rem;">🔓</span>
+        <span style="font-size: 1.25rem; font-weight: 800; background: linear-gradient(135deg, #f59e0b, #ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Bypass Mirror</span>
+      </a>
+
+      <div class="nav-dropdown" id="tools-dropdown" style="position:relative;">
+        <button type="button" class="nav-btn nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false">
+          <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          <span>Tools</span>
+          <svg class="dropdown-chevron" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="nav-dropdown-panel" role="menu">
+          <div class="dropdown-section-label">🔍 Intelligence</div>
+          <a href="/recon" class="dropdown-item"><span class="dropdown-item-icon">🔬</span><div><div class="dropdown-item-title">Domain Recon</div><div class="dropdown-item-desc">Security audit &amp; headers</div></div></a>
+          <a href="/tech" class="dropdown-item"><span class="dropdown-item-icon">⚡</span><div><div class="dropdown-item-title">Tech Inspector</div><div class="dropdown-item-desc">CMS &amp; server stack</div></div></a>
+          <a href="/subdomains" class="dropdown-item"><span class="dropdown-item-icon">🌐</span><div><div class="dropdown-item-title">Subdomain Finder</div><div class="dropdown-item-desc">CT Log asset discovery</div></div></a>
+          <a href="/dns" class="dropdown-item"><span class="dropdown-item-icon">📡</span><div><div class="dropdown-item-title">DNS Propagation</div><div class="dropdown-item-desc">Global DNS resolver check</div></div></a>
+          <a href="/ping" class="dropdown-item"><span class="dropdown-item-icon">⚡</span><div><div class="dropdown-item-title">Is It Down &amp; Ping</div><div class="dropdown-item-desc">Uptime &amp; port scanner</div></div></a>
+          <a href="/archive" class="dropdown-item"><span class="dropdown-item-icon">🕰️</span><div><div class="dropdown-item-title">Time Machine</div><div class="dropdown-item-desc">Wayback historical snapshot</div></div></a>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-section-label">🛠️ Utilities</div>
+          <a href="/bypass" class="dropdown-item"><span class="dropdown-item-icon">🔓</span><div><div class="dropdown-item-title">Paywall Bypass</div><div class="dropdown-item-desc">Clean mirror article reader</div></div></a>
+          <a href="/media" class="dropdown-item"><span class="dropdown-item-icon">📥</span><div><div class="dropdown-item-title">Media Downloader</div><div class="dropdown-item-desc">Ad-free video &amp; audio extractor</div></div></a>
+          <a href="/qr" class="dropdown-item"><span class="dropdown-item-icon">📱</span><div><div class="dropdown-item-title">QR &amp; WiFi Key</div><div class="dropdown-item-desc">Generator &amp; scanner</div></div></a>
+          <a href="/reader" class="dropdown-item"><span class="dropdown-item-icon">📖</span><div><div class="dropdown-item-title">Reader View</div><div class="dropdown-item-desc">Distraction-free reading</div></div></a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="max-width: 860px; padding: 40px 16px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 28px;">
+      <h1 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 8px;">Paywall Bypass &amp; Clean Mirror</h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">Read paywalled or ad-cluttered news articles cleanly via multi-engine archival mirrors and bot crawlers.</p>
+      
+      <form id="bypass-form" style="margin-top: 24px; display: flex; gap: 8px; justify-content: center; max-width: 650px; margin-left: auto; margin-right: auto;">
+        <input 
+          type="url" 
+          id="url-input" 
+          placeholder="Paste article URL (e.g. https://www.bloomberg.com/...)" 
+          value="{{.TargetURL}}"
+          required
+          style="flex: 1; padding: 12px 18px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 1rem; outline: none;"
+        >
+        <button type="submit" class="btn-search" style="padding: 0 24px; border-radius: 12px; background: #f59e0b; color: white; border: none; font-weight: 700; cursor: pointer;">
+          Unlock
+        </button>
+      </form>
+    </div>
+
+    <!-- Mirror Launchpad -->
+    <div id="mirrors-section" style="display: none;">
+      <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 6px;">🚀 Instant 1-Click Mirrors</h3>
+      <div class="mirror-pills-grid" id="mirrors-grid"></div>
+    </div>
+
+    <div id="loading" style="display: none; text-align: center; padding: 40px 0;">
+      <div class="spinner" style="margin: 0 auto 16px;"></div>
+      <p style="color: var(--text-muted);">Bypassing paywalls and extracting clean content...</p>
+    </div>
+
+    <!-- Clean In-Engine Reader -->
+    <div id="article-section" style="display: none;" class="article-container">
+      <div class="article-header">
+        <h2 id="article-title" class="article-title"></h2>
+        <div class="article-meta">
+          <span id="article-domain">🌐 domain.com</span>
+          <span id="article-author">✍️ Author</span>
+          <span id="article-time">⏱️ 3 min read</span>
+          <span id="article-method" style="color: #10b981; font-weight: 600;">🤖 Clean Bot Crawl</span>
+        </div>
+      </div>
+      <div id="article-body" class="article-body"></div>
+    </div>
+  </main>
+
+  <script>
+    const urlInput = document.getElementById('url-input');
+    const form = document.getElementById('bypass-form');
+    const loading = document.getElementById('loading');
+    const mirrorsSection = document.getElementById('mirrors-section');
+    const articleSection = document.getElementById('article-section');
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      runBypass();
+    });
+
+    async function runBypass() {
+      const target = urlInput.value.trim();
+      if (!target) return;
+
+      loading.style.display = 'block';
+      mirrorsSection.style.display = 'none';
+      articleSection.style.display = 'none';
+
+      try {
+        const res = await fetch(`/api/bypass?url=${encodeURIComponent(target)}`);
+        const data = await res.json();
+        loading.style.display = 'none';
+
+        if (data.error) {
+          alert('Error: ' + data.error);
+          return;
+        }
+
+        renderArticle(data);
+      } catch (err) {
+        loading.style.display = 'none';
+        alert('Failed to connect to Bypass API');
+      }
+    }
+
+    function renderArticle(data) {
+      // Mirrors launchpad
+      if (data.mirrors && data.mirrors.length > 0) {
+        mirrorsSection.style.display = 'block';
+        const grid = document.getElementById('mirrors-grid');
+        grid.innerHTML = '';
+        data.mirrors.forEach(m => {
+          const a = document.createElement('a');
+          a.className = 'mirror-pill';
+          a.href = m.url;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.innerHTML = `
+            <span class="mirror-icon">${m.icon}</span>
+            <div>
+              <div style="font-weight:700; font-size:0.95rem;">${escapeHtml(m.name)}</div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(m.description)}</div>
+            </div>
+          `;
+          grid.appendChild(a);
+        });
+      }
+
+      // Render content
+      if (data.clean_html && data.clean_html.trim().length > 100) {
+        articleSection.style.display = 'block';
+        document.getElementById('article-title').textContent = data.title;
+        document.getElementById('article-domain').textContent = '🌐 ' + data.domain;
+        document.getElementById('article-author').textContent = data.author ? '✍️ ' + data.author : '📰 ' + data.domain;
+        document.getElementById('article-time').textContent = `⏱️ ${data.read_time_min} min read (${data.word_count} words)`;
+        document.getElementById('article-body').innerHTML = data.clean_html;
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const qURL = urlParams.get('url');
+    if (qURL) {
+      urlInput.value = qURL;
+      runBypass();
+    }
+
+    document.querySelectorAll('.nav-dropdown-trigger').forEach(trigger => {
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const parent = trigger.closest('.nav-dropdown');
+        parent.classList.toggle('open');
+      });
+    });
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
+    });
+  </script>
+</body>
+</html>

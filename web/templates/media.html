@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{if .TargetURL}}{{.TargetURL}} - {{end}}Ad-Free Media &amp; Video Downloader - SearXGo</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📥</text></svg>">
+  <style>
+    .platform-chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+    .platform-chip { background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle); border-radius: 20px; padding: 4px 12px; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
+    .media-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; margin-top: 32px; display: flex; flex-direction: column; gap: 20px; }
+    .media-preview-box { border-radius: 12px; overflow: hidden; background: #000; max-height: 480px; display: flex; justify-content: center; align-items: center; }
+    .media-preview-box video { max-height: 460px; max-width: 100%; width: auto; border-radius: 8px; }
+    .media-preview-box img { max-height: 460px; max-width: 100%; object-fit: contain; }
+    .btn-download-primary { background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 12px 24px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; border: none; cursor: pointer; transition: opacity 0.2s; }
+    .btn-download-primary:hover { opacity: 0.9; }
+    .btn-download-secondary { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px 20px; border-radius: 10px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+    .btn-download-secondary:hover { border-color: var(--accent-primary); }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="container header-container" style="display: flex; align-items: center; justify-content: space-between; position:relative; z-index:1000; overflow:visible;">
+      <a href="/" class="brand-logo" style="text-decoration: none; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 1.5rem;">📥</span>
+        <span style="font-size: 1.25rem; font-weight: 800; background: linear-gradient(135deg, #10b981, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Media Extractor</span>
+      </a>
+
+      <div class="nav-dropdown" id="tools-dropdown" style="position:relative;">
+        <button type="button" class="nav-btn nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false">
+          <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          <span>Tools</span>
+          <svg class="dropdown-chevron" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="nav-dropdown-panel" role="menu">
+          <div class="dropdown-section-label">🔍 Intelligence</div>
+          <a href="/recon" class="dropdown-item"><span class="dropdown-item-icon">🔬</span><div><div class="dropdown-item-title">Domain Recon</div><div class="dropdown-item-desc">Security audit &amp; headers</div></div></a>
+          <a href="/tech" class="dropdown-item"><span class="dropdown-item-icon">⚡</span><div><div class="dropdown-item-title">Tech Inspector</div><div class="dropdown-item-desc">CMS &amp; server stack</div></div></a>
+          <a href="/subdomains" class="dropdown-item"><span class="dropdown-item-icon">🌐</span><div><div class="dropdown-item-title">Subdomain Finder</div><div class="dropdown-item-desc">CT Log asset discovery</div></div></a>
+          <a href="/dns" class="dropdown-item"><span class="dropdown-item-icon">📡</span><div><div class="dropdown-item-title">DNS Propagation</div><div class="dropdown-item-desc">Global DNS resolver check</div></div></a>
+          <a href="/ping" class="dropdown-item"><span class="dropdown-item-icon">⚡</span><div><div class="dropdown-item-title">Is It Down &amp; Ping</div><div class="dropdown-item-desc">Uptime &amp; port scanner</div></div></a>
+          <a href="/archive" class="dropdown-item"><span class="dropdown-item-icon">🕰️</span><div><div class="dropdown-item-title">Time Machine</div><div class="dropdown-item-desc">Wayback historical snapshot</div></div></a>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-section-label">🛠️ Utilities</div>
+          <a href="/bypass" class="dropdown-item"><span class="dropdown-item-icon">🔓</span><div><div class="dropdown-item-title">Paywall Bypass</div><div class="dropdown-item-desc">Clean mirror article reader</div></div></a>
+          <a href="/media" class="dropdown-item"><span class="dropdown-item-icon">📥</span><div><div class="dropdown-item-title">Media Downloader</div><div class="dropdown-item-desc">Ad-free video &amp; audio extractor</div></div></a>
+          <a href="/qr" class="dropdown-item"><span class="dropdown-item-icon">📱</span><div><div class="dropdown-item-title">QR &amp; WiFi Key</div><div class="dropdown-item-desc">Generator &amp; scanner</div></div></a>
+          <a href="/reader" class="dropdown-item"><span class="dropdown-item-icon">📖</span><div><div class="dropdown-item-title">Reader View</div><div class="dropdown-item-desc">Distraction-free reading</div></div></a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="max-width: 800px; padding: 40px 16px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 28px;">
+      <h1 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 8px;">Ad-Free Media &amp; Video Extractor</h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">Download direct clean videos &amp; audio from social platforms. Zero ads, zero popups, zero tracking.</p>
+      
+      <div class="platform-chips">
+        <span class="platform-chip">🔴 YouTube</span>
+        <span class="platform-chip">🎵 TikTok</span>
+        <span class="platform-chip">🐦 Twitter / X</span>
+        <span class="platform-chip">📸 Instagram</span>
+        <span class="platform-chip">🤖 Reddit</span>
+        <span class="platform-chip">📘 Facebook</span>
+        <span class="platform-chip">☁️ SoundCloud</span>
+      </div>
+
+      <form id="media-form" style="margin-top: 24px; display: flex; gap: 8px; justify-content: center; max-width: 650px; margin-left: auto; margin-right: auto;">
+        <input 
+          type="url" 
+          id="url-input" 
+          placeholder="Paste video or post link..." 
+          value="{{.TargetURL}}"
+          required
+          style="flex: 1; padding: 12px 18px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 1rem; outline: none;"
+        >
+        <button type="submit" class="btn-search" style="padding: 0 24px; border-radius: 12px; background: #10b981; color: white; border: none; font-weight: 700; cursor: pointer;">
+          Extract
+        </button>
+      </form>
+    </div>
+
+    <div id="loading" style="display: none; text-align: center; padding: 40px 0;">
+      <div class="spinner" style="margin: 0 auto 16px;"></div>
+      <p style="color: var(--text-muted);">Resolving clean media stream without ads...</p>
+    </div>
+
+    <!-- Media Result Card -->
+    <div id="media-result" style="display: none;" class="media-card">
+      <div class="media-preview-box" id="preview-box"></div>
+      
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <span id="res-platform" style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700;">Platform</span>
+          <span id="res-author" style="color: var(--text-muted); font-size: 0.85rem;">Author</span>
+        </div>
+        <h2 id="res-title" style="font-size: 1.25rem; font-weight: 700; margin-bottom: 16px; line-height: 1.4;">Video Title</h2>
+        
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <a id="btn-download" href="#" target="_blank" download class="btn-download-primary">
+            <span>📥</span>
+            <span>Download MP4 File</span>
+          </a>
+          <button type="button" id="btn-copy-stream" class="btn-download-secondary">
+            <span>📋</span>
+            <span>Copy Direct Link</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const urlInput = document.getElementById('url-input');
+    const form = document.getElementById('media-form');
+    const loading = document.getElementById('loading');
+    const mediaResult = document.getElementById('media-result');
+    const previewBox = document.getElementById('preview-box');
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      runExtract();
+    });
+
+    async function runExtract() {
+      const target = urlInput.value.trim();
+      if (!target) return;
+
+      loading.style.display = 'block';
+      mediaResult.style.display = 'none';
+
+      try {
+        const res = await fetch(`/api/media?url=${encodeURIComponent(target)}`);
+        const data = await res.json();
+        loading.style.display = 'none';
+
+        if (data.error) {
+          alert('Extraction Error: ' + data.error);
+          return;
+        }
+
+        renderMedia(data);
+      } catch (err) {
+        loading.style.display = 'none';
+        alert('Failed to connect to Media Extractor');
+      }
+    }
+
+    function renderMedia(data) {
+      mediaResult.style.display = 'flex';
+      document.getElementById('res-platform').textContent = data.platform;
+      document.getElementById('res-author').textContent = data.author || '';
+      document.getElementById('res-title').textContent = data.title || 'Extracted Media';
+
+      const dlBtn = document.getElementById('btn-download');
+      dlBtn.href = data.download_url;
+      if (data.file_name) dlBtn.setAttribute('download', data.file_name);
+
+      const copyBtn = document.getElementById('btn-copy-stream');
+      copyBtn.onclick = () => {
+        navigator.clipboard.writeText(data.download_url);
+        copyBtn.innerHTML = '<span>✅</span> <span>Copied!</span>';
+        setTimeout(() => copyBtn.innerHTML = '<span>📋</span> <span>Copy Direct Link</span>', 2000);
+      };
+
+      previewBox.innerHTML = '';
+      if (data.media_type === 'video' || data.download_url.includes('.mp4')) {
+        const video = document.createElement('video');
+        video.controls = true;
+        video.src = data.download_url;
+        if (data.thumbnail) video.poster = data.thumbnail;
+        previewBox.appendChild(video);
+      } else {
+        const img = document.createElement('img');
+        img.src = data.thumbnail || data.download_url;
+        previewBox.appendChild(img);
+      }
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const qURL = urlParams.get('url');
+    if (qURL) {
+      urlInput.value = qURL;
+      runExtract();
+    }
+
+    document.querySelectorAll('.nav-dropdown-trigger').forEach(trigger => {
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const parent = trigger.closest('.nav-dropdown');
+        parent.classList.toggle('open');
+      });
+    });
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
+    });
+  </script>
+</body>
+</html>

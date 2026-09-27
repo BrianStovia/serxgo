@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Code &amp; Wi-Fi Key Generator - SearXGo</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+  <!-- Minimalist standalone qrcode generator lib -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    .qr-workspace { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 32px; margin-top: 24px; }
+    @media (max-width: 768px) { .qr-workspace { grid-template-columns: 1fr; } }
+    .tab-nav { display: flex; gap: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 20px; }
+    .tab-btn { background: none; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; color: var(--text-muted); cursor: pointer; transition: all 0.2s; }
+    .tab-btn.active { background: var(--accent-primary); color: white; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); }
+    .form-input { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 0.95rem; box-sizing: border-box; }
+    .qr-preview-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+    .qr-box { background: white; padding: 18px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); margin-bottom: 20px; }
+    .qr-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="container header-container" style="display: flex; align-items: center; justify-content: space-between; position:relative; z-index:1000; overflow:visible;">
+      <a href="/" class="brand-logo" style="text-decoration: none; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 1.5rem;">📱</span>
+        <span style="font-size: 1.25rem; font-weight: 800; background: linear-gradient(135deg, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">QR Studio</span>
+      </a>
+
+      <div class="nav-dropdown" id="tools-dropdown" style="position:relative;">
+        <button type="button" class="nav-btn nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false">
+          <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          <span>Tools</span>
+          <svg class="dropdown-chevron" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="nav-dropdown-panel" role="menu">
+          <div class="dropdown-section-label">🔍 Intelligence</div>
+          <a href="/recon" class="dropdown-item"><span class="dropdown-item-icon">🔬</span><div><div class="dropdown-item-title">Domain Recon</div><div class="dropdown-item-desc">Security audit &amp; headers</div></div></a>
+          <a href="/tech" class="dropdown-item"><span class="dropdown-item-icon">⚡</span><div><div class="dropdown-item-title">Tech Inspector</div><div class="dropdown-item-desc">CMS &amp; server stack</div></div></a>
+          <a href="/subdomains" class="dropdown-item"><span class="dropdown-item-icon">🌐</span><div><div class="dropdown-item-title">Subdomain Finder</div><div class="dropdown-item-desc">CT Log asset discovery</div></div></a>
+          <a href="/dns" class="dropdown-item"><span class="dropdown-item-icon">📡</span><div><div class="dropdown-item-title">DNS Propagation</div><div class="dropdown-item-desc">Global DNS resolver check</div></div></a>
+          <a href="/ping" class="dropdown-item"><span class="dropdown-item-icon">⚡</span><div><div class="dropdown-item-title">Is It Down &amp; Ping</div><div class="dropdown-item-desc">Uptime &amp; port scanner</div></div></a>
+          <a href="/archive" class="dropdown-item"><span class="dropdown-item-icon">🕰️</span><div><div class="dropdown-item-title">Time Machine</div><div class="dropdown-item-desc">Wayback historical snapshot</div></div></a>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-section-label">🛠️ Utilities</div>
+          <a href="/bypass" class="dropdown-item"><span class="dropdown-item-icon">🔓</span><div><div class="dropdown-item-title">Paywall Bypass</div><div class="dropdown-item-desc">Clean mirror article reader</div></div></a>
+          <a href="/media" class="dropdown-item"><span class="dropdown-item-icon">📥</span><div><div class="dropdown-item-title">Media Downloader</div><div class="dropdown-item-desc">Ad-free video &amp; audio extractor</div></div></a>
+          <a href="/qr" class="dropdown-item"><span class="dropdown-item-icon">📱</span><div><div class="dropdown-item-title">QR &amp; WiFi Key</div><div class="dropdown-item-desc">Generator &amp; scanner</div></div></a>
+          <a href="/reader" class="dropdown-item"><span class="dropdown-item-icon">📖</span><div><div class="dropdown-item-title">Reader View</div><div class="dropdown-item-desc">Distraction-free reading</div></div></a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="max-width: 900px; padding: 40px 16px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 24px;">
+      <h1 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 8px;">QR Code &amp; Wi-Fi Studio</h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">Generate high-res QR codes for websites, texts, and 1-tap Wi-Fi network logins.</p>
+    </div>
+
+    <div class="tab-nav">
+      <button type="button" class="tab-btn active" id="tab-url">🔗 Link / Text</button>
+      <button type="button" class="tab-btn" id="tab-wifi">📶 Wi-Fi Guest Key</button>
+    </div>
+
+    <div class="qr-workspace">
+      <!-- Input Panel -->
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px;">
+        <!-- URL Mode -->
+        <div id="panel-url">
+          <div class="form-group">
+            <label>URL or Text Payload</label>
+            <textarea id="text-input" rows="4" class="form-input" placeholder="https://example.com or any message...">https://searxgo.org</textarea>
+          </div>
+        </div>
+
+        <!-- Wi-Fi Mode -->
+        <div id="panel-wifi" style="display: none;">
+          <div class="form-group">
+            <label>Network Name (SSID)</label>
+            <input type="text" id="wifi-ssid" class="form-input" placeholder="e.g. Cafe_Free_WiFi">
+          </div>
+          <div class="form-group">
+            <label>Password (WPA/WPA2)</label>
+            <input type="text" id="wifi-pass" class="form-input" placeholder="Network password...">
+          </div>
+          <div class="form-group">
+            <label>Security Encryption</label>
+            <select id="wifi-enc" class="form-input">
+              <option value="WPA">WPA / WPA2 / WPA3 (Standard)</option>
+              <option value="WEP">WEP (Legacy)</option>
+              <option value="nopass">None (Open Network)</option>
+            </select>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 12px;">
+            <input type="checkbox" id="wifi-hidden">
+            <label for="wifi-hidden" style="margin: 0; cursor: pointer;">Hidden SSID Network</label>
+          </div>
+        </div>
+
+        <!-- Customization -->
+        <div style="margin-top: 20px; border-top: 1px solid var(--border-subtle); padding-top: 16px;">
+          <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 8px;">Colors &amp; Styling</label>
+          <div style="display: flex; gap: 16px; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.8rem; color: var(--text-muted);">Dots:</span>
+              <input type="color" id="qr-fg" value="#000000" style="cursor: pointer; border: none; background: none; width: 36px; height: 36px;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.8rem; color: var(--text-muted);">Background:</span>
+              <input type="color" id="qr-bg" value="#ffffff" style="cursor: pointer; border: none; background: none; width: 36px; height: 36px;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview & Export Panel -->
+      <div class="qr-preview-card">
+        <div class="qr-box" id="qrcode"></div>
+        <div id="qr-payload-preview" style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 16px; font-family: ui-monospace, monospace; word-break: break-all; max-width: 260px;"></div>
+        <div class="qr-actions">
+          <button type="button" id="btn-dl-png" class="nav-btn" style="background: var(--accent-primary); color: white; border: none; font-weight: 700;">
+            <span>📥 Download PNG</span>
+          </button>
+          <button type="button" id="btn-copy-payload" class="nav-btn">
+            <span>📋 Copy Payload</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let currentMode = 'url';
+    const qrcodeContainer = document.getElementById('qrcode');
+    const textInput = document.getElementById('text-input');
+    const wifiSSID = document.getElementById('wifi-ssid');
+    const wifiPass = document.getElementById('wifi-pass');
+    const wifiEnc = document.getElementById('wifi-enc');
+    const wifiHidden = document.getElementById('wifi-hidden');
+    const qrFg = document.getElementById('qr-fg');
+    const qrBg = document.getElementById('qr-bg');
+    const payloadPreview = document.getElementById('qr-payload-preview');
+
+    let qr = null;
+
+    function getPayload() {
+      if (currentMode === 'url') {
+        return textInput.value.trim() || 'https://searxgo.org';
+      } else {
+        const ssid = (wifiSSID.value || '').replace(/([\\;,":])/g, '\\$1');
+        const pass = (wifiPass.value || '').replace(/([\\;,":])/g, '\\$1');
+        const enc = wifiEnc.value;
+        const hidden = wifiHidden.checked ? 'true' : 'false';
+        return `WIFI:S:${ssid};T:${enc};P:${pass};H:${hidden};;`;
+      }
+    }
+
+    function renderQR() {
+      const payload = getPayload();
+      payloadPreview.textContent = payload;
+      qrcodeContainer.innerHTML = '';
+
+      if (window.QRCode) {
+        qr = new QRCode(qrcodeContainer, {
+          text: payload,
+          width: 220,
+          height: 220,
+          colorDark: qrFg.value,
+          colorLight: qrBg.value,
+          correctLevel: QRCode.CorrectLevel.H
+        });
+      }
+    }
+
+    // Tab switching
+    document.getElementById('tab-url').addEventListener('click', () => {
+      currentMode = 'url';
+      document.getElementById('tab-url').classList.add('active');
+      document.getElementById('tab-wifi').classList.remove('active');
+      document.getElementById('panel-url').style.display = 'block';
+      document.getElementById('panel-wifi').style.display = 'none';
+      renderQR();
+    });
+
+    document.getElementById('tab-wifi').addEventListener('click', () => {
+      currentMode = 'wifi';
+      document.getElementById('tab-wifi').classList.add('active');
+      document.getElementById('tab-url').classList.remove('active');
+      document.getElementById('panel-wifi').style.display = 'block';
+      document.getElementById('panel-url').style.display = 'none';
+      renderQR();
+    });
+
+    // Inputs
+    [textInput, wifiSSID, wifiPass, wifiEnc, wifiHidden, qrFg, qrBg].forEach(el => {
+      el.addEventListener('input', renderQR);
+    });
+
+    // Download PNG
+    document.getElementById('btn-dl-png').addEventListener('click', () => {
+      const img = qrcodeContainer.querySelector('img') || qrcodeContainer.querySelector('canvas');
+      if (!img) return;
+      const url = img.tagName.toLowerCase() === 'canvas' ? img.toDataURL('image/png') : img.src;
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `qrcode-${Date.now()}.png`;
+      a.click();
+    });
+
+    // Copy Payload
+    document.getElementById('btn-copy-payload').addEventListener('click', () => {
+      navigator.clipboard.writeText(getPayload());
+      const btn = document.getElementById('btn-copy-payload');
+      btn.innerHTML = '<span>✅ Copied!</span>';
+      setTimeout(() => btn.innerHTML = '<span>📋 Copy Payload</span>', 2000);
+    });
+
+    // Initial render
+    window.addEventListener('load', renderQR);
+
+    document.querySelectorAll('.nav-dropdown-trigger').forEach(trigger => {
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const parent = trigger.closest('.nav-dropdown');
+        parent.classList.toggle('open');
+      });
+    });
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
+    });
+  </script>
+</body>
+</html>
