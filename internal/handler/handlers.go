@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"searxgo/internal/aggregator"
+	"searxgo/internal/archive"
 	"searxgo/internal/bangs"
 	"searxgo/internal/config"
 	"searxgo/internal/dorks"
@@ -36,6 +37,8 @@ import (
 	"searxgo/internal/recon"
 	"searxgo/internal/scrub"
 	"searxgo/internal/stats"
+	"searxgo/internal/subdomains"
+	"searxgo/internal/tech"
 	"searxgo/internal/threat"
 	"searxgo/web"
 )
@@ -61,6 +64,9 @@ type Handler struct {
 	templates      *template.Template
 	imageStoreMu   sync.RWMutex
 	imageStore     map[string]*TempUploadedImage
+	archiveClient  *archive.ArchiveClient
+	techInspector  *tech.Inspector
+	subFinder      *subdomains.Finder
 }
 
 func NewHandler(cfg *config.Config, agg *aggregator.Aggregator) (*Handler, error) {
@@ -126,6 +132,9 @@ func NewHandler(cfg *config.Config, agg *aggregator.Aggregator) (*Handler, error
 		limiter:        NewRateLimiter(cfg.LimiterRate, cfg.LimiterBurst, cfg.LimiterEnabled),
 		templates:      tmpl,
 		imageStore:     make(map[string]*TempUploadedImage),
+		archiveClient:  archive.NewArchiveClient(),
+		techInspector:  tech.NewInspector(),
+		subFinder:      subdomains.NewFinder(),
 	}, nil
 }
 
@@ -206,6 +215,18 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	// Interactive Knowledge & Entity Graph
 	mux.HandleFunc("GET /graph", h.ServeGraph)
 	mux.HandleFunc("GET /api/graph", h.ServeAPIGraph)
+
+	// Internet Time Machine & Wayback Archive
+	mux.HandleFunc("GET /archive", h.ServeArchive)
+	mux.HandleFunc("GET /api/archive", h.ServeAPIArchive)
+
+	// Tech Stack & Security Header Inspector
+	mux.HandleFunc("GET /tech", h.ServeTech)
+	mux.HandleFunc("GET /api/tech", h.ServeAPITech)
+
+	// Subdomain Enumeration via CT Logs
+	mux.HandleFunc("GET /subdomains", h.ServeSubdomains)
+	mux.HandleFunc("GET /api/subdomains", h.ServeAPISubdomains)
 
 	// Search Goggles - Domain Block/Boost API
 	mux.HandleFunc("POST /api/goggles/validate", h.ServeAPIGogglesValidate)
@@ -1886,6 +1907,118 @@ func (h *Handler) ServeAPIGogglesValidate(w http.ResponseWriter, r *http.Request
 		"count":     len(cleanedBlock) + len(cleanedBoost),
 	})
 }
+
+// ==============================================================================
+// 🕰️ Internet Time Machine & Wayback Machine Handlers
+// ==============================================================================
+
+func (h *Handler) ServeArchive(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	targetURL := r.URL.Query().Get("url")
+	data := map[string]interface{}{
+		"TargetURL": targetURL,
+	}
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "archive.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(buf.Bytes())
+}
+
+func (h *Handler) ServeAPIArchive(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	targetURL := r.URL.Query().Get("url")
+	if strings.TrimSpace(targetURL) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "url parameter is required"})
+		return
+	}
+
+	report, err := h.archiveClient.GetSnapshots(r.Context(), targetURL)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	json.NewEncoder(w).Encode(report)
+}
+
+// ==============================================================================
+// ⚡ Tech Stack & Security Header Inspector Handlers
+// ==============================================================================
+
+func (h *Handler) ServeTech(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	targetURL := r.URL.Query().Get("url")
+	data := map[string]interface{}{
+		"TargetURL": targetURL,
+	}
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "tech.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(buf.Bytes())
+}
+
+func (h *Handler) ServeAPITech(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	targetURL := r.URL.Query().Get("url")
+	if strings.TrimSpace(targetURL) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "url parameter is required"})
+		return
+	}
+
+	report, err := h.techInspector.Analyze(r.Context(), targetURL)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	json.NewEncoder(w).Encode(report)
+}
+
+// ==============================================================================
+// 🌐 Subdomain Enumeration (CT Logs) Handlers
+// ==============================================================================
+
+func (h *Handler) ServeSubdomains(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	domain := r.URL.Query().Get("domain")
+	data := map[string]interface{}{
+		"Domain": domain,
+	}
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "subdomains.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(buf.Bytes())
+}
+
+func (h *Handler) ServeAPISubdomains(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	domain := r.URL.Query().Get("domain")
+	if strings.TrimSpace(domain) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "domain parameter is required"})
+		return
+	}
+
+	report, err := h.subFinder.Enumerate(r.Context(), domain)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	json.NewEncoder(w).Encode(report)
+}
+
 
 
 

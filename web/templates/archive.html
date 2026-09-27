@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Internet Time Machine &amp; Archive Explorer - SearXGo</title>
+  <meta name="description" content="Explore historical snapshots, revive dead links, and travel back in time through the Wayback Machine archive.">
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕰️</text></svg>">
+  <style>
+    .archive-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 5rem;
+    }
+    .archive-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    .archive-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
+    }
+    .timeline-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 1.25rem;
+    }
+    .timeline-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+    .timeline-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(99, 102, 241, 0.4);
+      background: rgba(99, 102, 241, 0.04);
+    }
+    .status-pill {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 6px;
+      display: inline-block;
+      width: fit-content;
+    }
+    .status-200 { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+    .status-300 { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .status-400 { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    .status-500 { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+
+  <!-- Top Navigation Header -->
+  <nav class="top-nav container">
+    <a href="/" class="nav-btn"><span>🪐 Home</span></a>
+
+    <!-- Tools Dropdown -->
+    <div class="nav-dropdown">
+      <button type="button" class="nav-btn nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false">
+        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </svg>
+        <span>Tools</span>
+        <svg class="dropdown-chevron" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+
+      <div class="nav-dropdown-panel" role="menu">
+        <div class="dropdown-section-label">🔍 Intelligence</div>
+        <a href="/recon" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">🔬</span>
+          <div>
+            <div class="dropdown-item-title">Domain Recon</div>
+            <div class="dropdown-item-desc">Security audit, SSL &amp; headers</div>
+          </div>
+        </a>
+        <a href="/tech" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">⚡</span>
+          <div>
+            <div class="dropdown-item-title">Tech Inspector</div>
+            <div class="dropdown-item-desc">CMS, frameworks &amp; server stack</div>
+          </div>
+        </a>
+        <a href="/subdomains" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">🌐</span>
+          <div>
+            <div class="dropdown-item-title">Subdomain Finder</div>
+            <div class="dropdown-item-desc">CT Log certificate asset discovery</div>
+          </div>
+        </a>
+        <a href="/archive" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">🕰️</span>
+          <div>
+            <div class="dropdown-item-title">Time Machine</div>
+            <div class="dropdown-item-desc">Historical snapshots &amp; dead link revive</div>
+          </div>
+        </a>
+        <a href="/threat" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">🛡️</span>
+          <div>
+            <div class="dropdown-item-title">Threat Scanner</div>
+            <div class="dropdown-item-desc">Phishing, redirect &amp; URL analysis</div>
+          </div>
+        </a>
+        <a href="/sherlock" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">🕵️</span>
+          <div>
+            <div class="dropdown-item-title">Sherlock OSINT</div>
+            <div class="dropdown-item-desc">Username recon across 20+ platforms</div>
+          </div>
+        </a>
+        <a href="/dorks" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">🎯</span>
+          <div>
+            <div class="dropdown-item-title">Dorks Suite</div>
+            <div class="dropdown-item-desc">Google dorking &amp; recon operators</div>
+          </div>
+        </a>
+
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-section-label">🛠️ Utilities</div>
+        <a href="/graph" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">🕸️</span>
+          <div>
+            <div class="dropdown-item-title">Knowledge Graph</div>
+            <div class="dropdown-item-desc">Entity &amp; domain relationship explorer</div>
+          </div>
+        </a>
+        <a href="/scrub" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">🧹</span>
+          <div>
+            <div class="dropdown-item-title">EXIF Scrubber</div>
+            <div class="dropdown-item-desc">Strip metadata from images</div>
+          </div>
+        </a>
+        <a href="/reader" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">📖</span>
+          <div>
+            <div class="dropdown-item-title">Reader View</div>
+            <div class="dropdown-item-desc">Clean distraction-free reading</div>
+          </div>
+        </a>
+        <a href="/split" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">⚖️</span>
+          <div>
+            <div class="dropdown-item-title">Split Compare</div>
+            <div class="dropdown-item-desc">Side-by-side engine comparison</div>
+          </div>
+        </a>
+
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-section-label">📊 System</div>
+        <a href="/stats" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">📈</span>
+          <div>
+            <div class="dropdown-item-title">Telemetry</div>
+            <div class="dropdown-item-desc">Engine performance &amp; health</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Bookmarks -->
+    <button type="button" class="nav-btn btn-open-bookmarks" title="Saved Bookmarks">
+      <span>🔖</span>
+      <span>Bookmarks</span>
+      <span class="bookmark-counter" style="display:none; background:var(--accent-primary); color:white; border-radius:10px; padding:1px 6px; font-size:0.7rem; font-weight:700;">0</span>
+    </button>
+
+    <!-- Settings -->
+    <a href="/settings" class="nav-btn" title="Preferences &amp; Engines">
+      <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      </svg>
+      <span>Settings</span>
+    </a>
+
+    <!-- Command Palette -->
+    <button type="button" class="cmd-k-badge btn-open-cmd-palette" title="Quick Command Palette (Ctrl+K)">
+      <span>⌘K</span>
+    </button>
+  </nav>
+
+  <div class="archive-container">
+    <div style="text-align:center; margin-bottom:2rem;">
+      <div class="brand-badge" style="margin-bottom:0.75rem;">
+        <span class="engine-dot" style="background:#8b5cf6;"></span>
+        <span>Wayback Machine &bull; Link Resurrection &bull; History Explorer</span>
+      </div>
+      <h1 class="brand-title" style="font-size:2.4rem; margin-bottom:0.4rem;">🕰️ Internet Time Machine</h1>
+      <p class="brand-tagline">Inspect historical captures, resurrect 404 dead links, and view websites from years past</p>
+    </div>
+
+    <!-- Search Input Card -->
+    <div class="archive-card">
+      <form id="archive-form" style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+        <input type="text" id="target-url" class="osint-input" placeholder="Enter URL or domain (e.g. apple.com or https://example.com/dead-page)..." value="{{.TargetURL}}" style="flex:1; min-width:260px;" required autocomplete="off">
+        <button type="submit" class="btn-search" style="padding:0.65rem 1.6rem;">
+          <span>Explore Timeline</span>
+        </button>
+      </form>
+
+      <div style="margin-top:0.8rem; display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+        <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">Sample Targets:</span>
+        <button type="button" class="sample-pill" data-target="google.com">google.com</button>
+        <button type="button" class="sample-pill" data-target="apple.com">apple.com</button>
+        <button type="button" class="sample-pill" data-target="wikipedia.org">wikipedia.org</button>
+        <button type="button" class="sample-pill" data-target="yahoo.com">yahoo.com</button>
+      </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="archive-loading" style="display:none; text-align:center; padding:3rem 0;">
+      <div class="loading-spinner" style="margin:0 auto 1rem; width:36px; height:36px; border:3px solid rgba(255,255,255,0.1); border-top-color:#8b5cf6; border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+      <p style="color:var(--text-secondary);">Querying Wayback Machine CDX archives...</p>
+    </div>
+
+    <!-- Results Container -->
+    <div id="archive-results" style="display:none;">
+      <!-- Stats Banner -->
+      <div class="archive-card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+        <div>
+          <div style="font-size:1.15rem; font-weight:700; color:var(--text-primary);" id="res-target-domain">domain.com</div>
+          <div style="font-size:0.82rem; color:var(--text-muted);" id="res-date-range">Snapshots available</div>
+        </div>
+        <div style="display:flex; gap:0.75rem; align-items:center;">
+          <div style="text-align:right;">
+            <div style="font-size:1.4rem; font-weight:800; color:#8b5cf6;" id="res-total-count">0</div>
+            <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase;">Captures</div>
+          </div>
+          <a href="#" id="res-save-btn" target="_blank" rel="noopener noreferrer" class="nav-btn" style="background:rgba(139,92,246,0.15); border-color:rgba(139,92,246,0.4); color:#c4b5fd; font-weight:700;">
+            <span>📸 Save Current Snapshot</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Timeline Grid -->
+      <div class="archive-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+          <h3 style="margin:0; font-size:1.1rem; color:var(--text-primary);">Historical Snapshots Timeline</h3>
+          <span style="font-size:0.8rem; color:var(--text-muted);">Click any card to open archived version</span>
+        </div>
+        <div class="timeline-grid" id="timeline-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('archive-form');
+      const input = document.getElementById('target-url');
+      const loading = document.getElementById('archive-loading');
+      const results = document.getElementById('archive-results');
+
+      document.querySelectorAll('.sample-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          input.value = pill.dataset.target;
+          runArchive(pill.dataset.target);
+        });
+      });
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        runArchive(input.value.trim());
+      });
+
+      function runArchive(url) {
+        if (!url) return;
+        loading.style.display = 'block';
+        results.style.display = 'none';
+
+        fetch('/api/archive?url=' + encodeURIComponent(url))
+          .then(res => res.json())
+          .then(data => {
+            loading.style.display = 'none';
+            if (data.error && (!data.snapshots || data.snapshots.length === 0)) {
+              alert('Error: ' + data.error);
+              return;
+            }
+            renderArchive(data);
+          })
+          .catch(err => {
+            loading.style.display = 'none';
+            alert('Failed to query archive: ' + err.message);
+          });
+      }
+
+      function renderArchive(data) {
+        document.getElementById('res-target-domain').textContent = data.query_url || data.clean_domain;
+        document.getElementById('res-date-range').textContent = (data.first_seen && data.last_seen) ? `First snapshot: ${data.first_seen} • Latest: ${data.last_seen}` : 'Historical captures';
+        document.getElementById('res-total-count').textContent = data.total_snapshots;
+        document.getElementById('res-save-btn').href = data.save_url || `https://web.archive.org/save/${data.query_url}`;
+
+        const list = document.getElementById('timeline-list');
+        list.innerHTML = '';
+
+        if (!data.snapshots || data.snapshots.length === 0) {
+          list.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:2rem; color:var(--text-muted);">No snapshots recorded in Wayback Machine yet. Use the Save button above to create the first capture!</div>';
+        } else {
+          data.snapshots.forEach(s => {
+            const card = document.createElement('a');
+            card.href = s.archive_url;
+            card.target = '_blank';
+            card.rel = 'noopener noreferrer';
+            card.className = 'timeline-card';
+            card.style.textDecoration = 'none';
+
+            let statusClass = 'status-200';
+            if (s.status_code.startsWith('3')) statusClass = 'status-300';
+            else if (s.status_code.startsWith('4')) statusClass = 'status-400';
+            else if (s.status_code.startsWith('5')) statusClass = 'status-500';
+
+            card.innerHTML = `
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span class="status-pill ${statusClass}">HTTP ${s.status_code || '200'}</span>
+                <span style="font-size:0.75rem; color:var(--text-muted);">${s.mime_type || 'html'}</span>
+              </div>
+              <div style="font-size:0.92rem; font-weight:700; color:var(--text-primary); margin-top:0.25rem;">${s.date_str}</div>
+              <div style="font-size:0.75rem; color:var(--accent-primary); display:flex; align-items:center; gap:0.25rem; margin-top:auto;">
+                <span>View Snapshot</span>
+                <span>↗</span>
+              </div>
+            `;
+            list.appendChild(card);
+          });
+        }
+
+        results.style.display = 'block';
+      }
+
+      const initial = input.value.trim();
+      if (initial) runArchive(initial);
+    });
+  </script>
+</body>
+</html>

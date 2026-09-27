@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tech Stack &amp; Security Header Inspector - SearXGo</title>
+  <meta name="description" content="Discover website technologies, frameworks, CMS, web servers, and audit HTTP security headers with Wappalyzer parity.">
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <style>
+    .tech-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 5rem;
+    }
+    .tech-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    .tech-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #10b981, #06b6d4, #3b82f6);
+    }
+    .tech-badge-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 0.85rem;
+      margin-top: 1rem;
+    }
+    .tech-item-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .tech-cat-pill {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent-primary);
+    }
+    .grade-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      font-size: 1.6rem;
+      font-weight: 900;
+    }
+    .grade-A, .grade-A\+ { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 2px solid #10b981; }
+    .grade-B { background: rgba(59, 130, 246, 0.2); color: #3b82f6; border: 2px solid #3b82f6; }
+    .grade-C { background: rgba(234, 179, 8, 0.2); color: #eab308; border: 2px solid #eab308; }
+    .grade-D, .grade-F { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 2px solid #ef4444; }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+
+  <!-- Top Navigation Header -->
+  <nav class="top-nav container">
+    <a href="/" class="nav-btn"><span>🪐 Home</span></a>
+
+    <!-- Tools Dropdown -->
+    <div class="nav-dropdown">
+      <button type="button" class="nav-btn nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false">
+        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </svg>
+        <span>Tools</span>
+        <svg class="dropdown-chevron" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+
+      <div class="nav-dropdown-panel" role="menu">
+        <div class="dropdown-section-label">🔍 Intelligence</div>
+        <a href="/recon" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">🔬</span>
+          <div>
+            <div class="dropdown-item-title">Domain Recon</div>
+            <div class="dropdown-item-desc">Security audit, SSL &amp; headers</div>
+          </div>
+        </a>
+        <a href="/tech" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">⚡</span>
+          <div>
+            <div class="dropdown-item-title">Tech Inspector</div>
+            <div class="dropdown-item-desc">CMS, frameworks &amp; server stack</div>
+          </div>
+        </a>
+        <a href="/subdomains" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">🌐</span>
+          <div>
+            <div class="dropdown-item-title">Subdomain Finder</div>
+            <div class="dropdown-item-desc">CT Log certificate asset discovery</div>
+          </div>
+        </a>
+        <a href="/archive" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">🕰️</span>
+          <div>
+            <div class="dropdown-item-title">Time Machine</div>
+            <div class="dropdown-item-desc">Historical snapshots &amp; dead link revive</div>
+          </div>
+        </a>
+        <a href="/threat" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">🛡️</span>
+          <div>
+            <div class="dropdown-item-title">Threat Scanner</div>
+            <div class="dropdown-item-desc">Phishing, redirect &amp; URL analysis</div>
+          </div>
+        </a>
+        <a href="/sherlock" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">🕵️</span>
+          <div>
+            <div class="dropdown-item-title">Sherlock OSINT</div>
+            <div class="dropdown-item-desc">Username recon across 20+ platforms</div>
+          </div>
+        </a>
+        <a href="/dorks" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">🎯</span>
+          <div>
+            <div class="dropdown-item-title">Dorks Suite</div>
+            <div class="dropdown-item-desc">Google dorking &amp; recon operators</div>
+          </div>
+        </a>
+
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-section-label">🛠️ Utilities</div>
+        <a href="/graph" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">🕸️</span>
+          <div>
+            <div class="dropdown-item-title">Knowledge Graph</div>
+            <div class="dropdown-item-desc">Entity &amp; domain relationship explorer</div>
+          </div>
+        </a>
+        <a href="/scrub" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">🧹</span>
+          <div>
+            <div class="dropdown-item-title">EXIF Scrubber</div>
+            <div class="dropdown-item-desc">Strip metadata from images</div>
+          </div>
+        </a>
+        <a href="/reader" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">📖</span>
+          <div>
+            <div class="dropdown-item-title">Reader View</div>
+            <div class="dropdown-item-desc">Clean distraction-free reading</div>
+          </div>
+        </a>
+        <a href="/split" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">⚖️</span>
+          <div>
+            <div class="dropdown-item-title">Split Compare</div>
+            <div class="dropdown-item-desc">Side-by-side engine comparison</div>
+          </div>
+        </a>
+
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-section-label">📊 System</div>
+        <a href="/stats" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">📈</span>
+          <div>
+            <div class="dropdown-item-title">Telemetry</div>
+            <div class="dropdown-item-desc">Engine performance &amp; health</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Bookmarks -->
+    <button type="button" class="nav-btn btn-open-bookmarks" title="Saved Bookmarks">
+      <span>🔖</span>
+      <span>Bookmarks</span>
+      <span class="bookmark-counter" style="display:none; background:var(--accent-primary); color:white; border-radius:10px; padding:1px 6px; font-size:0.7rem; font-weight:700;">0</span>
+    </button>
+
+    <!-- Settings -->
+    <a href="/settings" class="nav-btn" title="Preferences &amp; Engines">
+      <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      </svg>
+      <span>Settings</span>
+    </a>
+
+    <!-- Command Palette -->
+    <button type="button" class="cmd-k-badge btn-open-cmd-palette" title="Quick Command Palette (Ctrl+K)">
+      <span>⌘K</span>
+    </button>
+  </nav>
+
+  <div class="tech-container">
+    <div style="text-align:center; margin-bottom:2rem;">
+      <div class="brand-badge" style="margin-bottom:0.75rem;">
+        <span class="engine-dot" style="background:#06b6d4;"></span>
+        <span>Technology Profiler &bull; Security Header Auditor &bull; Wappalyzer Parity</span>
+      </div>
+      <h1 class="brand-title" style="font-size:2.4rem; margin-bottom:0.4rem;">⚡ Tech Stack &amp; Header Inspector</h1>
+      <p class="brand-tagline">Detect CMS, JavaScript frameworks, web servers, CDNs, and audit security headers for any website</p>
+    </div>
+
+    <!-- Search Input Card -->
+    <div class="tech-card">
+      <form id="tech-form" style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+        <input type="text" id="target-domain" class="osint-input" placeholder="Enter website URL or domain (e.g. github.com, wordpress.org)..." value="{{.TargetURL}}" style="flex:1; min-width:260px;" required autocomplete="off">
+        <button type="submit" class="btn-search" style="padding:0.65rem 1.6rem;">
+          <span>Inspect Stack</span>
+        </button>
+      </form>
+
+      <div style="margin-top:0.8rem; display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+        <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">Sample Targets:</span>
+        <button type="button" class="sample-pill" data-target="github.com">github.com</button>
+        <button type="button" class="sample-pill" data-target="wordpress.org">wordpress.org</button>
+        <button type="button" class="sample-pill" data-target="vercel.com">vercel.com</button>
+        <button type="button" class="sample-pill" data-target="cloudflare.com">cloudflare.com</button>
+      </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="tech-loading" style="display:none; text-align:center; padding:3rem 0;">
+      <div class="loading-spinner" style="margin:0 auto 1rem; width:36px; height:36px; border:3px solid rgba(255,255,255,0.1); border-top-color:#06b6d4; border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+      <p style="color:var(--text-secondary);">Probing target headers and fingerprinting technologies...</p>
+    </div>
+
+    <!-- Results Container -->
+    <div id="tech-results" style="display:none;">
+      <!-- Overview Banner -->
+      <div class="tech-card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1.25rem;">
+        <div>
+          <div style="font-size:1.3rem; font-weight:800; color:var(--text-primary);" id="res-clean-domain">domain.com</div>
+          <div style="font-size:0.82rem; color:var(--text-muted); margin-top:0.2rem;" id="res-final-url">https://domain.com</div>
+          <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:0.35rem;" id="res-server-info">Server: Unknown</div>
+        </div>
+        <div style="display:flex; gap:1.25rem; align-items:center;">
+          <div style="text-align:right;">
+            <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;">Security Score</div>
+            <div style="font-size:1.4rem; font-weight:800; color:var(--text-primary);"><span id="res-sec-score">0</span><span style="font-size:0.9rem; color:var(--text-muted);">/100</span></div>
+          </div>
+          <div class="grade-badge" id="res-grade-badge">A</div>
+        </div>
+      </div>
+
+      <!-- Detected Technologies -->
+      <div class="tech-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+          <h3 style="margin:0; font-size:1.1rem; color:var(--text-primary);">Detected Technologies</h3>
+          <span style="font-size:0.8rem; color:var(--text-muted);" id="res-tech-count">0 items detected</span>
+        </div>
+        <div class="tech-badge-grid" id="tech-badges-list"></div>
+      </div>
+
+      <!-- Security Headers Audit -->
+      <div class="tech-card">
+        <div style="margin-bottom:1rem;">
+          <h3 style="margin:0; font-size:1.1rem; color:var(--text-primary);">HTTP Security Headers Audit</h3>
+          <p style="margin:0.25rem 0 0; font-size:0.82rem; color:var(--text-muted);">Evaluation of critical headers protecting against XSS, clickjacking, and sniffing</p>
+        </div>
+        <div id="security-headers-list" style="display:flex; flex-direction:column; gap:0.6rem;"></div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('tech-form');
+      const input = document.getElementById('target-domain');
+      const loading = document.getElementById('tech-loading');
+      const results = document.getElementById('tech-results');
+
+      document.querySelectorAll('.sample-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          input.value = pill.dataset.target;
+          runTech(pill.dataset.target);
+        });
+      });
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        runTech(input.value.trim());
+      });
+
+      function runTech(target) {
+        if (!target) return;
+        loading.style.display = 'block';
+        results.style.display = 'none';
+
+        fetch('/api/tech?url=' + encodeURIComponent(target))
+          .then(res => res.json())
+          .then(data => {
+            loading.style.display = 'none';
+            if (data.error && (!data.technologies || data.technologies.length === 0)) {
+              alert('Inspection error: ' + data.error);
+              return;
+            }
+            renderTech(data);
+          })
+          .catch(err => {
+            loading.style.display = 'none';
+            alert('Failed to inspect: ' + err.message);
+          });
+      }
+
+      function renderTech(data) {
+        document.getElementById('res-clean-domain').textContent = data.clean_domain;
+        document.getElementById('res-final-url').textContent = `${data.final_url} (HTTP ${data.status_code || 200} • ${data.response_time_ms}ms)`;
+        document.getElementById('res-server-info').textContent = data.server_info ? `Server: ${data.server_info}` : 'Server header hidden or protected by proxy';
+
+        const scoreEl = document.getElementById('res-sec-score');
+        scoreEl.textContent = data.security_score;
+
+        const gradeEl = document.getElementById('res-grade-badge');
+        gradeEl.textContent = data.security_grade;
+        gradeEl.className = 'grade-badge grade-' + data.security_grade.replace('+', '\\+');
+
+        // Tech Badges
+        const techList = document.getElementById('tech-badges-list');
+        techList.innerHTML = '';
+        document.getElementById('res-tech-count').textContent = `${data.technologies ? data.technologies.length : 0} items detected`;
+
+        if (!data.technologies || data.technologies.length === 0) {
+          techList.innerHTML = '<div style="grid-column:1/-1; color:var(--text-muted); text-align:center; padding:1.5rem;">No fingerprint signatures identified on public HTML/headers.</div>';
+        } else {
+          data.technologies.forEach(t => {
+            const item = document.createElement('div');
+            item.className = 'tech-item-box';
+            item.innerHTML = `
+              <div class="tech-cat-pill">${t.category}</div>
+              <div style="font-size:0.95rem; font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:0.4rem;">
+                <span>${t.name}</span>
+                ${t.version ? `<span style="font-size:0.75rem; background:rgba(255,255,255,0.08); padding:1px 5px; border-radius:4px; color:var(--text-muted);">${t.version}</span>` : ''}
+              </div>
+              <div style="font-size:0.75rem; color:var(--text-muted); line-height:1.3;">${t.description || ''}</div>
+            `;
+            techList.appendChild(item);
+          });
+        }
+
+        // Security Headers List
+        const headerList = document.getElementById('security-headers-list');
+        headerList.innerHTML = '';
+        if (data.security_headers) {
+          data.security_headers.forEach(h => {
+            const isGood = h.status === 'good';
+            const row = document.createElement('div');
+            row.style.cssText = `padding:0.75rem 1rem; border-radius:8px; display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; background:${isGood ? 'rgba(16,185,129,0.04)' : 'rgba(239,68,68,0.04)'}; border:1px solid ${isGood ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'};`;
+
+            row.innerHTML = `
+              <div style="flex:1;">
+                <div style="font-weight:700; font-size:0.9rem; color:var(--text-primary); font-family:monospace;">${h.header}</div>
+                <div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.2rem;">${h.description}</div>
+                ${h.value ? `<div style="font-size:0.72rem; color:var(--text-secondary); background:rgba(0,0,0,0.25); padding:0.25rem 0.5rem; border-radius:4px; font-family:monospace; margin-top:0.35rem; word-break:break-all;">${h.value}</div>` : ''}
+              </div>
+              <div>
+                <span style="font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:6px; ${isGood ? 'background:rgba(16,185,129,0.2); color:#10b981;' : 'background:rgba(239,68,68,0.2); color:#f87171;'}">${isGood ? 'Configured' : 'Missing'}</span>
+              </div>
+            `;
+            headerList.appendChild(row);
+          });
+        }
+
+        results.style.display = 'block';
+      }
+
+      const initial = input.value.trim();
+      if (initial) runTech(initial);
+    });
+  </script>
+</body>
+</html>

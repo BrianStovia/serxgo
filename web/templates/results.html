@@ -80,11 +80,25 @@
                   <div class="dropdown-item-desc">Security audit, SSL &amp; headers</div>
                 </div>
               </a>
-              <a href="/sherlock" class="dropdown-item" role="menuitem">
-                <span class="dropdown-item-icon">🕵️</span>
+              <a href="/tech" class="dropdown-item" role="menuitem">
+                <span class="dropdown-item-icon">⚡</span>
                 <div>
-                  <div class="dropdown-item-title">Sherlock OSINT</div>
-                  <div class="dropdown-item-desc">Username recon across 20+ platforms</div>
+                  <div class="dropdown-item-title">Tech Inspector</div>
+                  <div class="dropdown-item-desc">CMS, frameworks &amp; server stack</div>
+                </div>
+              </a>
+              <a href="/subdomains" class="dropdown-item" role="menuitem">
+                <span class="dropdown-item-icon">🌐</span>
+                <div>
+                  <div class="dropdown-item-title">Subdomain Finder</div>
+                  <div class="dropdown-item-desc">CT Log certificate asset discovery</div>
+                </div>
+              </a>
+              <a href="/archive" class="dropdown-item" role="menuitem">
+                <span class="dropdown-item-icon">🕰️</span>
+                <div>
+                  <div class="dropdown-item-title">Time Machine</div>
+                  <div class="dropdown-item-desc">Historical snapshots &amp; dead link revive</div>
                 </div>
               </a>
               <a href="/threat" class="dropdown-item" role="menuitem">
@@ -92,6 +106,13 @@
                 <div>
                   <div class="dropdown-item-title">Threat Scanner</div>
                   <div class="dropdown-item-desc">Phishing, redirect &amp; URL analysis</div>
+                </div>
+              </a>
+              <a href="/sherlock" class="dropdown-item" role="menuitem">
+                <span class="dropdown-item-icon">🕵️</span>
+                <div>
+                  <div class="dropdown-item-title">Sherlock OSINT</div>
+                  <div class="dropdown-item-desc">Username recon across 20+ platforms</div>
                 </div>
               </a>
               <a href="/dorks" class="dropdown-item" role="menuitem">
@@ -424,6 +445,8 @@
                   <div class="archive-dropdown-wrap">
                     <button type="button" class="btn-archive-dropdown" title="View historical web archives & snapshots">🕰️ Archive ▾</button>
                     <div class="archive-menu">
+                      <a href="/archive?url={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option" style="font-weight:700; color:var(--accent-primary);">🕰️ SearXGo Time Machine</a>
+                      <a href="/tech?url={{urlquery $item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">⚡ Inspect Tech Stack</a>
                       <a href="https://web.archive.org/web/*/{{$item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">🏛️ Wayback Machine</a>
                       <a href="https://archive.is/{{$item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">📜 Archive.today</a>
                       <a href="https://webcache.googleusercontent.com/search?q=cache:{{$item.URL}}" target="_blank" rel="noreferrer noopener" class="archive-option">⚡ Google Cache</a>
