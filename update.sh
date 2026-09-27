@@ -97,7 +97,18 @@ if [ -d "./.git" ] && [ -f "./cmd/server/main.go" ] && command -v go >/dev/null 
     CGO_ENABLED=0 go build -ldflags="-s -w" -o "${TMP_DIR}/searxgo" ./cmd/server
 # Option B: Download prebuilt binary from GitHub Releases / Raw Repo
 else
-    MAIN_DIST_URL="https://raw.githubusercontent.com/${REPO}/main/dist/${BINARY_NAME}?t=$(date +%s)"
+    LATEST_COMMIT=""
+    if command -v curl >/dev/null 2>&1; then
+        LATEST_COMMIT="$(curl -fsSL "https://api.github.com/repos/${REPO}/commits/main" 2>/dev/null | grep '"sha"' | head -n 1 | cut -d '"' -f 4 || true)"
+    elif command -v wget >/dev/null 2>&1; then
+        LATEST_COMMIT="$(wget -qO- "https://api.github.com/repos/${REPO}/commits/main" 2>/dev/null | grep '"sha"' | head -n 1 | cut -d '"' -f 4 || true)"
+    fi
+
+    if [ -n "${LATEST_COMMIT}" ]; then
+        MAIN_DIST_URL="https://raw.githubusercontent.com/${REPO}/${LATEST_COMMIT}/dist/${BINARY_NAME}"
+    else
+        MAIN_DIST_URL="https://raw.githubusercontent.com/${REPO}/main/dist/${BINARY_NAME}?t=$(date +%s)"
+    fi
     RELEASE_URL="https://github.com/${REPO}/releases/latest/download/${BINARY_NAME}"
     
     DOWNLOADED=false
