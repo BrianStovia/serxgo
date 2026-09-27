@@ -79,6 +79,8 @@ func main() {
 
 	// Music & Lyrics
 	engine.DefaultRegistry.Register(engine.NewGeniusEngine())
+	engine.DefaultRegistry.Register(engine.NewITunesEngine())
+	engine.DefaultRegistry.Register(engine.NewRadioBrowserEngine())
 
 	// Maps & Geolocation
 	engine.DefaultRegistry.Register(engine.NewOpenStreetMapEngine())

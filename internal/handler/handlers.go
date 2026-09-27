@@ -87,8 +87,12 @@ func NewHandler(cfg *config.Config, agg *aggregator.Aggregator) (*Handler, error
 			lower := strings.ToLower(u)
 			return strings.Contains(lower, "youtube.com") || strings.Contains(lower, "youtu.be") ||
 				strings.Contains(lower, "vimeo.com") || strings.Contains(lower, "dailymotion.com") ||
+				strings.Contains(lower, "itunes.apple.com") || strings.Contains(lower, "mzstatic.com") ||
+				strings.Contains(lower, "soundcloud.com") || strings.Contains(lower, "stream") ||
 				strings.HasSuffix(lower, ".mp4") || strings.HasSuffix(lower, ".webm") ||
-				strings.HasSuffix(lower, ".mp3") || strings.HasSuffix(lower, ".ogg")
+				strings.HasSuffix(lower, ".mp3") || strings.HasSuffix(lower, ".ogg") ||
+				strings.HasSuffix(lower, ".m4a") || strings.HasSuffix(lower, ".aac") ||
+				strings.HasSuffix(lower, ".wav") || strings.HasSuffix(lower, ".flac")
 		},
 		"extractDomain": func(rawURL string) string {
 			raw := strings.TrimPrefix(rawURL, "https://")
