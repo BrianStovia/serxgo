@@ -2450,6 +2450,8 @@ input:checked + .slider:before {
   opacity: 0.65;
 }
 
+.nav-dropdown:hover .dropdown-chevron,
+.nav-dropdown:focus-within .dropdown-chevron,
 .nav-dropdown.open .dropdown-chevron {
   transform: rotate(180deg);
   opacity: 1;
@@ -2481,6 +2483,8 @@ input:checked + .slider:before {
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.nav-dropdown:hover .nav-dropdown-panel,
+.nav-dropdown:focus-within .nav-dropdown-panel,
 .nav-dropdown.open .nav-dropdown-panel {
   opacity: 1;
   transform: translateY(0) scale(1);
@@ -2556,5 +2560,107 @@ input:checked + .slider:before {
   margin-top: 0.1rem;
   line-height: 1.3;
 }
+
+/* Global Standard App Header Navbar */
+.app-header {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: rgba(10, 14, 26, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-glass, rgba(255, 255, 255, 0.08));
+  padding: 0.65rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+}
+
+.app-header .header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.app-header .brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: var(--text-primary, #fff);
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+
+.app-header .brand-logo:hover {
+  opacity: 0.9;
+}
+
+.app-header .brand-name {
+  letter-spacing: -0.02em;
+}
+
+.app-header .brand-accent {
+  background: var(--accent-gradient, linear-gradient(135deg, #6366f1, #a855f7));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.app-header .nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+@media (max-width: 900px) {
+  .app-header .nav-links {
+    display: none;
+  }
+}
+
+.app-header .nav-link {
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.app-header .nav-link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.app-header .nav-link.active {
+  color: #fff;
+  background: rgba(99, 102, 241, 0.2);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+}
+
+.app-header .header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.app-header .nav-dropdown {
+  position: relative;
+}
+
+.app-header .nav-dropdown-panel {
+  left: auto;
+  right: 0;
+}
+
 
 

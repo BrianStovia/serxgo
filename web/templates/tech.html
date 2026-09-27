@@ -71,138 +71,71 @@
 <body>
   <div class="ambient-glow"></div>
 
-  <!-- Top Navigation Header -->
-  <nav class="top-nav container">
-    <a href="/" class="nav-btn"><span>🪐 Home</span></a>
-
-    <!-- Tools Dropdown -->
-    <div class="nav-dropdown">
-      <button type="button" class="nav-btn nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false">
-        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none">
-          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-        </svg>
-        <span>Tools</span>
-        <svg class="dropdown-chevron" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none">
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
-      </button>
-
-      <div class="nav-dropdown-panel" role="menu">
-        <div class="dropdown-section-label">🔍 Intelligence</div>
-        <a href="/recon" class="dropdown-item" role="menuitem">
-          <span class="dropdown-item-icon">🔬</span>
-          <div>
-            <div class="dropdown-item-title">Domain Recon</div>
-            <div class="dropdown-item-desc">Security audit, SSL &amp; headers</div>
-          </div>
-        </a>
-        <a href="/tech" class="dropdown-item" role="menuitem">
-          <span class="dropdown-item-icon">⚡</span>
-          <div>
-            <div class="dropdown-item-title">Tech Inspector</div>
-            <div class="dropdown-item-desc">CMS, frameworks &amp; server stack</div>
-          </div>
-        </a>
-        <a href="/subdomains" class="dropdown-item" role="menuitem">
-          <span class="dropdown-item-icon">🌐</span>
-          <div>
-            <div class="dropdown-item-title">Subdomain Finder</div>
-            <div class="dropdown-item-desc">CT Log certificate asset discovery</div>
-          </div>
-        </a>
-        <a href="/archive" class="dropdown-item" role="menuitem">
-          <span class="dropdown-item-icon">🕰️</span>
-          <div>
-            <div class="dropdown-item-title">Time Machine</div>
-            <div class="dropdown-item-desc">Historical snapshots &amp; dead link revive</div>
-          </div>
-        </a>
-        <a href="/threat" class="dropdown-item" role="menuitem">
-          <span class="dropdown-item-icon">🛡️</span>
-          <div>
-            <div class="dropdown-item-title">Threat Scanner</div>
-            <div class="dropdown-item-desc">Phishing, redirect &amp; URL analysis</div>
-          </div>
-        </a>
-        <a href="/sherlock" class="dropdown-item" role="menuitem">
-          <span class="dropdown-item-icon">🕵️</span>
-          <div>
-            <div class="dropdown-item-title">Sherlock OSINT</div>
-            <div class="dropdown-item-desc">Username recon across 20+ platforms</div>
-          </div>
-        </a>
-        <a href="/dorks" class="dropdown-item" role="menuitem">
-          <span class="dropdown-item-icon">🎯</span>
-          <div>
-            <div class="dropdown-item-title">Dorks Suite</div>
-            <div class="dropdown-item-desc">Google dorking &amp; recon operators</div>
-          </div>
-        </a>
-
-        <div class="dropdown-divider"></div>
-        <div class="dropdown-section-label">🛠️ Utilities</div>
-        <a href="/graph" class="dropdown-item" role="menuitem">
-          <span class="dropdown-item-icon">🕸️</span>
-          <div>
-            <div class="dropdown-item-title">Knowledge Graph</div>
-            <div class="dropdown-item-desc">Entity &amp; domain relationship explorer</div>
-          </div>
-        </a>
-        <a href="/scrub" class="dropdown-item" role="menuitem">
-          <span class="dropdown-item-icon">🧹</span>
-          <div>
-            <div class="dropdown-item-title">EXIF Scrubber</div>
-            <div class="dropdown-item-desc">Strip metadata from images</div>
-          </div>
-        </a>
-        <a href="/reader" class="dropdown-item" role="menuitem">
-          <span class="dropdown-item-icon">📖</span>
-          <div>
-            <div class="dropdown-item-title">Reader View</div>
-            <div class="dropdown-item-desc">Clean distraction-free reading</div>
-          </div>
-        </a>
-        <a href="/split" class="dropdown-item" role="menuitem">
-          <span class="dropdown-item-icon">⚖️</span>
-          <div>
-            <div class="dropdown-item-title">Split Compare</div>
-            <div class="dropdown-item-desc">Side-by-side engine comparison</div>
-          </div>
-        </a>
-
-        <div class="dropdown-divider"></div>
-        <div class="dropdown-section-label">📊 System</div>
-        <a href="/stats" class="dropdown-item" role="menuitem">
-          <span class="dropdown-item-icon">📈</span>
-          <div>
-            <div class="dropdown-item-title">Telemetry</div>
-            <div class="dropdown-item-desc">Engine performance &amp; health</div>
-          </div>
-        </a>
+  <!-- Standard Global Header Navbar -->
+  <header class="app-header">
+    <div class="header-left">
+      <a href="/" class="brand-logo" title="Back to SearXGo Home">
+        <span style="font-size:1.35rem;">🪐</span>
+        <span class="brand-name">Sear<span class="brand-accent">X</span>Go</span>
+      </a>
+      <div class="nav-links">
+        <a href="/" class="nav-link">Search</a>
+        <a href="/news-hub" class="nav-link">News Pulse</a>
+        <a href="/weather" class="nav-link">Weather</a>
+        <a href="/currency" class="nav-link">Currency</a>
+        <a href="/recon" class="nav-link">Recon</a>
+        <a href="/tech" class="nav-link active">Tech</a>
+        <a href="/dorks" class="nav-link">Dorks</a>
       </div>
     </div>
-
-    <!-- Bookmarks -->
-    <button type="button" class="nav-btn btn-open-bookmarks" title="Saved Bookmarks">
-      <span>🔖</span>
-      <span>Bookmarks</span>
-      <span class="bookmark-counter" style="display:none; background:var(--accent-primary); color:white; border-radius:10px; padding:1px 6px; font-size:0.7rem; font-weight:700;">0</span>
-    </button>
-
-    <!-- Settings -->
-    <a href="/settings" class="nav-btn" title="Preferences &amp; Engines">
-      <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none">
-        <circle cx="12" cy="12" r="3"></circle>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-      </svg>
-      <span>Settings</span>
-    </a>
-
-    <!-- Command Palette -->
-    <button type="button" class="cmd-k-badge btn-open-cmd-palette" title="Quick Command Palette (Ctrl+K)">
-      <span>⌘K</span>
-    </button>
-  </nav>
+    <div class="header-right">
+      <a href="/" class="nav-btn" title="Return to Search Home">
+        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        <span>Home</span>
+      </a>
+      <div class="nav-dropdown" id="tools-dropdown">
+        <button type="button" class="nav-btn nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false" title="All Tools &amp; Utilities">
+          <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          <span>Tools</span>
+          <svg class="dropdown-chevron" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="nav-dropdown-panel" role="menu">
+          <div class="dropdown-section-label">🌤️ Weather &amp; Finance</div>
+          <a href="/weather" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">⛅</span><div><div class="dropdown-item-title">Weather Radar</div><div class="dropdown-item-desc">Live 7-day forecast &amp; rain radar</div></div></a>
+          <a href="/currency" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">💱</span><div><div class="dropdown-item-title">Currency &amp; Crypto</div><div class="dropdown-item-desc">Real-time exchange converter</div></div></a>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-section-label">🔍 Intelligence &amp; Recon</div>
+          <a href="/news-hub" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">📰</span><div><div class="dropdown-item-title">World News Pulse</div><div class="dropdown-item-desc">Live global news portals</div></div></a>
+          <a href="/recon" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🔬</span><div><div class="dropdown-item-title">Domain Recon</div><div class="dropdown-item-desc">Security audit, SSL &amp; headers</div></div></a>
+          <a href="/tech" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">⚡</span><div><div class="dropdown-item-title">Tech Inspector</div><div class="dropdown-item-desc">CMS, frameworks &amp; server stack</div></div></a>
+          <a href="/subdomains" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🌐</span><div><div class="dropdown-item-title">Subdomain Finder</div><div class="dropdown-item-desc">CT Log certificate asset discovery</div></div></a>
+          <a href="/archive" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🕰️</span><div><div class="dropdown-item-title">Time Machine</div><div class="dropdown-item-desc">Historical snapshots &amp; dead link revive</div></div></a>
+          <a href="/dns" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">📡</span><div><div class="dropdown-item-title">DNS Propagation</div><div class="dropdown-item-desc">Global DNS resolver check</div></div></a>
+          <a href="/ping" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">⚡</span><div><div class="dropdown-item-title">Is It Down &amp; Ping</div><div class="dropdown-item-desc">Uptime &amp; port scanner</div></div></a>
+          <a href="/threat" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🛡️</span><div><div class="dropdown-item-title">Threat Scanner</div><div class="dropdown-item-desc">Phishing, redirect &amp; URL analysis</div></div></a>
+          <a href="/sherlock" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🕵️</span><div><div class="dropdown-item-title">Sherlock OSINT</div><div class="dropdown-item-desc">Username recon across 20+ platforms</div></div></a>
+          <a href="/dorks" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🎯</span><div><div class="dropdown-item-title">Dorks Suite</div><div class="dropdown-item-desc">Google dorking &amp; recon operators</div></div></a>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-section-label">🛠️ Utilities</div>
+          <a href="/bypass" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🔓</span><div><div class="dropdown-item-title">Paywall Bypass</div><div class="dropdown-item-desc">Clean mirror article reader</div></div></a>
+          <a href="/media" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">📥</span><div><div class="dropdown-item-title">Media Downloader</div><div class="dropdown-item-desc">Ad-free video &amp; audio extractor</div></div></a>
+          <a href="/qr" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">📱</span><div><div class="dropdown-item-title">QR &amp; WiFi Studio</div><div class="dropdown-item-desc">Generator &amp; scanner</div></div></a>
+          <a href="/reader" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">📖</span><div><div class="dropdown-item-title">Reader View</div><div class="dropdown-item-desc">Clean distraction-free reading</div></div></a>
+          <a href="/graph" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🕸️</span><div><div class="dropdown-item-title">Knowledge Graph</div><div class="dropdown-item-desc">Entity &amp; domain relationship explorer</div></div></a>
+          <a href="/scrub" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🧹</span><div><div class="dropdown-item-title">Metadata Stripper</div><div class="dropdown-item-desc">EXIF &amp; GPS privacy cleaner</div></div></a>
+          <a href="/split" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">⚖️</span><div><div class="dropdown-item-title">Split Dual Search</div><div class="dropdown-item-desc">Side-by-side engine comparison</div></div></a>
+          <a href="/settings" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">⚙️</span><div><div class="dropdown-item-title">Settings</div><div class="dropdown-item-desc">Engines, privacy &amp; appearance</div></div></a>
+        </div>
+      </div>
+      <a href="/settings" class="nav-btn" title="Preferences &amp; Settings">
+        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Settings</span>
+      </a>
+      <button type="button" class="cmd-k-badge btn-open-cmd-palette" title="Quick Command Palette (Ctrl+K)">
+        <span>⌘K</span>
+      </button>
+    </div>
+  </header>
 
   <div class="tech-container">
     <div style="text-align:center; margin-bottom:2rem;">

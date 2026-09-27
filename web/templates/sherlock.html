@@ -277,23 +277,40 @@
 <body>
   <div class="ambient-glow"></div>
 
-  <!-- Top Navigation Header -->
-  <nav class="top-nav container">
-    <a href="/" class="nav-btn"><span>🪐 Home</span></a>
-
-    <!-- Tools Dropdown -->
-    <div class="nav-dropdown">
-      <button type="button" class="nav-btn nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false">
-        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none">
-          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-        </svg>
-        <span>Tools</span>
-        <svg class="dropdown-chevron" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none">
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
-      </button>
+  <!-- Standard Global Header Navbar -->
+  <header class="app-header">
+    <div class="header-left">
+      <a href="/" class="brand-logo" title="Back to SearXGo Home">
+        <span style="font-size:1.35rem;">🪐</span>
+        <span class="brand-name">Sear<span class="brand-accent">X</span>Go</span>
+      </a>
+      <div class="nav-links">
+        <a href="/" class="nav-link">Search</a>
+        <a href="/news-hub" class="nav-link">News Pulse</a>
+        <a href="/weather" class="nav-link">Weather</a>
+        <a href="/currency" class="nav-link">Currency</a>
+        <a href="/recon" class="nav-link">Recon</a>
+        <a href="/sherlock" class="nav-link active">Sherlock OSINT</a>
+        <a href="/dorks" class="nav-link">Dorks</a>
+      </div>
+    </div>
+    <div class="header-right">
+      <a href="/" class="nav-btn" title="Return to Search Home">
+        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        <span>Home</span>
+      </a>
+      <div class="nav-dropdown" id="tools-dropdown">
+        <button type="button" class="nav-btn nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false" title="All Tools &amp; Utilities">
+          <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          <span>Tools</span>
+          <svg class="dropdown-chevron" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
 
       <div class="nav-dropdown-panel" role="menu">
+        <div class="dropdown-section-label">🌤️ Weather &amp; Finance</div>
+        <a href="/weather" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">⛅</span><div><div class="dropdown-item-title">Weather Radar</div><div class="dropdown-item-desc">Live 7-day forecast &amp; rain radar</div></div></a>
+        <a href="/currency" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">💱</span><div><div class="dropdown-item-title">Currency &amp; Crypto</div><div class="dropdown-item-desc">Real-time exchange converter</div></div></a>
+        <div class="dropdown-divider"></div>
         <div class="dropdown-section-label">🔍 Intelligence</div>
         <a href="/recon" class="dropdown-item" role="menuitem">
           <span class="dropdown-item-icon">🔬</span>
@@ -387,7 +404,7 @@
     <button type="button" class="cmd-k-badge btn-open-cmd-palette" title="Quick Command Palette (Ctrl+K)">
       <span>⌘K</span>
     </button>
-  </nav>
+  </header>
 
   <div class="sherlock-container">
     <!-- Header Title -->
