@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Currency &amp; Crypto Exchange Converter - SearXGo</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <style>
+    .curr-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 20px 80px;
+    }
+    .curr-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .curr-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 14px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #10b981;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .curr-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #f8fafc 0%, #34d399 50%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+    .curr-subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    /* Hero Converter Box */
+    .converter-card {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.7));
+      border: 1px solid rgba(52, 211, 153, 0.25);
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+      margin-bottom: 30px;
+      position: relative;
+      overflow: hidden;
+    }
+    .converter-card::after {
+      content: "";
+      position: absolute;
+      top: -80px;
+      right: -80px;
+      width: 250px;
+      height: 250px;
+      background: radial-gradient(circle, rgba(52, 211, 153, 0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .converter-grid {
+      display: grid;
+      grid-template-columns: 1.5fr 48px 1.5fr;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 768px) {
+      .converter-grid {
+        grid-template-columns: 1fr;
+      }
+      .swap-btn-wrap {
+        display: flex;
+        justify-content: center;
+      }
+    }
+    .curr-field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .curr-field label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .curr-input-group {
+      display: flex;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+    .curr-input-group:focus-within {
+      border-color: #34d399;
+      box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.2);
+    }
+    .curr-amount-input {
+      flex: 1;
+      height: 52px;
+      padding: 0 16px;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 1.25rem;
+      font-weight: 700;
+      outline: none;
+    }
+    .curr-select {
+      height: 52px;
+      padding: 0 16px;
+      background: rgba(30, 41, 59, 0.8);
+      border: none;
+      border-left: 1px solid var(--border-color);
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+    .curr-select option {
+      background: #0f172a;
+      color: #fff;
+    }
+    .swap-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(52, 211, 153, 0.15);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+      color: #34d399;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .swap-btn:hover {
+      background: rgba(52, 211, 153, 0.3);
+      transform: rotate(180deg);
+    }
+
+    /* Result Display */
+    .conversion-result-box {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+    }
+    .result-amount-display {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 6px;
+      word-break: break-word;
+    }
+    .result-amount-display .result-target {
+      color: #34d399;
+    }
+    .result-rate-desc {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .result-meta {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+    }
+    .live-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+    }
+
+    /* Quick Pairs */
+    .quick-pairs-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 30px;
+    }
+    .pair-pill {
+      padding: 8px 16px;
+      border-radius: 999px;
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pair-pill:hover {
+      background: rgba(52, 211, 153, 0.15);
+      border-color: #34d399;
+      color: #34d399;
+      transform: translateY(-1px);
+    }
+
+    /* Crypto Grid */
+    .section-header {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .crypto-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      margin-bottom: 36px;
+    }
+    .crypto-card {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: transform 0.2s, border-color 0.2s;
+      cursor: pointer;
+    }
+    .crypto-card:hover {
+      transform: translateY(-2px);
+      border-color: #34d399;
+    }
+    .crypto-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .crypto-name-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .crypto-icon {
+      font-size: 1.6rem;
+    }
+    .crypto-symbol {
+      font-weight: 700;
+      color: #fff;
+      font-size: 1.05rem;
+    }
+    .crypto-name {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .crypto-badge-change {
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .change-up { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+    .change-down { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .crypto-price-usd {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    .crypto-price-idr {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Multiplier Matrix Table */
+    .matrix-card {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 24px;
+    }
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 0.95rem;
+    }
+    .matrix-table th {
+      text-align: left;
+      padding: 12px 16px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .matrix-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: #e2e8f0;
+    }
+    .matrix-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .matrix-units {
+      font-weight: 700;
+      color: #fff;
+    }
+    .matrix-converted {
+      font-weight: 700;
+      color: #34d399;
+    }
+  </style>
+</head>
+<body class="theme-dark">
+  <!-- Global Top Navigation Bar -->
+  <header class="app-header">
+    <div class="header-left">
+      <a href="/" class="brand-logo" title="Back to SearXGo Home">
+        <span class="brand-name">Sear<span class="brand-accent">X</span>Go</span>
+      </a>
+      <div class="nav-links">
+        <a href="/" class="nav-link">Search</a>
+        <a href="/news-hub" class="nav-link">News Pulse</a>
+        <a href="/weather" class="nav-link">Weather</a>
+        <a href="/currency" class="nav-link active">Currency</a>
+        <a href="/dorks" class="nav-link">Dorks</a>
+        <a href="/recon" class="nav-link">Recon</a>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="nav-dropdown">
+        <button type="button" class="nav-btn nav-dropdown-trigger" id="toolsBtn">
+          <span>More Tools</span>
+          <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="nav-dropdown-panel" id="toolsPanel">
+          <div class="dropdown-section-label">🌤️ Weather &amp; Finance</div>
+          <a href="/currency" class="dropdown-item"><span class="dropdown-item-icon">💱</span><div><div class="dropdown-item-title">Currency &amp; Crypto</div><div class="dropdown-item-desc">Real-time exchange converter</div></div></a>
+          <a href="/weather" class="dropdown-item"><span class="dropdown-item-icon">⛅</span><div><div class="dropdown-item-title">Weather Radar</div><div class="dropdown-item-desc">Live 7-day forecast &amp; rain radar</div></div></a>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-section-label">⚡ Intelligence &amp; Recon</div>
+          <a href="/news-hub" class="dropdown-item"><span class="dropdown-item-icon">📰</span><div><div class="dropdown-item-title">World News Pulse</div><div class="dropdown-item-desc">Live global news portals</div></div></a>
+          <a href="/dns" class="dropdown-item"><span class="dropdown-item-icon">📡</span><div><div class="dropdown-item-title">DNS Propagation</div><div class="dropdown-item-desc">Global DNS resolver check</div></div></a>
+          <a href="/ping" class="dropdown-item"><span class="dropdown-item-icon">⚡</span><div><div class="dropdown-item-title">Is It Down &amp; Ping</div><div class="dropdown-item-desc">Uptime &amp; port scanner</div></div></a>
+          <a href="/bypass" class="dropdown-item"><span class="dropdown-item-icon">🔓</span><div><div class="dropdown-item-title">Paywall Bypass</div><div class="dropdown-item-desc">Clean mirror article reader</div></div></a>
+          <a href="/media" class="dropdown-item"><span class="dropdown-item-icon">📥</span><div><div class="dropdown-item-title">Media Downloader</div><div class="dropdown-item-desc">Ad-free video &amp; audio extractor</div></div></a>
+          <a href="/qr" class="dropdown-item"><span class="dropdown-item-icon">📱</span><div><div class="dropdown-item-title">QR &amp; WiFi Studio</div><div class="dropdown-item-desc">Generator &amp; scanner</div></div></a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="curr-container">
+    <div class="curr-header">
+      <div class="curr-badge">💱 Real-Time Global Exchange</div>
+      <h1 class="curr-title">Live Currency &amp; Crypto Converter</h1>
+      <p class="curr-subtitle">Live exchange rates across 160+ world fiat currencies and top cryptocurrencies</p>
+    </div>
+
+    <!-- Quick Pairs -->
+    <div class="quick-pairs-wrap">
+      <button class="pair-pill" onclick="setPair('USD', 'IDR')">🇺🇸 USD ⇄ 🇮🇩 IDR</button>
+      <button class="pair-pill" onclick="setPair('EUR', 'USD')">🇪🇺 EUR ⇄ 🇺🇸 USD</button>
+      <button class="pair-pill" onclick="setPair('USD', 'JPY')">🇺🇸 USD ⇄ 🇯🇵 JPY</button>
+      <button class="pair-pill" onclick="setPair('SGD', 'IDR')">🇸🇬 SGD ⇄ 🇮🇩 IDR</button>
+      <button class="pair-pill" onclick="setPair('MYR', 'IDR')">🇲🇾 MYR ⇄ 🇮🇩 IDR</button>
+      <button class="pair-pill" onclick="setPair('BTC', 'USD')">🪙 BTC ⇄ 🇺🇸 USD</button>
+      <button class="pair-pill" onclick="setPair('ETH', 'USD')">🪙 ETH ⇄ 🇺🇸 USD</button>
+      <button class="pair-pill" onclick="setPair('SOL', 'USD')">🪙 SOL ⇄ 🇺🇸 USD</button>
+      <button class="pair-pill" onclick="setPair('BTC', 'IDR')">🪙 BTC ⇄ 🇮🇩 IDR</button>
+    </div>
+
+    <!-- Main Converter Card -->
+    <div class="converter-card">
+      <div class="converter-grid">
+        <!-- From Field -->
+        <div class="curr-field">
+          <label>You send / Convert from</label>
+          <div class="curr-input-group">
+            <input type="number" id="amountInput" class="curr-amount-input" value="100" min="0" step="any" oninput="calculateConversion()">
+            <select id="fromCurrency" class="curr-select" onchange="calculateConversion()"></select>
+          </div>
+        </div>
+
+        <!-- Swap Button -->
+        <div class="swap-btn-wrap">
+          <button type="button" class="swap-btn" onclick="swapCurrencies()" title="Swap currencies">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.2" fill="none"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+          </button>
+        </div>
+
+        <!-- To Field -->
+        <div class="curr-field">
+          <label>You receive / Convert to</label>
+          <div class="curr-input-group">
+            <input type="text" id="resultInput" class="curr-amount-input" readonly>
+            <select id="toCurrency" class="curr-select" onchange="calculateConversion()"></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result Showcase -->
+      <div class="conversion-result-box">
+        <div class="result-amount-display" id="resultDisplay">100 USD = <span class="result-target">...</span></div>
+        <div class="result-rate-desc" id="rateDesc">Calculating live exchange rate...</div>
+        <div class="result-meta">
+          <span><span class="live-dot"></span> Live Mid-Market Rate</span>
+          <span id="timestampText">Updated real-time</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Crypto Market Tickers -->
+    <div class="section-header">
+      <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span>Live Top Cryptocurrencies</span>
+    </div>
+    <div class="crypto-grid" id="cryptoGrid">
+      <div style="grid-column: 1/-1; text-align:center; padding: 20px; color:var(--text-muted);">Loading crypto assets...</div>
+    </div>
+
+    <!-- Multiplier Breakdown Table -->
+    <div class="matrix-card">
+      <div class="section-header" style="margin-bottom: 4px;">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+        <span id="matrixTitle">Conversion Matrix &amp; Multiplier Table</span>
+      </div>
+      <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">Quick reference units comparison</div>
+      <table class="matrix-table">
+        <thead>
+          <tr>
+            <th id="thFrom">From Unit</th>
+            <th id="thTo">Converted Total</th>
+            <th>Inverse Ratio</th>
+          </tr>
+        </thead>
+        <tbody id="matrixBody"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    let currencies = [];
+    let currentFrom = "USD";
+    let currentTo = "IDR";
+
+    // Toggle dropdown
+    const toolsBtn = document.getElementById('toolsBtn');
+    const toolsPanel = document.getElementById('toolsPanel');
+    if (toolsBtn && toolsPanel) {
+      toolsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toolsPanel.classList.toggle('show');
+      });
+      document.addEventListener('click', () => toolsPanel.classList.remove('show'));
+    }
+
+    async function initCurrencies() {
+      try {
+        const res = await fetch('/api/currency/currencies');
+        if (res.ok) {
+          currencies = await res.json();
+          populateDropdowns();
+        }
+      } catch (e) {
+        console.error('Failed to load currencies', e);
+      }
+      loadTopCryptos();
+      calculateConversion();
+    }
+
+    function populateDropdowns() {
+      const fromSel = document.getElementById('fromCurrency');
+      const toSel = document.getElementById('toCurrency');
+      fromSel.innerHTML = '';
+      toSel.innerHTML = '';
+
+      currencies.forEach(c => {
+        const opt1 = document.createElement('option');
+        opt1.value = c.code;
+        opt1.textContent = `${c.flag} ${c.code} - ${c.name}`;
+        if (c.code === currentFrom) opt1.selected = true;
+        fromSel.appendChild(opt1);
+
+        const opt2 = document.createElement('option');
+        opt2.value = c.code;
+        opt2.textContent = `${c.flag} ${c.code} - ${c.name}`;
+        if (c.code === currentTo) opt2.selected = true;
+        toSel.appendChild(opt2);
+      });
+    }
+
+    function setPair(from, to) {
+      currentFrom = from;
+      currentTo = to;
+      const fromSel = document.getElementById('fromCurrency');
+      const toSel = document.getElementById('toCurrency');
+      if (fromSel) fromSel.value = from;
+      if (toSel) toSel.value = to;
+      calculateConversion();
+    }
+
+    function swapCurrencies() {
+      const fromSel = document.getElementById('fromCurrency');
+      const toSel = document.getElementById('toCurrency');
+      const temp = fromSel.value;
+      fromSel.value = toSel.value;
+      toSel.value = temp;
+      calculateConversion();
+    }
+
+    async function calculateConversion() {
+      const amountVal = parseFloat(document.getElementById('amountInput').value) || 0;
+      const fromVal = document.getElementById('fromCurrency').value || 'USD';
+      const toVal = document.getElementById('toCurrency').value || 'IDR';
+
+      try {
+        const res = await fetch(`/api/currency/convert?from=${encodeURIComponent(fromVal)}&to=${encodeURIComponent(toVal)}&amount=${amountVal}`);
+        if (!res.ok) throw new Error('Conversion error');
+        const data = await res.json();
+
+        document.getElementById('resultInput').value = data.formatted;
+        document.getElementById('resultDisplay').innerHTML = `${data.amount} ${data.from_code} = <span class="result-target">${data.formatted} ${data.to_code}</span>`;
+        
+        let unitRateStr = data.rate < 0.0001 ? data.rate.toFixed(8) : (data.rate >= 1000 ? data.rate.toLocaleString('en-US', {maximumFractionDigits:2}) : data.rate.toFixed(4));
+        let invRateStr = data.inverse_rate < 0.0001 ? data.inverse_rate.toFixed(8) : (data.inverse_rate >= 1000 ? data.inverse_rate.toLocaleString('en-US', {maximumFractionDigits:2}) : data.inverse_rate.toFixed(4));
+        
+        document.getElementById('rateDesc').textContent = `1 ${data.from_code} = ${unitRateStr} ${data.to_code} • 1 ${data.to_code} = ${invRateStr} ${data.from_code}`;
+
+        renderMatrix(data.from_code, data.to_code, data.rate, data.inverse_rate);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function renderMatrix(from, to, rate, invRate) {
+      document.getElementById('thFrom').textContent = `Unit in ${from}`;
+      document.getElementById('thTo').textContent = `Equivalent in ${to}`;
+      document.getElementById('matrixTitle').textContent = `${from} to ${to} Conversion Table`;
+
+      const units = [1, 5, 10, 25, 50, 100, 500, 1000, 5000];
+      const tbody = document.getElementById('matrixBody');
+      tbody.innerHTML = '';
+
+      units.forEach(u => {
+        const converted = u * rate;
+        let cStr = converted >= 1000 ? converted.toLocaleString('en-US', {maximumFractionDigits:2}) : (converted < 0.001 ? converted.toFixed(6) : converted.toFixed(2));
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="matrix-units">${u.toLocaleString()} ${from}</td>
+          <td class="matrix-converted">${cStr} ${to}</td>
+          <td style="color:var(--text-muted); font-size:0.85rem;">${(1/rate).toFixed(6)} ${from}/${to}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function loadTopCryptos() {
+      try {
+        const res = await fetch('/api/currency/crypto');
+        if (!res.ok) return;
+        const list = await res.json();
+        const grid = document.getElementById('cryptoGrid');
+        grid.innerHTML = '';
+
+        list.forEach(c => {
+          const card = document.createElement('div');
+          card.className = 'crypto-card';
+          card.onclick = () => setPair(c.symbol, 'USD');
+
+          const isUp = c.change_24h >= 0;
+          const changeClass = isUp ? 'change-up' : 'change-down';
+          const changeSign = isUp ? '+' : '';
+
+          const usdFormatted = c.price_usd >= 1 ? c.price_usd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : c.price_usd.toFixed(4);
+          const idrFormatted = c.price_idr >= 1 ? c.price_idr.toLocaleString('en-US', {maximumFractionDigits: 0}) : c.price_idr.toFixed(2);
+
+          card.innerHTML = `
+            <div class="crypto-card-top">
+              <div class="crypto-name-wrap">
+                <span class="crypto-icon">${c.icon}</span>
+                <div>
+                  <div class="crypto-symbol">${c.symbol}</div>
+                  <div class="crypto-name">${c.name}</div>
+                </div>
+              </div>
+              <span class="crypto-badge-change ${changeClass}">${changeSign}${c.change_24h.toFixed(2)}%</span>
+            </div>
+            <div>
+              <div class="crypto-price-usd">$${usdFormatted}</div>
+              <div class="crypto-price-idr">Rp ${idrFormatted}</div>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // Auto calculate on load
+    window.addEventListener('DOMContentLoaded', () => {
+      initCurrencies();
+    });
+  </script>
+</body>
+</html>

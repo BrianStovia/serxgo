@@ -29,6 +29,7 @@ import (
 	"searxgo/internal/bangs"
 	"searxgo/internal/bypass"
 	"searxgo/internal/config"
+	"searxgo/internal/currency"
 	"searxgo/internal/dns"
 	"searxgo/internal/dorks"
 	"searxgo/internal/engine"
@@ -46,6 +47,7 @@ import (
 	"searxgo/internal/subdomains"
 	"searxgo/internal/tech"
 	"searxgo/internal/threat"
+	"searxgo/internal/weather"
 	"searxgo/web"
 )
 
@@ -78,6 +80,8 @@ type Handler struct {
 	bypassService  *bypass.Service
 	mediaService   *media.Service
 	newsHubService *newshub.Service
+	weatherService *weather.Service
+	currencyService *currency.Service
 }
 
 func NewHandler(cfg *config.Config, agg *aggregator.Aggregator) (*Handler, error) {
@@ -155,6 +159,8 @@ func NewHandler(cfg *config.Config, agg *aggregator.Aggregator) (*Handler, error
 		bypassService:  bypass.NewService(),
 		mediaService:   media.NewService(),
 		newsHubService: newshub.NewService(),
+		weatherService: weather.NewService(),
+		currencyService: currency.NewService(),
 	}, nil
 }
 
@@ -274,6 +280,17 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /pulse", h.ServeNewsHub)
 	mux.HandleFunc("GET /worldnews", h.ServeNewsHub)
 	mux.HandleFunc("GET /api/news-hub", h.ServeAPINewsHub)
+
+	// Live Weather Radar & Global Forecast
+	mux.HandleFunc("GET /weather", h.ServeWeather)
+	mux.HandleFunc("GET /api/weather", h.ServeAPIWeather)
+
+	// Live Currency & Crypto Exchange Converter
+	mux.HandleFunc("GET /currency", h.ServeCurrency)
+	mux.HandleFunc("GET /api/currency/convert", h.ServeAPICurrencyConvert)
+	mux.HandleFunc("GET /api/currency/crypto", h.ServeAPICurrencyCrypto)
+	mux.HandleFunc("GET /api/currency/currencies", h.ServeAPICurrencyCurrencies)
+	mux.HandleFunc("GET /api/currency/rates", h.ServeAPICurrencyRates)
 
 	// Search Goggles - Domain Block/Boost API
 	mux.HandleFunc("POST /api/goggles/validate", h.ServeAPIGogglesValidate)
@@ -2287,6 +2304,118 @@ func (h *Handler) ServeAPINewsHub(w http.ResponseWriter, r *http.Request) {
 		"articles": articles,
 	})
 }
+
+// ==============================================================================
+// 🌤️ Live Weather Radar & Forecast Handlers
+// ==============================================================================
+
+func (h *Handler) ServeWeather(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	data := map[string]interface{}{}
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "weather.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(buf.Bytes())
+}
+
+func (h *Handler) ServeAPIWeather(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	latStr := r.URL.Query().Get("lat")
+	lonStr := r.URL.Query().Get("lon")
+	query := r.URL.Query().Get("q")
+
+	if latStr != "" && lonStr != "" {
+		lat, err1 := strconv.ParseFloat(latStr, 64)
+		lon, err2 := strconv.ParseFloat(lonStr, 64)
+		if err1 == nil && err2 == nil {
+			report, err := h.weatherService.GetWeatherByCoords(r.Context(), lat, lon, nil)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+				return
+			}
+			json.NewEncoder(w).Encode(report)
+			return
+		}
+	}
+
+	if query == "" {
+		query = "Jakarta"
+	}
+
+	report, err := h.weatherService.GetWeatherByQuery(r.Context(), query)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	json.NewEncoder(w).Encode(report)
+}
+
+// ==============================================================================
+// 💱 Live Currency & Crypto Exchange Handlers
+// ==============================================================================
+
+func (h *Handler) ServeCurrency(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	data := map[string]interface{}{}
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "currency.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(buf.Bytes())
+}
+
+func (h *Handler) ServeAPICurrencyConvert(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	from := r.URL.Query().Get("from")
+	to := r.URL.Query().Get("to")
+	amountStr := r.URL.Query().Get("amount")
+
+	if from == "" {
+		from = "USD"
+	}
+	if to == "" {
+		to = "IDR"
+	}
+	amount := 1.0
+	if amountStr != "" {
+		if val, err := strconv.ParseFloat(amountStr, 64); err == nil {
+			amount = val
+		}
+	}
+
+	res, err := h.currencyService.Convert(from, to, amount)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	json.NewEncoder(w).Encode(res)
+}
+
+func (h *Handler) ServeAPICurrencyCrypto(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	cryptos := h.currencyService.GetTopCryptos()
+	json.NewEncoder(w).Encode(cryptos)
+}
+
+func (h *Handler) ServeAPICurrencyCurrencies(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(currency.CurrencyList)
+}
+
+func (h *Handler) ServeAPICurrencyRates(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	rates := h.currencyService.GetRatesSnapshot()
+	json.NewEncoder(w).Encode(rates)
+}
+
 
 
 

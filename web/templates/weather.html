@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Weather Radar &amp; Forecast - SearXGo</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <style>
+    .weather-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 20px 80px;
+    }
+    .weather-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .weather-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 14px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #38bdf8;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .weather-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #f8fafc 0%, #38bdf8 50%, #818cf8 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+    .weather-subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+    .weather-search-bar {
+      display: flex;
+      gap: 10px;
+      max-width: 640px;
+      margin: 0 auto 20px;
+    }
+    .weather-input-wrap {
+      flex: 1;
+      position: relative;
+    }
+    .weather-input-wrap input {
+      width: 100%;
+      height: 48px;
+      padding: 0 16px 0 44px;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .weather-input-wrap input:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+    }
+    .weather-input-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+    .weather-btn {
+      height: 48px;
+      padding: 0 20px;
+      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .weather-btn:hover {
+      opacity: 0.9;
+    }
+    .weather-geo-btn {
+      height: 48px;
+      padding: 0 16px;
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      color: #e2e8f0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    .weather-geo-btn:hover {
+      background: rgba(51, 65, 85, 0.9);
+      border-color: #38bdf8;
+    }
+    .weather-quick-cities {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 30px;
+    }
+    .city-pill {
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .city-pill:hover, .city-pill.active {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+
+    /* Hero Weather Card */
+    .hero-weather-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 900px) {
+      .hero-weather-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .current-card {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.85), rgba(30, 41, 59, 0.6));
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 20px;
+      padding: 28px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    .current-card::after {
+      content: "";
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .current-loc-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #38bdf8;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .current-loc-name {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .current-loc-country {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 20px;
+    }
+    .current-temp-wrap {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .current-emoji {
+      font-size: 4.5rem;
+      line-height: 1;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+    }
+    .current-temp-val {
+      font-size: 4rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .current-temp-unit {
+      font-size: 1.8rem;
+      color: #38bdf8;
+      font-weight: 600;
+      margin-left: 2px;
+    }
+    .current-condition-text {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 4px;
+    }
+    .current-feels-like {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    /* Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.85), rgba(30, 41, 59, 0.6));
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 24px;
+    }
+    @media (max-width: 600px) {
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    .metric-tile {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .metric-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .metric-val {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .metric-sub {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+    .badge-uv {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .uv-low { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+    .uv-mod { background: rgba(234, 179, 8, 0.2); color: #facc15; }
+    .uv-high { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
+    .uv-ext { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+    /* Hourly Slider */
+    .weather-section-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .hourly-track {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding: 8px 4px 16px;
+      scrollbar-width: thin;
+      margin-bottom: 24px;
+    }
+    .hourly-card {
+      flex: 0 0 90px;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 14px 8px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .hourly-card:hover {
+      transform: translateY(-2px);
+      border-color: #38bdf8;
+    }
+    .hourly-time {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .hourly-emoji {
+      font-size: 1.8rem;
+      margin: 2px 0;
+    }
+    .hourly-temp {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .hourly-rain {
+      font-size: 0.7rem;
+      color: #38bdf8;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    /* 7-Day Forecast Grid */
+    .daily-card-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
+      margin-bottom: 30px;
+    }
+    .daily-card {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .daily-day-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .daily-emoji {
+      font-size: 2rem;
+    }
+    .daily-day-name {
+      font-weight: 600;
+      color: #fff;
+      font-size: 0.95rem;
+    }
+    .daily-condition {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .daily-temps {
+      text-align: right;
+    }
+    .daily-temp-max {
+      font-weight: 700;
+      color: #fff;
+      font-size: 1.05rem;
+    }
+    .daily-temp-min {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-left: 6px;
+    }
+    .daily-sun-info {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    /* Radar Map Container */
+    .radar-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 20px;
+      margin-top: 30px;
+    }
+    .radar-map-wrap {
+      width: 100%;
+      height: 380px;
+      border-radius: 14px;
+      overflow: hidden;
+      margin-top: 12px;
+      position: relative;
+    }
+    #radarMap {
+      width: 100%;
+      height: 100%;
+    }
+    .radar-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body class="theme-dark">
+  <!-- Global Top Navigation Bar -->
+  <header class="app-header">
+    <div class="header-left">
+      <a href="/" class="brand-logo" title="Back to SearXGo Home">
+        <span class="brand-name">Sear<span class="brand-accent">X</span>Go</span>
+      </a>
+      <div class="nav-links">
+        <a href="/" class="nav-link">Search</a>
+        <a href="/news-hub" class="nav-link">News Pulse</a>
+        <a href="/weather" class="nav-link active">Weather</a>
+        <a href="/currency" class="nav-link">Currency</a>
+        <a href="/dorks" class="nav-link">Dorks</a>
+        <a href="/recon" class="nav-link">Recon</a>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="nav-dropdown">
+        <button type="button" class="nav-btn nav-dropdown-trigger" id="toolsBtn">
+          <span>More Tools</span>
+          <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="nav-dropdown-panel" id="toolsPanel">
+          <div class="dropdown-section-label">🌤️ Weather &amp; Finance</div>
+          <a href="/weather" class="dropdown-item"><span class="dropdown-item-icon">⛅</span><div><div class="dropdown-item-title">Weather Radar</div><div class="dropdown-item-desc">Live 7-day forecast &amp; rain radar</div></div></a>
+          <a href="/currency" class="dropdown-item"><span class="dropdown-item-icon">💱</span><div><div class="dropdown-item-title">Currency &amp; Crypto</div><div class="dropdown-item-desc">Real-time exchange converter</div></div></a>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-section-label">⚡ Intelligence &amp; Recon</div>
+          <a href="/news-hub" class="dropdown-item"><span class="dropdown-item-icon">📰</span><div><div class="dropdown-item-title">World News Pulse</div><div class="dropdown-item-desc">Live global news portals</div></div></a>
+          <a href="/dns" class="dropdown-item"><span class="dropdown-item-icon">📡</span><div><div class="dropdown-item-title">DNS Propagation</div><div class="dropdown-item-desc">Global DNS resolver check</div></div></a>
+          <a href="/ping" class="dropdown-item"><span class="dropdown-item-icon">⚡</span><div><div class="dropdown-item-title">Is It Down &amp; Ping</div><div class="dropdown-item-desc">Uptime &amp; port scanner</div></div></a>
+          <a href="/bypass" class="dropdown-item"><span class="dropdown-item-icon">🔓</span><div><div class="dropdown-item-title">Paywall Bypass</div><div class="dropdown-item-desc">Clean mirror article reader</div></div></a>
+          <a href="/media" class="dropdown-item"><span class="dropdown-item-icon">📥</span><div><div class="dropdown-item-title">Media Downloader</div><div class="dropdown-item-desc">Ad-free video &amp; audio extractor</div></div></a>
+          <a href="/qr" class="dropdown-item"><span class="dropdown-item-icon">📱</span><div><div class="dropdown-item-title">QR &amp; WiFi Studio</div><div class="dropdown-item-desc">Generator &amp; scanner</div></div></a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="weather-container">
+    <div class="weather-header">
+      <div class="weather-badge">🌤️ Open-Meteo Global Satellite Data</div>
+      <h1 class="weather-title">Live Weather Radar &amp; Global Forecast</h1>
+      <p class="weather-subtitle">High-precision real-time meteorological conditions, hourly precipitation, UV index, and 7-day predictions</p>
+    </div>
+
+    <!-- Search Form -->
+    <form id="weatherForm" class="weather-search-bar" onsubmit="handleWeatherSubmit(event)">
+      <div class="weather-input-wrap">
+        <svg class="weather-input-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+          <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="cityInput" placeholder="Search any city or coordinates (e.g. Jakarta, Tokyo, London, -6.2, 106.8)..." autocomplete="off" required>
+      </div>
+      <button type="submit" class="weather-btn">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <span>Search</span>
+      </button>
+      <button type="button" class="weather-geo-btn" onclick="useCurrentLocation()" title="Use my current GPS position">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span>GPS</span>
+      </button>
+    </form>
+
+    <!-- Popular Cities Quick Select -->
+    <div class="weather-quick-cities" id="quickCities">
+      <button class="city-pill active" onclick="loadCity('Jakarta')">🇮🇩 Jakarta</button>
+      <button class="city-pill" onclick="loadCity('Tokyo')">🇯🇵 Tokyo</button>
+      <button class="city-pill" onclick="loadCity('London')">🇬🇧 London</button>
+      <button class="city-pill" onclick="loadCity('New York')">🇺🇸 New York</button>
+      <button class="city-pill" onclick="loadCity('Singapore')">🇸🇬 Singapore</button>
+      <button class="city-pill" onclick="loadCity('Paris')">🇫🇷 Paris</button>
+      <button class="city-pill" onclick="loadCity('Sydney')">🇦🇺 Sydney</button>
+      <button class="city-pill" onclick="loadCity('Dubai')">🇦🇪 Dubai</button>
+      <button class="city-pill" onclick="loadCity('Seoul')">🇰🇷 Seoul</button>
+      <button class="city-pill" onclick="loadCity('Cairo')">🇪🇬 Cairo</button>
+    </div>
+
+    <!-- Weather Content Render Target -->
+    <div id="weatherContent">
+      <div style="text-align:center; padding: 60px 0; color: var(--text-muted);">
+        <div style="font-size: 2.5rem; margin-bottom: 12px; animation: pulse 1.5s infinite;">🛰️</div>
+        <div>Loading live meteorological data...</div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+    let mapInstance = null;
+    let radarLayer = null;
+
+    // Toggle dropdown
+    const toolsBtn = document.getElementById('toolsBtn');
+    const toolsPanel = document.getElementById('toolsPanel');
+    if (toolsBtn && toolsPanel) {
+      toolsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toolsPanel.classList.toggle('show');
+      });
+      document.addEventListener('click', () => toolsPanel.classList.remove('show'));
+    }
+
+    function handleWeatherSubmit(e) {
+      e.preventDefault();
+      const city = document.getElementById('cityInput').value.trim();
+      if (city) {
+        loadCity(city);
+      }
+    }
+
+    function loadCity(city) {
+      document.getElementById('cityInput').value = city;
+      document.querySelectorAll('.city-pill').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.toLowerCase().includes(city.toLowerCase()));
+      });
+      fetchWeather(`/api/weather?q=${encodeURIComponent(city)}`);
+    }
+
+    function useCurrentLocation() {
+      if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser");
+        return;
+      }
+      const btn = document.querySelector('.weather-geo-btn');
+      btn.innerHTML = `<span style="font-size:0.8rem">Acquiring...</span>`;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          btn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><circle cx="12" cy="12" r="3"/></svg><span>GPS</span>`;
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          document.getElementById('cityInput').value = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+          fetchWeather(`/api/weather?lat=${lat}&lon=${lon}`);
+        },
+        (err) => {
+          btn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><circle cx="12" cy="12" r="3"/></svg><span>GPS</span>`;
+          alert("Could not access location: " + err.message);
+        },
+        { timeout: 10000 }
+      );
+    }
+
+    async function fetchWeather(endpoint) {
+      const container = document.getElementById('weatherContent');
+      container.innerHTML = `
+        <div style="text-align:center; padding: 60px 0; color: var(--text-muted);">
+          <div style="font-size: 2.5rem; margin-bottom: 12px; animation: pulse 1.5s infinite;">🛰️</div>
+          <div>Querying satellite radar &amp; atmospheric sensors...</div>
+        </div>`;
+
+      try {
+        const res = await fetch(endpoint);
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: 'Failed to fetch weather' }));
+          throw new Error(err.error || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        renderWeather(data);
+      } catch (err) {
+        container.innerHTML = `
+          <div style="text-align:center; padding: 40px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 16px; color: #f87171;">
+            <div style="font-size: 2rem; margin-bottom: 8px;">⚠️</div>
+            <div style="font-weight: 700; margin-bottom: 4px;">Weather Fetch Error</div>
+            <div style="font-size: 0.9rem; color: #fca5a5;">${err.message}</div>
+          </div>`;
+      }
+    }
+
+    function getUVBadge(uv) {
+      if (uv < 3) return `<span class="badge-uv uv-low">${uv.toFixed(1)} Low</span>`;
+      if (uv < 6) return `<span class="badge-uv uv-mod">${uv.toFixed(1)} Moderate</span>`;
+      if (uv < 8) return `<span class="badge-uv uv-high">${uv.toFixed(1)} High</span>`;
+      return `<span class="badge-uv uv-ext">${uv.toFixed(1)} Very High</span>`;
+    }
+
+    function renderWeather(data) {
+      const loc = data.location;
+      const cur = data.current;
+      const hourly = data.hourly || [];
+      const daily = data.daily || [];
+
+      let hourlyHTML = '';
+      hourly.forEach(h => {
+        hourlyHTML += `
+          <div class="hourly-card">
+            <div class="hourly-time">${h.hour_formatted}</div>
+            <div class="hourly-emoji">${h.emoji}</div>
+            <div class="hourly-temp">${Math.round(h.temperature)}°</div>
+            <div class="hourly-rain">💧 ${h.precip_probability}%</div>
+          </div>`;
+      });
+
+      let dailyHTML = '';
+      daily.forEach(d => {
+        dailyHTML += `
+          <div class="daily-card">
+            <div class="daily-day-info">
+              <div class="daily-emoji">${d.emoji}</div>
+              <div>
+                <div class="daily-day-name">${d.day_name}</div>
+                <div class="daily-condition">${d.condition} &bull; 💧 ${d.precipitation_probability_max}%</div>
+              </div>
+            </div>
+            <div class="daily-temps">
+              <span class="daily-temp-max">${Math.round(d.temp_max)}°</span>
+              <span class="daily-temp-min">${Math.round(d.temp_min)}°</span>
+              <div class="daily-sun-info">☀️ ${d.sunrise} - 🌙 ${d.sunset}</div>
+            </div>
+          </div>`;
+      });
+
+      const html = `
+        <div class="hero-weather-grid">
+          <!-- Main Hero Current Status -->
+          <div class="current-card">
+            <div class="current-loc-badge">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>${loc.timezone || 'Local Station'}</span>
+            </div>
+            <div class="current-loc-name">${loc.name}</div>
+            <div class="current-loc-country">${loc.admin1 ? loc.admin1 + ', ' : ''}${loc.country || ''} (${loc.latitude.toFixed(2)}°, ${loc.longitude.toFixed(2)}°)</div>
+
+            <div class="current-temp-wrap">
+              <div class="current-emoji">${cur.emoji}</div>
+              <div>
+                <div class="current-temp-val">${Math.round(cur.temperature)}<span class="current-temp-unit">°C</span></div>
+                <div class="current-condition-text">${cur.condition}</div>
+                <div class="current-feels-like">Feels like ${cur.apparent_temperature.toFixed(1)}°C &bull; ${cur.is_day ? 'Daytime ☀️' : 'Nighttime 🌙'}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Metrics Matrix -->
+          <div class="metrics-grid">
+            <div class="metric-tile">
+              <div class="metric-label">💧 Humidity</div>
+              <div class="metric-val">${cur.relative_humidity}%</div>
+              <div class="metric-sub">Dew point index</div>
+            </div>
+            <div class="metric-tile">
+              <div class="metric-label">💨 Wind Speed</div>
+              <div class="metric-val">${cur.wind_speed} <span style="font-size:0.8rem; font-weight:normal;">km/h</span></div>
+              <div class="metric-sub">${cur.wind_direction}° direction</div>
+            </div>
+            <div class="metric-tile">
+              <div class="metric-label">☀️ UV Index</div>
+              <div class="metric-val" style="margin-top:2px;">${getUVBadge(cur.uv_index)}</div>
+              <div class="metric-sub">Sun exposure risk</div>
+            </div>
+            <div class="metric-tile">
+              <div class="metric-label">🌧️ Precipitation</div>
+              <div class="metric-val">${cur.precipitation} <span style="font-size:0.8rem; font-weight:normal;">mm</span></div>
+              <div class="metric-sub">Current rainfall</div>
+            </div>
+            <div class="metric-tile">
+              <div class="metric-label">🧭 Pressure</div>
+              <div class="metric-val">${Math.round(cur.surface_pressure)} <span style="font-size:0.8rem; font-weight:normal;">hPa</span></div>
+              <div class="metric-sub">Barometric level</div>
+            </div>
+            <div class="metric-tile">
+              <div class="metric-label">🏔️ Elevation</div>
+              <div class="metric-val">${Math.round(loc.elevation || 0)} <span style="font-size:0.8rem; font-weight:normal;">m</span></div>
+              <div class="metric-sub">Above sea level</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 24-Hour Timeline -->
+        <div class="weather-section-title">
+          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Hourly Forecast (Next 24 Hours)</span>
+        </div>
+        <div class="hourly-track">
+          ${hourlyHTML}
+        </div>
+
+        <!-- 7-Day Extended Forecast -->
+        <div class="weather-section-title">
+          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span>7-Day Extended Forecast</span>
+        </div>
+        <div class="daily-card-list">
+          ${dailyHTML}
+        </div>
+
+        <!-- RainViewer Interactive Weather Radar Map -->
+        <div class="radar-card">
+          <div class="weather-section-title" style="margin-bottom: 4px;">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+            <span>Live Rain &amp; Precipitation Radar</span>
+          </div>
+          <div style="font-size:0.85rem; color: var(--text-muted);">Real-time weather radar tile layer via RainViewer &amp; OpenStreetMap</div>
+          <div class="radar-map-wrap">
+            <div id="radarMap"></div>
+          </div>
+          <div class="radar-controls">
+            <span>📍 Center: ${loc.latitude.toFixed(4)}, ${loc.longitude.toFixed(4)}</span>
+            <span>Zoom &amp; Pan to inspect incoming storms</span>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('weatherContent').innerHTML = html;
+      initRadarMap(loc.latitude, loc.longitude, loc.name);
+    }
+
+    async function initRadarMap(lat, lon, name) {
+      if (mapInstance) {
+        mapInstance.remove();
+        mapInstance = null;
+      }
+
+      const mapEl = document.getElementById('radarMap');
+      if (!mapEl) return;
+
+      mapInstance = L.map('radarMap').setView([lat, lon], 8);
+
+      // CartoDB Dark Matter tile basemap for sleek dark UI
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19
+      }).addTo(mapInstance);
+
+      // Marker for city center
+      const marker = L.circleMarker([lat, lon], {
+        radius: 8,
+        fillColor: '#38bdf8',
+        color: '#ffffff',
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.9
+      }).addTo(mapInstance);
+      marker.bindPopup(`<b>${name}</b><br>Weather Radar Center`).openPopup();
+
+      // Fetch live RainViewer radar timestamps
+      try {
+        const rvRes = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+        if (rvRes.ok) {
+          const rvData = await rvRes.json();
+          if (rvData.radar && rvData.radar.past && rvData.radar.past.length > 0) {
+            const latest = rvData.radar.past[rvData.radar.past.length - 1];
+            radarLayer = L.tileLayer(`https://tilecache.rainviewer.com/v2/radar/${latest.time}/512/{z}/{x}/{y}/2/1_1.png`, {
+              opacity: 0.65,
+              maxZoom: 19
+            }).addTo(mapInstance);
+          }
+        }
+      } catch (e) {
+        console.warn('Could not load radar layer:', e);
+      }
+    }
+
+    // Auto-load default city on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const q = urlParams.get('q') || 'Jakarta';
+      loadCity(q);
+    });
+  </script>
+</body>
+</html>

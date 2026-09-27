@@ -386,7 +386,8 @@ func checkCurrencyConverter(ctx context.Context, q string) *models.InstantAnswer
 		Type:        "calculator",
 		Title:       "Currency Conversion",
 		Value:       fmt.Sprintf("%s %s", resFormatted, toCurr),
-		Description: fmt.Sprintf("%g %s = %s %s (Estimated rate)", amount, fromCurr, resFormatted, toCurr),
+		Description: fmt.Sprintf("%g %s = %s %s &bull; <a href=\"/currency\" style=\"color:#34d399; text-decoration:underline;\">Live Currency Studio &rarr;</a>", amount, fromCurr, resFormatted, toCurr),
+		URL:         "/currency",
 	}
 }
 
@@ -455,15 +456,16 @@ func fetchWeather(ctx context.Context, location string) *models.InstantAnswer {
 
 	weatherDesc, emoji := weatherCodeToString(meteoData.Current.WeatherCode)
 	tempVal := fmt.Sprintf("%.1f °C %s", meteoData.Current.Temperature2m, emoji)
-	desc := fmt.Sprintf("%s, %s &bull; %s &bull; Feels like %.1f °C &bull; Humidity %d%% &bull; Wind %.1f km/h",
+	desc := fmt.Sprintf("%s, %s &bull; %s &bull; Feels like %.1f °C &bull; Humidity %d%% &bull; Wind %.1f km/h &bull; <a href=\"/weather?q=%s\" style=\"color:#38bdf8; text-decoration:underline;\">Live Radar &amp; 7-Day Forecast &rarr;</a>",
 		locInfo.Name, locInfo.Country, weatherDesc,
-		meteoData.Current.ApparentTemperature, meteoData.Current.RelativeHumidity2m, meteoData.Current.WindSpeed10m)
+		meteoData.Current.ApparentTemperature, meteoData.Current.RelativeHumidity2m, meteoData.Current.WindSpeed10m, url.QueryEscape(locInfo.Name))
 
 	return &models.InstantAnswer{
 		Type:        "weather",
 		Title:       fmt.Sprintf("Weather in %s, %s", locInfo.Name, locInfo.Country),
 		Value:       tempVal,
 		Description: desc,
+		URL:         fmt.Sprintf("/weather?q=%s", url.QueryEscape(locInfo.Name)),
 	}
 }
 
