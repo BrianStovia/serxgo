@@ -2338,17 +2338,25 @@ input:checked + .slider:before {
 .top-nav {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.5rem;
   padding: 0.5rem 1rem;
   border-bottom: 1px solid var(--border-glass);
   background: var(--bg-secondary);
-  overflow-x: auto;
-  scrollbar-width: none;
+  overflow: visible;
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 1000;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+}
+.hero-wrapper .top-nav {
+  position: relative;
+  background: transparent;
+  border-bottom: none;
+  justify-content: flex-end;
+  padding: 0.5rem 0;
+  overflow: visible;
+  z-index: 1000;
 }
 .top-nav::-webkit-scrollbar { display: none; }
 .top-nav .nav-btn {
@@ -2360,12 +2368,16 @@ input:checked + .slider:before {
   border-color: rgba(99, 102, 241, 0.35);
 }
 
-
 /* ======================================================
    Nav Dropdown — Tools Menu
    ====================================================== */
 .nav-dropdown {
   position: relative;
+  z-index: 1000;
+}
+
+.nav-dropdown.open {
+  z-index: 10005;
 }
 
 .nav-dropdown-trigger {
@@ -2388,18 +2400,22 @@ input:checked + .slider:before {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  width: 260px;
-  background: rgba(15, 20, 35, 0.97);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: 275px;
+  max-height: 80vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  background: #0f1423;
+  background: rgba(15, 20, 35, 0.98);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 14px;
   box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.7),
-    0 0 0 1px rgba(99, 102, 241, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    0 24px 60px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(99, 102, 241, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
   padding: 0.5rem;
-  z-index: 1000;
+  z-index: 99999;
   opacity: 0;
   transform: translateY(-6px) scale(0.97);
   pointer-events: none;
