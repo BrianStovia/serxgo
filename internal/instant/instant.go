@@ -44,9 +44,33 @@ func (s *InstantService) FindInstantAnswers(ctx context.Context, query string, c
 		return answers
 	}
 
-	// 2.1 Check Developer Power Tools (JWT, Cron, Chmod, Regex)
+	// 2.1 Check Timezone & Unit Converters
+	if convAns := CheckConverters(q); convAns != nil {
+		answers = append(answers, *convAns)
+		return answers
+	}
+
+	// 2.2 Check Color Inspector Tool
+	if colorAns := CheckColorTool(q); colorAns != nil {
+		answers = append(answers, *colorAns)
+		return answers
+	}
+
+	// 2.3 Check Cryptographic Secret & Token Generator
+	if secretAns := CheckSecretGen(q); secretAns != nil {
+		answers = append(answers, *secretAns)
+		return answers
+	}
+
+	// 2.4 Check Developer Power Tools (JWT, Cron, Chmod, Regex)
 	if devAns := CheckDevTools(q); devAns != nil {
 		answers = append(answers, *devAns)
+		return answers
+	}
+
+	// 2.5 Check Social Username Recon OSINT (Sherlock)
+	if sherlockAns := CheckSherlockQuery(ctx, q); sherlockAns != nil {
+		answers = append(answers, *sherlockAns)
 		return answers
 	}
 

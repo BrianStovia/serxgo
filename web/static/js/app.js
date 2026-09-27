@@ -314,16 +314,98 @@
     });
   }
 
-  // --- Vim Navigation Shortcuts ---
+  // --- Universal Toast Notification Helper ---
+  function showToast(msg, icon = '✓') {
+    let toast = document.getElementById('searxgo-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'searxgo-toast';
+      toast.className = 'searxgo-toast';
+      document.body.appendChild(toast);
+    }
+    toast.innerHTML = `<span style="font-size:1.1rem;">${icon}</span><span>${msg}</span>`;
+    toast.classList.add('show');
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => {
+      toast.classList.remove('show');
+    }, 2800);
+  }
+
+  // --- Keyboard Shortcuts Cheatsheet Modal ---
+  function showShortcutsModal() {
+    let modal = document.getElementById('searxgo-shortcuts-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'searxgo-shortcuts-modal';
+      modal.className = 'cmd-palette-backdrop';
+      modal.innerHTML = `
+        <div class="cmd-palette-modal" style="max-width:540px;">
+          <div class="cmd-palette-header" style="justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:0.5rem; font-weight:700; color:var(--text-primary);">
+              <span>⌨️ Keyboard Shortcuts Cheatsheet</span>
+            </div>
+            <button type="button" class="player-btn btn-close-shortcuts" style="font-size:1.2rem;">&times;</button>
+          </div>
+          <div style="padding:1.25rem; font-size:0.875rem;">
+            <div style="display:grid; grid-template-columns:auto 1fr; gap:0.75rem 1.25rem; align-items:center;">
+              <kbd style="font-family:monospace; padding:3px 8px; background:rgba(255,255,255,0.1); border-radius:4px;">Ctrl+K</kbd>
+              <span>Open universal Command Palette</span>
+
+              <kbd style="font-family:monospace; padding:3px 8px; background:rgba(255,255,255,0.1); border-radius:4px;">j / ↓</kbd>
+              <span>Move down to next search result</span>
+
+              <kbd style="font-family:monospace; padding:3px 8px; background:rgba(255,255,255,0.1); border-radius:4px;">k / ↑</kbd>
+              <span>Move up to previous search result</span>
+
+              <kbd style="font-family:monospace; padding:3px 8px; background:rgba(255,255,255,0.1); border-radius:4px;">Enter</kbd>
+              <span>Open selected search result</span>
+
+              <kbd style="font-family:monospace; padding:3px 8px; background:rgba(255,255,255,0.1); border-radius:4px;">r</kbd>
+              <span>Open selected result in Clean Reader View</span>
+
+              <kbd style="font-family:monospace; padding:3px 8px; background:rgba(255,255,255,0.1); border-radius:4px;">b</kbd>
+              <span>Toggle bookmark on selected result</span>
+
+              <kbd style="font-family:monospace; padding:3px 8px; background:rgba(255,255,255,0.1); border-radius:4px;">c / y</kbd>
+              <span>Copy selected result link to clipboard</span>
+
+              <kbd style="font-family:monospace; padding:3px 8px; background:rgba(255,255,255,0.1); border-radius:4px;">/ or s</kbd>
+              <span>Focus search bar</span>
+
+              <kbd style="font-family:monospace; padding:3px 8px; background:rgba(255,255,255,0.1); border-radius:4px;">?</kbd>
+              <span>Show this shortcuts guide</span>
+
+              <kbd style="font-family:monospace; padding:3px 8px; background:rgba(255,255,255,0.1); border-radius:4px;">Esc</kbd>
+              <span>Close any open modal</span>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      modal.querySelector('.btn-close-shortcuts').addEventListener('click', () => modal.classList.remove('active'));
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.remove('active');
+      });
+    }
+    modal.classList.add('active');
+  }
+
+  // --- Enhanced Vim Navigation Shortcuts ---
   function initVimKeybindings() {
     let currentIndex = -1;
-    const items = document.querySelectorAll('.result-item');
     const input = document.querySelector('.search-input');
 
+    function getItems() {
+      return document.querySelectorAll('.result-item, .video-card, .image-card');
+    }
+
     document.addEventListener('keydown', function (e) {
-      if (document.activeElement === input || document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
+      if (document.activeElement === input || document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.isContentEditable) {
         return;
       }
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      const items = getItems();
 
       if (e.key === '/' || e.key === 's') {
         e.preventDefault();
@@ -335,32 +417,477 @@
         if (items.length === 0) return;
         e.preventDefault();
         currentIndex = Math.min(currentIndex + 1, items.length - 1);
-        highlightResult(currentIndex);
+        highlightResult(currentIndex, items);
       } else if (e.key === 'k' || e.key === 'ArrowUp') {
         if (items.length === 0) return;
         e.preventDefault();
         currentIndex = Math.max(currentIndex - 1, 0);
-        highlightResult(currentIndex);
+        highlightResult(currentIndex, items);
       } else if (e.key === 'Enter') {
         if (currentIndex >= 0 && currentIndex < items.length) {
-          const link = items[currentIndex].querySelector('.result-title a');
+          const link = items[currentIndex].querySelector('.result-title a, .video-title a, a.image-thumb-wrap');
           if (link) link.click();
         }
-      } else if (e.key === 'c') {
+      } else if (e.key === 'r') {
         if (currentIndex >= 0 && currentIndex < items.length) {
-          const cached = items[currentIndex].querySelector('.cached-link');
-          if (cached) cached.click();
+          const link = items[currentIndex].querySelector('.result-title a');
+          if (link && link.href) {
+            window.open('/reader?url=' + encodeURIComponent(link.href), '_blank');
+            showToast('Opening in Clean Reader Mode...', '📖');
+          }
         }
+      } else if (e.key === 'b') {
+        if (currentIndex >= 0 && currentIndex < items.length) {
+          const bBtn = items[currentIndex].querySelector('.btn-bookmark');
+          if (bBtn) {
+            bBtn.click();
+            showToast('Bookmark toggled', '🔖');
+          }
+        }
+      } else if (e.key === 'y' || e.key === 'c') {
+        if (currentIndex >= 0 && currentIndex < items.length) {
+          const link = items[currentIndex].querySelector('.result-title a, .video-title a, a.image-thumb-wrap');
+          if (link && link.href) {
+            navigator.clipboard.writeText(link.href).then(() => {
+              showToast('Link copied to clipboard!', '📋');
+            }).catch(() => {
+              showToast('Copied: ' + link.href, '📋');
+            });
+          }
+        }
+      } else if (e.key === '?') {
+        e.preventDefault();
+        showShortcutsModal();
       }
     });
 
-    function highlightResult(index) {
+    function highlightResult(index, items) {
       items.forEach((it, idx) => {
         if (idx === index) {
           it.classList.add('keyboard-selected');
           it.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         } else {
           it.classList.remove('keyboard-selected');
+        }
+      });
+    }
+  }
+
+  // --- Universal Command Palette (Ctrl+K / Cmd+K) ---
+  function initCommandPalette() {
+    let backdrop = document.getElementById('searxgo-cmd-palette');
+    if (!backdrop) {
+      backdrop = document.createElement('div');
+      backdrop.id = 'searxgo-cmd-palette';
+      backdrop.className = 'cmd-palette-backdrop';
+      backdrop.innerHTML = `
+        <div class="cmd-palette-modal" role="dialog" aria-modal="true">
+          <div class="cmd-palette-header">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" class="cmd-palette-input" placeholder="Type a command, search engine, theme, or shortcut..." autocomplete="off" spellcheck="false" />
+          </div>
+          <ul class="cmd-palette-results"></ul>
+          <div class="cmd-palette-footer">
+            <div class="cmd-palette-footer-keys">
+              <span><kbd>↑</kbd> <kbd>↓</kbd> to navigate</span>
+              <span><kbd>↵</kbd> to select</span>
+              <span><kbd>esc</kbd> to close</span>
+            </div>
+            <span>SearXGo Command Center</span>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(backdrop);
+    }
+
+    const input = backdrop.querySelector('.cmd-palette-input');
+    const list = backdrop.querySelector('.cmd-palette-results');
+    let selectedIdx = 0;
+
+    const commands = [
+      // Navigation
+      { category: 'Navigation', icon: '🪐', title: 'Home Page', action: () => window.location.href = '/' },
+      { category: 'Navigation', icon: '🔍', title: 'Domain Recon & Security Auditor', action: () => window.location.href = '/recon' },
+      { category: 'Navigation', icon: '🎯', title: 'Google Dorking Recon Suite', action: () => window.location.href = '/dorks' },
+      { category: 'Navigation', icon: '🛡️', title: 'EXIF Metadata Cleaner & Privacy Scrubber', action: () => window.location.href = '/scrub' },
+      { category: 'Navigation', icon: '⚖️', title: 'Split-Screen Multi Engine Comparison', action: () => window.location.href = '/split' },
+      { category: 'Navigation', icon: '⚙️', title: 'Preferences & Engine Settings', action: () => window.location.href = '/settings' },
+      { category: 'Navigation', icon: '📊', title: 'Engine Telemetry & Diagnostics', action: () => window.location.href = '/stats' },
+
+      // Quick Bangs
+      { category: 'Engines & Bangs', icon: '🟢', title: 'DuckDuckGo Bang (!ddg)', shortcut: '!ddg', action: () => appendBang('!ddg ') },
+      { category: 'Engines & Bangs', icon: '🔵', title: 'Google Bang (!g)', shortcut: '!g', action: () => appendBang('!g ') },
+      { category: 'Engines & Bangs', icon: '🔴', title: 'YouTube Video Search (!yt)', shortcut: '!yt', action: () => appendBang('!yt ') },
+      { category: 'Engines & Bangs', icon: '🟣', title: 'Wikipedia Articles (!w)', shortcut: '!w', action: () => appendBang('!w ') },
+      { category: 'Engines & Bangs', icon: '⬛', title: 'GitHub Code & Repos (!gh)', shortcut: '!gh', action: () => appendBang('!gh ') },
+      { category: 'Engines & Bangs', icon: '🧅', title: 'Tor Onion Darkweb Search (!ahmia)', shortcut: '!tor', action: () => appendBang('!ahmia ') },
+      { category: 'Engines & Bangs', icon: '💣', title: 'Exploit-DB & 0-Day Vulnerabilities (!exploit)', shortcut: '!exploit', action: () => appendBang('!exploit ') },
+      { category: 'Engines & Bangs', icon: '🔓', title: 'Data Breach & Leaks OSINT (!leak)', shortcut: '!leak', action: () => appendBang('!leak ') },
+
+      // Themes
+      { category: 'Appearance', icon: '🌙', title: 'Theme: Dark Glass (Default)', action: () => { window.setTheme('dark'); showToast('Switched to Dark Glass theme'); } },
+      { category: 'Appearance', icon: '☀️', title: 'Theme: Light Minimal', action: () => { window.setTheme('light'); showToast('Switched to Light Minimal theme'); } },
+      { category: 'Appearance', icon: '🖤', title: 'Theme: OLED Pitch Black', action: () => { window.setTheme('black'); showToast('Switched to OLED Black theme'); } },
+      { category: 'Appearance', icon: '🧛', title: 'Theme: Dracula Theme', action: () => { window.setTheme('dracula'); showToast('Switched to Dracula theme'); } },
+      { category: 'Appearance', icon: '⚡', title: 'Theme: Cyberpunk Neon', action: () => { window.setTheme('cyberpunk'); showToast('Switched to Cyberpunk Neon theme'); } },
+
+      // Tools & Utilities
+      { category: 'Actions', icon: '🔖', title: 'Open Saved Bookmarks Workspace', action: () => {
+        const bmBtn = document.querySelector('.btn-open-bookmarks');
+        if (bmBtn) bmBtn.click();
+      }},
+      { category: 'Actions', icon: '🔐', title: 'Export Encrypted Vault Backup', action: () => exportEncryptedVault() },
+      { category: 'Actions', icon: '🧹', title: 'Clear All Cookies & Preferences', action: () => window.location.href = '/clear_cookies' },
+      { category: 'Actions', icon: '❓', title: 'View Keyboard Navigation Cheatsheet', action: () => showShortcutsModal() },
+    ];
+
+    function appendBang(bang) {
+      const searchInp = document.querySelector('.search-input');
+      if (searchInp) {
+        searchInp.value = bang + searchInp.value.replace(/^!\w+\s*/, '');
+        searchInp.focus();
+        searchInp.setSelectionRange(searchInp.value.length, searchInp.value.length);
+      } else {
+        window.location.href = '/search?q=' + encodeURIComponent(bang);
+      }
+    }
+
+    function openPalette() {
+      backdrop.classList.add('active');
+      input.value = '';
+      selectedIdx = 0;
+      renderResults('');
+      setTimeout(() => input.focus(), 50);
+    }
+
+    function closePalette() {
+      backdrop.classList.remove('active');
+    }
+
+    function renderResults(filterText) {
+      const query = filterText.toLowerCase().trim();
+      const filtered = commands.filter(c => 
+        c.title.toLowerCase().includes(query) || 
+        c.category.toLowerCase().includes(query) || 
+        (c.shortcut && c.shortcut.toLowerCase().includes(query))
+      );
+
+      if (filtered.length === 0) {
+        list.innerHTML = `<li style="padding:1.5rem; text-align:center; color:var(--text-muted); font-size:0.9rem;">No matching commands found</li>`;
+        return;
+      }
+
+      let html = '';
+      let currentCat = '';
+      filtered.forEach((cmd, idx) => {
+        if (cmd.category !== currentCat) {
+          currentCat = cmd.category;
+          html += `<div class="cmd-palette-group-title">${currentCat}</div>`;
+        }
+        const isSel = idx === selectedIdx;
+        html += `
+          <li class="cmd-palette-item ${isSel ? 'active' : ''}" data-idx="${idx}">
+            <div class="cmd-palette-item-left">
+              <span class="cmd-palette-item-icon">${cmd.icon}</span>
+              <span class="cmd-palette-item-title">${cmd.title}</span>
+            </div>
+            ${cmd.shortcut ? `<span class="cmd-palette-item-shortcut">${cmd.shortcut}</span>` : ''}
+          </li>
+        `;
+      });
+      list.innerHTML = html;
+
+      list.querySelectorAll('.cmd-palette-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const idx = parseInt(item.dataset.idx, 10);
+          closePalette();
+          if (filtered[idx] && filtered[idx].action) filtered[idx].action();
+        });
+      });
+    }
+
+    input.addEventListener('input', () => {
+      selectedIdx = 0;
+      renderResults(input.value);
+    });
+
+    input.addEventListener('keydown', (e) => {
+      const items = list.querySelectorAll('.cmd-palette-item');
+      if (items.length === 0) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        selectedIdx = (selectedIdx + 1) % items.length;
+        updateSelection(items);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectedIdx = (selectedIdx - 1 + items.length) % items.length;
+        updateSelection(items);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (items[selectedIdx]) items[selectedIdx].click();
+      } else if (e.key === 'Escape') {
+        closePalette();
+      }
+    });
+
+    function updateSelection(items) {
+      items.forEach((it, idx) => {
+        if (idx === selectedIdx) {
+          it.classList.add('active');
+          it.scrollIntoView({ block: 'nearest' });
+        } else {
+          it.classList.remove('active');
+        }
+      });
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        if (backdrop.classList.contains('active')) {
+          closePalette();
+        } else {
+          openPalette();
+        }
+      } else if (e.key === 'Escape' && backdrop.classList.contains('active')) {
+        closePalette();
+      }
+    });
+
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) closePalette();
+    });
+
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('.btn-open-cmd-palette')) {
+        e.preventDefault();
+        openPalette();
+      }
+    });
+  }
+
+  // --- Custom Bangs & Custom Engines Builder ---
+  function initCustomBangs() {
+    function getCustomBangs() {
+      try {
+        return JSON.parse(localStorage.getItem('searxgo_custom_bangs') || '[]');
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveCustomBangs(bangs) {
+      localStorage.setItem('searxgo_custom_bangs', JSON.stringify(bangs));
+      renderSettingsCustomBangs();
+    }
+
+    function renderSettingsCustomBangs() {
+      const listEl = document.getElementById('custom-bangs-list');
+      const emptyEl = document.getElementById('custom-bangs-empty');
+      if (!listEl || !emptyEl) return;
+
+      const bangs = getCustomBangs();
+      if (bangs.length === 0) {
+        listEl.innerHTML = '';
+        emptyEl.style.display = 'block';
+        return;
+      }
+
+      emptyEl.style.display = 'none';
+      listEl.innerHTML = bangs.map((b, idx) => `
+        <tr style="border-bottom:1px solid var(--border-glass);">
+          <td style="padding:8px 10px; font-weight:600; color:var(--text-primary);">${b.name}</td>
+          <td style="padding:8px 10px;"><code style="color:var(--accent-primary); font-weight:700;">${b.prefix}</code></td>
+          <td style="padding:8px 10px; color:var(--text-muted); font-family:monospace; font-size:0.8rem;">${b.url}</td>
+          <td style="padding:8px 10px; text-align:right;">
+            <button type="button" class="nav-btn btn-del-custom-bang" data-idx="${idx}" style="padding:2px 8px; font-size:0.75rem; color:#ef4444; border-color:rgba(239,68,68,0.3);">
+              Delete
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      listEl.querySelectorAll('.btn-del-custom-bang').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.dataset.idx, 10);
+          const current = getCustomBangs();
+          current.splice(idx, 1);
+          saveCustomBangs(current);
+          showToast('Custom bang deleted');
+        });
+      });
+    }
+
+    const addBtn = document.getElementById('btn-add-custom-bang');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        const nameInp = document.getElementById('custom-bang-name');
+        const prefixInp = document.getElementById('custom-bang-prefix');
+        const urlInp = document.getElementById('custom-bang-url');
+
+        const name = (nameInp.value || '').trim();
+        let prefix = (prefixInp.value || '').trim();
+        const targetUrl = (urlInp.value || '').trim();
+
+        if (!name || !prefix || !targetUrl) {
+          alert('Please fill out Name, Bang Prefix, and Search URL');
+          return;
+        }
+        if (!prefix.startsWith('!')) prefix = '!' + prefix;
+        if (!targetUrl.includes('%s')) {
+          alert('Search URL must contain %s placeholder for the query term (e.g. https://site.com/search?q=%s)');
+          return;
+        }
+
+        const bangs = getCustomBangs();
+        bangs.push({ name, prefix, url: targetUrl });
+        saveCustomBangs(bangs);
+
+        nameInp.value = '';
+        prefixInp.value = '';
+        urlInp.value = '';
+        showToast(`Custom bang ${prefix} added!`, '⚡');
+      });
+      renderSettingsCustomBangs();
+    }
+
+    // Intercept search submit
+    document.addEventListener('submit', function (e) {
+      const form = e.target.closest('.search-form');
+      if (!form) return;
+      const input = form.querySelector('.search-input');
+      if (!input) return;
+
+      const val = input.value.trim();
+      const parts = val.split(/\s+/);
+      const firstWord = parts[0];
+
+      const bangs = getCustomBangs();
+      const match = bangs.find(b => b.prefix.toLowerCase() === firstWord.toLowerCase());
+      if (match) {
+        e.preventDefault();
+        const queryTerm = parts.slice(1).join(' ');
+        const dest = match.url.replace('%s', encodeURIComponent(queryTerm));
+        window.location.href = dest;
+      }
+    });
+  }
+
+  // --- Encrypted Vault Backup & Restore (PBKDF2 + AES-GCM) ---
+  async function exportEncryptedVault() {
+    const password = prompt('Enter a password to encrypt your vault backup:');
+    if (!password) return;
+
+    const dataObj = {
+      version: 1,
+      timestamp: new Date().toISOString(),
+      bookmarks: JSON.parse(localStorage.getItem('searxgo_bookmarks') || '[]'),
+      saved_queries: JSON.parse(localStorage.getItem('searxgo_saved_queries') || '[]'),
+      custom_bangs: JSON.parse(localStorage.getItem('searxgo_custom_bangs') || '[]'),
+      theme: localStorage.getItem('searxgo_theme') || 'dark',
+    };
+
+    try {
+      const enc = new TextEncoder();
+      const salt = window.crypto.getRandomValues(new Uint8Array(16));
+      const iv = window.crypto.getRandomValues(new Uint8Array(12));
+
+      const keyMaterial = await window.crypto.subtle.importKey(
+        'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
+      );
+      const key = await window.crypto.subtle.deriveKey(
+        { name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256' },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt']
+      );
+      const ciphertext = await window.crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv: iv },
+        key,
+        enc.encode(JSON.stringify(dataObj))
+      );
+
+      const vaultPayload = {
+        searxgo_vault: true,
+        version: 1,
+        salt: Array.from(salt),
+        iv: Array.from(iv),
+        data: Array.from(new Uint8Array(ciphertext))
+      };
+
+      const blob = new Blob([JSON.stringify(vaultPayload, null, 2)], { type: 'application/json' });
+      const dlLink = document.createElement('a');
+      dlLink.href = URL.createObjectURL(blob);
+      dlLink.download = `searxgo-vault-${new Date().toISOString().slice(0, 10)}.json`;
+      dlLink.click();
+      showToast('Encrypted vault exported safely!', '🔐');
+    } catch (err) {
+      alert('Encryption failed: ' + err.message);
+    }
+  }
+
+  function initEncryptedVault() {
+    const exportBtn = document.getElementById('btn-export-vault');
+    const importInput = document.getElementById('file-import-vault');
+
+    if (exportBtn) {
+      exportBtn.addEventListener('click', exportEncryptedVault);
+    }
+
+    if (importInput) {
+      importInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+          const text = await file.text();
+          const vaultPayload = JSON.parse(text);
+
+          if (!vaultPayload.searxgo_vault || !vaultPayload.salt || !vaultPayload.iv || !vaultPayload.data) {
+            alert('Invalid SearXGo vault file format');
+            return;
+          }
+
+          const password = prompt('Enter your vault password to decrypt:');
+          if (!password) return;
+
+          const enc = new TextEncoder();
+          const salt = new Uint8Array(vaultPayload.salt);
+          const iv = new Uint8Array(vaultPayload.iv);
+          const ciphertext = new Uint8Array(vaultPayload.data);
+
+          const keyMaterial = await window.crypto.subtle.importKey(
+            'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
+          );
+          const key = await window.crypto.subtle.deriveKey(
+            { name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256' },
+            keyMaterial,
+            { name: 'AES-GCM', length: 256 },
+            false,
+            ['decrypt']
+          );
+          const decrypted = await window.crypto.subtle.decrypt(
+            { name: 'AES-GCM', iv: iv },
+            key,
+            ciphertext
+          );
+
+          const dataObj = JSON.parse(new TextDecoder().decode(decrypted));
+
+          if (dataObj.bookmarks) localStorage.setItem('searxgo_bookmarks', JSON.stringify(dataObj.bookmarks));
+          if (dataObj.saved_queries) localStorage.setItem('searxgo_saved_queries', JSON.stringify(dataObj.saved_queries));
+          if (dataObj.custom_bangs) localStorage.setItem('searxgo_custom_bangs', JSON.stringify(dataObj.custom_bangs));
+          if (dataObj.theme) window.setTheme(dataObj.theme);
+
+          showToast('Vault decrypted & restored successfully!', '🔓');
+          setTimeout(() => window.location.reload(), 1200);
+        } catch (err) {
+          alert('Decryption failed: Incorrect password or corrupted vault file.');
         }
       });
     }
@@ -1493,6 +2020,9 @@
     initVideoModal();
     initMagnetButtons();
     initVimKeybindings();
+    initCommandPalette();
+    initCustomBangs();
+    initEncryptedVault();
     initInfiniteScroll();
     initSettingsPage();
     initBookmarks();

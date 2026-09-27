@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.4.0] - 2026-09-28
+
+### 🚀 Major Enhancements Across OSINT, Power UX, Instant Answers & Customization
+- ⌨️ **Universal Command Palette (`Ctrl + K` / `Cmd + K`)**:
+  - Modal launcher accessible from anywhere (`/`, `/search`, `/settings`, `/recon`, etc.).
+  - Instant action shortcuts for fast navigation, search bang switching (`!g`, `!ddg`, `!yt`, `!w`, `!tor`, `!exploit`), theme switching (Dark Glass, Light Minimal, OLED Black, Dracula, Cyberpunk), and bookmarks.
+  - Full keyboard navigation with `↑`, `↓`, `Enter`, and `Esc`.
+  - Accessible via floating `⌘K` badge in the header.
+- 🕵️ **Sherlock-style Social Username Recon OSINT (`user: <handle>`, `username:`)**:
+  - High-speed concurrent profiling across 16 major platforms (GitHub, Reddit, Twitter/X, Telegram, DockerHub, Dev.to, HackerNews, Medium, Keybase, Chess.com, Codeberg, Steam, NPM, PyPI).
+  - Displays instant badge overview with active profile links.
+- 🧰 **Expanded Instant Answer Tools**:
+  - **Global Timezone Converter & Clock**: Converts time across world timezones (`10am UTC to WIB`, `3pm EST in Tokyo`) and provides live local clocks (`time in London`, `time in Jakarta`).
+  - **Color Palette & CSS Inspector**: Evaluates HEX (`#ff5722`), RGB (`rgb(...)`), HSL, and named colors. Displays color swatch, HSL/CMYK breakdown, and WCAG contrast ratio on white/black.
+  - **Cryptographic Secret & Token Generator**: Generates cryptographically secure alphanumeric tokens, raw hexadecimal entropy, and Base64URL secrets with entropy rating (`secret`, `token 32`, `api key`).
+  - **Digital Storage & Speed Converter**: Instant conversions between byte sizes (`500 GB to TB`, `1024 MB in GB`).
+- ⚡ **Custom Bangs & Custom Engines Builder**:
+  - Configure custom bangs in Preferences (`!docs` &rarr; `https://devdocs.io/#q=%s`).
+  - Automatically intercepts matching query prefixes and directs the search to your custom engines with zero server overhead.
+- 🔐 **Military-Grade Encrypted Vault Backup & Restore**:
+  - Export and restore bookmarks, saved queries, custom bangs, and settings protected with **PBKDF2 + AES-GCM-256** client-side encryption (`.searxgo-vault.json`).
+- ⌨️ **Vim / DuckDuckGo Navigation & Shortcuts Cheatsheet**:
+  - `j` / `k` (or `↓`/`↑`) cursor navigation with glowing highlight indicator.
+  - `r` to open highlighted item directly in Clean Reader Mode.
+  - `b` to toggle bookmark.
+  - `c` / `y` to copy link to clipboard with sleek floating toast notifications.
+  - `?` shortcut overlay modal detailing all keyboard controls.
+
 ## [v1.3.0] - 2026-09-27
 
 ### 🚀 Major New Capabilities

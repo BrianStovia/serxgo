@@ -575,6 +575,58 @@
             />
           </div>
 
+          <!-- Custom Bangs & Engines Builder Card -->
+          <div style="background:var(--bg-glass-card); border:1px solid var(--border-glow); border-radius:var(--radius-lg); padding:1.25rem; margin-bottom:2rem;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+              <div>
+                <h3 style="font-size:1.15rem; color:var(--text-primary); margin-bottom:0.25rem;">🛠️ Custom Bangs &amp; Engines Builder</h3>
+                <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">
+                  Create your own custom search shortcuts (e.g. <code>!docs</code> &rarr; <code>https://devdocs.io/#q=%s</code>). Stored locally in your browser.
+                </p>
+              </div>
+            </div>
+            
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) auto; gap:0.75rem; align-items:end; margin-bottom:1.25rem;">
+              <div>
+                <label style="font-size:0.75rem; font-weight:600; color:var(--text-muted); display:block; margin-bottom:4px;">Engine / Service Name</label>
+                <input type="text" id="custom-bang-name" placeholder="e.g. DevDocs" class="form-select" style="width:100%; padding:0.5rem 0.75rem;">
+              </div>
+              <div>
+                <label style="font-size:0.75rem; font-weight:600; color:var(--text-muted); display:block; margin-bottom:4px;">Bang Prefix</label>
+                <input type="text" id="custom-bang-prefix" placeholder="!docs" class="form-select" style="width:100%; padding:0.5rem 0.75rem;">
+              </div>
+              <div>
+                <label style="font-size:0.75rem; font-weight:600; color:var(--text-muted); display:block; margin-bottom:4px;">Search URL (%s = query)</label>
+                <input type="url" id="custom-bang-url" placeholder="https://devdocs.io/#q=%s" class="form-select" style="width:100%; padding:0.5rem 0.75rem;">
+              </div>
+              <div>
+                <button type="button" id="btn-add-custom-bang" class="btn-search" style="padding:0.55rem 1.25rem; font-size:0.85rem; white-space:nowrap;">
+                  + Add Bang
+                </button>
+              </div>
+            </div>
+
+            <!-- List of User Custom Bangs -->
+            <div id="custom-bangs-container">
+              <table style="width:100%; border-collapse:collapse; text-align:left; font-size:0.85rem;">
+                <thead>
+                  <tr style="border-bottom:1px solid var(--border-glow); color:var(--text-muted);">
+                    <th style="padding:6px 10px;">Name</th>
+                    <th style="padding:6px 10px;">Bang</th>
+                    <th style="padding:6px 10px;">Target URL Pattern</th>
+                    <th style="padding:6px 10px; text-align:right;">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="custom-bangs-list">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+              <div id="custom-bangs-empty" style="text-align:center; padding:1rem; color:var(--text-muted); font-size:0.85rem;">
+                No custom bangs configured yet. Add your first one above!
+              </div>
+            </div>
+          </div>
+
           <!-- Section 1: Category Bangs -->
           <div style="margin-bottom: 2rem;">
             <h3 style="font-size:1.1rem; color:var(--accent-primary); margin-bottom:0.75rem;">📂 Category Bangs</h3>
@@ -715,6 +767,24 @@
             <button type="button" id="btn-reset-defaults" class="nav-btn" style="color:#ef4444; border-color:rgba(239, 68, 68, 0.3);">
               Reset to Defaults
             </button>
+          </div>
+
+          <!-- Encrypted Vault Backup Section -->
+          <div style="margin-top:2rem; padding-top:1.5rem; border-top:1px solid var(--border-glass);">
+            <h3 style="font-size:1.15rem; color:var(--text-primary); margin-bottom:0.35rem;">🔐 Encrypted Vault Backup (PBKDF2 + AES-GCM)</h3>
+            <p style="color:var(--text-secondary); font-size:0.875rem; margin-bottom:1.25rem;">
+              Create a password-protected backup of all your bookmarks, search history, custom bangs, and preferences. Zero plaintext leakage.
+            </p>
+
+            <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center;">
+              <button type="button" id="btn-export-vault" class="btn-search" style="padding:0.6rem 1.25rem; font-size:0.875rem; background:linear-gradient(135deg, #10b981, #059669);">
+                🛡️ Export Encrypted Vault (.searxgo-vault)
+              </button>
+              <label class="nav-btn" style="cursor:pointer; display:inline-flex; align-items:center; border-color:var(--accent-emerald); color:var(--accent-emerald);">
+                <span>🔓 Restore Encrypted Vault</span>
+                <input type="file" id="file-import-vault" accept=".json,.searxgo-vault" style="display:none;">
+              </label>
+            </div>
           </div>
         </div>
       </div>
