@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.5.0] - 2026-09-28
+
+### 🚀 Dedicated OSINT Workspace, Mobile Bottom Nav & Touch Swipe Gestures
+- 🕵️ **Dedicated OSINT Sherlock Recon Workspace (`/sherlock` & `/osint`)**:
+  - Standalone cyber-recon portal with asynchronous parallel account probing across 20+ platforms.
+  - Granular categories: **Dev & Code** (GitHub, GitLab, Codeberg, DockerHub, Dev.to, NPM, PyPI, HackerNews), **Social** (Reddit, Telegram, Medium, Keybase, Mastodon, Disqus), **Gaming** (Steam, Chess.com, Twitch), and **Creators** (SoundCloud, Vimeo, BuyMeACoffee).
+  - Real-time animated progress bar with live found vs. checked counter metrics.
+  - Filter pills by category, "Show only found" filter, and one-click **JSON** & **CSV** dataset exports.
+  - "Open All Found in Tabs" bulk investigation launcher and formatted markdown summary clipboard copier.
+  - High-speed REST API at `GET /api/sherlock?username=<handle>` and `POST /api/sherlock`.
+- 📱 **Mobile Bottom Navigation Bar (< 768px)**:
+  - Fixed ergonomic bottom navigation bar tailored for single-handed smartphone use.
+  - Quick thumb-friendly shortcuts to **Home**, **Dorks**, **Sherlock**, **Scrub**, and **Settings** with active tab indicators.
+  - Native iOS/Android safe-area inset compatibility (`env(safe-area-inset-bottom)`).
+- 👆 **Fluid Mobile Touch Swipe Category Gestures**:
+  - Horizontal touch swipe left/right across search results seamlessly switches between SearXGo category tabs (`General` ↔ `Images` ↔ `Videos` ↔ `News` ↔ `IT & Code`, etc.).
+  - Micro-toast gesture notification displaying the target category during swipe.
+  - Automatic horizontal scrolling that centers the active category tab on viewport load.
+
 ## [v1.4.0] - 2026-09-28
 
 ### 🚀 Major Enhancements Across OSINT, Power UX, Instant Answers & Customization

@@ -264,6 +264,8 @@ SearXGo supports complete SearXNG advanced search query syntax:
 | Endpoint | Method | Description | Output Format |
 | :--- | :---: | :--- | :--- |
 | `/search` | `GET` | Web search interface & query processor | `HTML` |
+| `/sherlock` | `GET` | OSINT Sherlock username recon workspace | `HTML` |
+| `/api/sherlock` | `GET/POST` | Sherlock social profiling recon API | `application/json` |
 | `/api/search` | `GET` | REST API search endpoint | `application/json` |
 | `/search?format=json` | `GET` | SearXNG compliant JSON export | `application/json` |
 | `/search?format=rss` | `GET` | RSS 2.0 query feed | `application/rss+xml` |

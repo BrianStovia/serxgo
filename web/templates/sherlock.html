@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OSINT Sherlock Username Recon - SearXGo</title>
+  <meta name="description" content="High-speed OSINT social and developer profile reconnaissance workspace across GitHub, GitLab, Reddit, Telegram, Steam, and 20+ platforms.">
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕵️</text></svg>">
+  <style>
+    .sherlock-container {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 5rem 1rem;
+    }
+    .osint-search-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+      position: relative;
+      overflow: hidden;
+    }
+    .osint-search-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--accent-gradient);
+    }
+    .osint-input-wrap {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      position: relative;
+    }
+    .handle-prefix {
+      position: absolute;
+      left: 1rem;
+      color: var(--accent-cyan);
+      font-family: var(--font-mono, monospace);
+      font-size: 1.2rem;
+      font-weight: 700;
+      pointer-events: none;
+    }
+    .osint-input {
+      flex: 1;
+      font-size: 1.15rem;
+      padding: 0.85rem 1rem 0.85rem 2.4rem;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      outline: none;
+      transition: all var(--transition-fast);
+      font-family: var(--font-mono, monospace);
+    }
+    .osint-input:focus {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+      background: rgba(0, 0, 0, 0.4);
+    }
+    .sample-pills {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.85rem;
+      align-items: center;
+    }
+    .sample-pill {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.6rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-full);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .sample-pill:hover {
+      background: rgba(99, 102, 241, 0.2);
+      color: var(--text-primary);
+      border-color: var(--accent-primary);
+    }
+
+    /* Stats Banner */
+    .osint-stats-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-md);
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-metric {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .metric-value {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      line-height: 1;
+      font-family: var(--font-mono, monospace);
+    }
+    .metric-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Progress Bar */
+    .osint-progress-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+      display: none;
+    }
+    .osint-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent-gradient);
+      transition: width 0.3s ease;
+    }
+
+    /* Category Filter Tabs */
+    .osint-filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+    .filter-pills {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      padding: 0.4rem 0.85rem;
+      border-radius: var(--radius-full);
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .filter-btn:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .filter-btn.active {
+      background: var(--accent-primary);
+      color: #fff;
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+    }
+
+    /* Actions Bar */
+    .osint-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    /* Grid of Profile Cards */
+    .osint-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .profile-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-md);
+      padding: 1.1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all var(--transition-fast);
+      position: relative;
+    }
+    .profile-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      border-color: rgba(255, 255, 255, 0.16);
+    }
+    .profile-card.card-found {
+      border-color: rgba(16, 185, 129, 0.4);
+      background: linear-gradient(145deg, rgba(16, 185, 129, 0.08) 0%, var(--bg-card) 100%);
+    }
+    .profile-card.card-found:hover {
+      border-color: var(--accent-emerald);
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.2);
+    }
+    .profile-card.card-missing {
+      opacity: 0.55;
+    }
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+    .card-platform-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--text-primary);
+    }
+    .badge-status {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-full);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-found {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--accent-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+    .badge-missing {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-muted);
+      border: 1px solid var(--border-glass);
+    }
+    .card-url {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      word-break: break-all;
+      margin-bottom: 1rem;
+      font-family: var(--font-mono, monospace);
+    }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border-glass);
+      padding-top: 0.75rem;
+    }
+    .btn-profile-visit {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent-emerald);
+      text-decoration: none;
+      transition: color var(--transition-fast);
+    }
+    .btn-profile-visit:hover {
+      text-decoration: underline;
+      color: #34d399;
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+
+  <!-- Top Navigation Header -->
+  <nav class="top-nav container">
+    <a href="/" class="nav-btn"><span>🪐 Home</span></a>
+    <a href="/dorks" class="nav-btn"><span>🎯 Dorks</span></a>
+    <a href="/scrub" class="nav-btn"><span>🛡️ Scrub</span></a>
+    <a href="/recon" class="nav-btn"><span>🔍 Recon</span></a>
+    <a href="/sherlock" class="nav-btn active" style="color:var(--accent-primary); font-weight:700;"><span>🕵️ Sherlock</span></a>
+    <a href="/stats" class="nav-btn"><span>Telemetry</span></a>
+    <a href="/settings" class="nav-btn"><span>Settings</span></a>
+  </nav>
+
+  <div class="sherlock-container">
+    <!-- Header Title -->
+    <div style="text-align:center; margin-bottom:2rem;">
+      <div class="brand-badge" style="margin-bottom:0.75rem;">
+        <span class="engine-dot" style="background:#10b981;"></span>
+        <span>High-Speed Social Reconnaissance</span>
+      </div>
+      <h1 class="brand-title" style="font-size:2.2rem; margin-bottom:0.4rem;">OSINT Sherlock Workspace</h1>
+      <p class="brand-tagline">Scan username footprints across 20+ developer, social, discussion, and gaming platforms simultaneously.</p>
+    </div>
+
+    <!-- Search Input Card -->
+    <div class="osint-search-card">
+      <form id="sherlock-form">
+        <div class="osint-input-wrap">
+          <span class="handle-prefix">@</span>
+          <input type="text" id="target-username" class="osint-input" placeholder="Enter target username (e.g. torvalds, brian, satoshi)..." value="{{.Username}}" autofocus autocomplete="off" spellcheck="false">
+          <button type="submit" id="btn-scan" class="btn-search" style="padding:0.85rem 1.75rem; font-size:1rem; white-space:nowrap;">
+            🕵️ Launch Recon
+          </button>
+        </div>
+      </form>
+
+      <div class="sample-pills">
+        <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">Sample Targets:</span>
+        <button type="button" class="sample-pill" data-user="torvalds">@torvalds</button>
+        <button type="button" class="sample-pill" data-user="vitalik">@vitalik</button>
+        <button type="button" class="sample-pill" data-user="dhh">@dhh</button>
+        <button type="button" class="sample-pill" data-user="antirez">@antirez</button>
+        <button type="button" class="sample-pill" data-user="brianstovia">@brianstovia</button>
+      </div>
+    </div>
+
+    <!-- Progress Indicator -->
+    <div id="osint-progress-bar" class="osint-progress-container">
+      <div id="osint-progress-fill" class="osint-progress-fill"></div>
+    </div>
+
+    <!-- Live Stats Bar (Shown After Scan) -->
+    <div id="osint-stats-bar" class="osint-stats-bar" style="display:none;">
+      <div style="display:flex; gap:2rem; flex-wrap:wrap;">
+        <div class="stat-metric">
+          <div class="metric-value" id="stat-found-count" style="color:var(--accent-emerald);">0</div>
+          <div>
+            <div class="metric-label">Profiles Found</div>
+            <div style="font-size:0.75rem; color:var(--text-muted);" id="stat-ratio">0 of 0 active</div>
+          </div>
+        </div>
+
+        <div class="stat-metric">
+          <div class="metric-value" id="stat-duration" style="color:var(--accent-cyan);">0ms</div>
+          <div>
+            <div class="metric-label">Scan Speed</div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">Concurrent HTTP probes</div>
+          </div>
+        </div>
+
+        <div class="stat-metric">
+          <div class="metric-value" id="stat-username" style="color:var(--text-primary); font-size:1.4rem;">-</div>
+          <div>
+            <div class="metric-label">Target Handle</div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">OSINT Scope</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="osint-actions">
+        <button type="button" id="btn-open-all-found" class="nav-btn" style="padding:0.4rem 0.8rem; font-size:0.8rem; font-weight:600; background:rgba(16,185,129,0.15); color:var(--accent-emerald); border-color:rgba(16,185,129,0.3);">
+          🚀 Open All Found
+        </button>
+        <button type="button" id="btn-export-json" class="nav-btn" style="padding:0.4rem 0.8rem; font-size:0.8rem;">
+          📥 JSON
+        </button>
+        <button type="button" id="btn-export-csv" class="nav-btn" style="padding:0.4rem 0.8rem; font-size:0.8rem;">
+          📊 CSV
+        </button>
+        <button type="button" id="btn-copy-links" class="nav-btn" style="padding:0.4rem 0.8rem; font-size:0.8rem;">
+          📋 Copy Summary
+        </button>
+      </div>
+    </div>
+
+    <!-- Category Filter Bar -->
+    <div id="osint-filter-bar" class="osint-filter-bar" style="display:none;">
+      <div class="filter-pills">
+        <button type="button" class="filter-btn active" data-cat="all">All Platforms (<span id="count-all">0</span>)</button>
+        <button type="button" class="filter-btn" data-cat="dev">💻 Dev &amp; Code (<span id="count-dev">0</span>)</button>
+        <button type="button" class="filter-btn" data-cat="social">💬 Social (<span id="count-social">0</span>)</button>
+        <button type="button" class="filter-btn" data-cat="gaming">🎮 Gaming (<span id="count-gaming">0</span>)</button>
+        <button type="button" class="filter-btn" data-cat="creators">🎨 Creators (<span id="count-creators">0</span>)</button>
+      </div>
+
+      <label style="display:flex; align-items:center; gap:0.4rem; font-size:0.85rem; color:var(--text-secondary); cursor:pointer;">
+        <input type="checkbox" id="chk-only-found" checked style="accent-color:var(--accent-emerald); cursor:pointer;">
+        <span>Show only found profiles</span>
+      </label>
+    </div>
+
+    <!-- Initial State / Empty Prompt -->
+    <div id="osint-empty-state" style="text-align:center; padding:3rem 1rem; color:var(--text-muted);">
+      <div style="font-size:3rem; margin-bottom:1rem;">🕵️‍♂️</div>
+      <div style="font-size:1.1rem; font-weight:600; color:var(--text-primary); margin-bottom:0.5rem;">Ready to probe online footprints</div>
+      <p style="max-width:480px; margin:0 auto; font-size:0.9rem;">
+        Type any handle or username in the search bar above to query 20+ platforms with asynchronous parallel checks.
+      </p>
+    </div>
+
+    <!-- Loading State -->
+    <div id="osint-loading-state" style="display:none; text-align:center; padding:4rem 1rem;">
+      <div class="infinite-spinner" style="margin:0 auto 1.5rem auto;"></div>
+      <div style="font-size:1.15rem; font-weight:700; color:var(--text-primary); margin-bottom:0.35rem;" id="loading-title">Probing 20+ Platforms...</div>
+      <p style="font-size:0.85rem; color:var(--text-secondary);">Connecting directly to platform endpoints, verifying profile status...</p>
+    </div>
+
+    <!-- Results Cards Grid -->
+    <div id="osint-results-grid" class="osint-grid" style="display:none;"></div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    (function() {
+      let currentReport = null;
+      let activeCategory = 'all';
+
+      const form = document.getElementById('sherlock-form');
+      const input = document.getElementById('target-username');
+      const progressBar = document.getElementById('osint-progress-bar');
+      const progressFill = document.getElementById('osint-progress-fill');
+      const statsBar = document.getElementById('osint-stats-bar');
+      const filterBar = document.getElementById('osint-filter-bar');
+      const emptyState = document.getElementById('osint-empty-state');
+      const loadingState = document.getElementById('osint-loading-state');
+      const resultsGrid = document.getElementById('osint-results-grid');
+      const chkOnlyFound = document.getElementById('chk-only-found');
+
+      // Sample click handlers
+      document.querySelectorAll('.sample-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          input.value = btn.dataset.user;
+          runScan(btn.dataset.user);
+        });
+      });
+
+      // Filter category click
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          activeCategory = btn.dataset.cat;
+          renderCards();
+        });
+      });
+
+      chkOnlyFound.addEventListener('change', renderCards);
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const user = input.value.trim().replace(/^@/, '');
+        if (user) {
+          runScan(user);
+        }
+      });
+
+      async function runScan(user) {
+        if (!user) return;
+        emptyState.style.display = 'none';
+        resultsGrid.style.display = 'none';
+        statsBar.style.display = 'none';
+        filterBar.style.display = 'none';
+        loadingState.style.display = 'block';
+        document.getElementById('loading-title').textContent = `Probing profiles for @${user}...`;
+
+        progressBar.style.display = 'block';
+        progressFill.style.width = '35%';
+
+        try {
+          // Update URL without full refresh
+          const newUrl = new URL(window.location);
+          newUrl.searchParams.set('username', user);
+          window.history.pushState({}, '', newUrl);
+
+          progressFill.style.width = '70%';
+          const resp = await fetch(`/api/sherlock?username=${encodeURIComponent(user)}`);
+          if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to scan username');
+          }
+          currentReport = await resp.json();
+          progressFill.style.width = '100%';
+
+          setTimeout(() => {
+            progressBar.style.display = 'none';
+            progressFill.style.width = '0%';
+            loadingState.style.display = 'none';
+            displayResults(currentReport);
+          }, 200);
+
+        } catch (err) {
+          progressBar.style.display = 'none';
+          loadingState.style.display = 'none';
+          emptyState.style.display = 'block';
+          emptyState.innerHTML = `
+            <div style="color:var(--accent-red, #ef4444); font-size:2.5rem; margin-bottom:0.75rem;">⚠️</div>
+            <div style="font-weight:700; font-size:1.1rem; color:var(--text-primary); margin-bottom:0.5rem;">Scan Encountered an Issue</div>
+            <p style="color:var(--text-muted); font-size:0.9rem;">${err.message}</p>
+          `;
+        }
+      }
+
+      function displayResults(report) {
+        document.getElementById('stat-found-count').textContent = report.found_count;
+        document.getElementById('stat-ratio').textContent = `${report.found_count} of ${report.total} active`;
+        document.getElementById('stat-duration').textContent = report.scan_duration;
+        document.getElementById('stat-username').textContent = '@' + report.username;
+
+        // Count categories
+        const counts = { all: report.results.length, dev: 0, social: 0, gaming: 0, creators: 0 };
+        report.results.forEach(r => {
+          if (counts[r.category] !== undefined) counts[r.category]++;
+        });
+
+        document.getElementById('count-all').textContent = counts.all;
+        document.getElementById('count-dev').textContent = counts.dev;
+        document.getElementById('count-social').textContent = counts.social;
+        document.getElementById('count-gaming').textContent = counts.gaming;
+        document.getElementById('count-creators').textContent = counts.creators;
+
+        statsBar.style.display = 'flex';
+        filterBar.style.display = 'flex';
+        renderCards();
+      }
+
+      function renderCards() {
+        if (!currentReport) return;
+        const onlyFound = chkOnlyFound.checked;
+        resultsGrid.innerHTML = '';
+
+        const filtered = currentReport.results.filter(item => {
+          if (onlyFound && !item.found) return false;
+          if (activeCategory !== 'all' && item.category !== activeCategory) return false;
+          return true;
+        });
+
+        if (filtered.length === 0) {
+          resultsGrid.innerHTML = `
+            <div style="grid-column:1/-1; text-align:center; padding:3rem 1rem; color:var(--text-muted);">
+              <div style="font-size:2rem; margin-bottom:0.5rem;">🔍</div>
+              <div style="font-weight:600;">No profiles matched the current filter.</div>
+              <p style="font-size:0.85rem; margin-top:0.25rem;">Try unchecking "Show only found profiles" or selecting "All Platforms".</p>
+            </div>
+          `;
+          resultsGrid.style.display = 'grid';
+          return;
+        }
+
+        filtered.forEach(item => {
+          const card = document.createElement('div');
+          card.className = `profile-card ${item.found ? 'card-found' : 'card-missing'}`;
+          card.innerHTML = `
+            <div>
+              <div class="card-top">
+                <div class="card-platform-title">
+                  <span>${item.icon}</span>
+                  <span>${item.platform}</span>
+                </div>
+                <span class="badge-status ${item.found ? 'badge-found' : 'badge-missing'}">
+                  ${item.found ? '✓ Found' : 'Not Found'}
+                </span>
+              </div>
+              <div class="card-url">${item.url}</div>
+            </div>
+            <div class="card-footer">
+              <span style="font-size:0.75rem; text-transform:uppercase; color:var(--text-muted); font-weight:600;">
+                Category: ${item.category}
+              </span>
+              ${item.found ? `
+                <a href="${item.url}" target="_blank" rel="noreferrer noopener" class="btn-profile-visit">
+                  View Profile ➔
+                </a>
+              ` : `
+                <span style="font-size:0.75rem; color:var(--text-muted);">Unavailable</span>
+              `}
+            </div>
+          `;
+          resultsGrid.appendChild(card);
+        });
+
+        resultsGrid.style.display = 'grid';
+      }
+
+      // Action: Open All Found Profiles
+      document.getElementById('btn-open-all-found').addEventListener('click', () => {
+        if (!currentReport) return;
+        const found = currentReport.results.filter(r => r.found);
+        if (found.length === 0) {
+          alert('No active profiles detected to open.');
+          return;
+        }
+        if (confirm(`Open all ${found.length} detected profiles in new browser tabs?`)) {
+          found.forEach(p => window.open(p.url, '_blank'));
+        }
+      });
+
+      // Action: Export JSON
+      document.getElementById('btn-export-json').addEventListener('click', () => {
+        if (!currentReport) return;
+        const blob = new Blob([JSON.stringify(currentReport, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `sherlock-${currentReport.username}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      // Action: Export CSV
+      document.getElementById('btn-export-csv').addEventListener('click', () => {
+        if (!currentReport) return;
+        let csv = 'Platform,Category,Found,ProfileURL\n';
+        currentReport.results.forEach(r => {
+          csv += `"${r.platform}","${r.category}",${r.found ? 'YES' : 'NO'},"${r.url}"\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `sherlock-${currentReport.username}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      // Action: Copy Summary
+      document.getElementById('btn-copy-links').addEventListener('click', () => {
+        if (!currentReport) return;
+        const found = currentReport.results.filter(r => r.found);
+        let summary = `🕵️ OSINT Sherlock Recon for @${currentReport.username}\nFound: ${found.length} / ${currentReport.total} platforms\n\n`;
+        found.forEach(r => {
+          summary += `- ${r.platform}: ${r.url}\n`;
+        });
+        navigator.clipboard.writeText(summary).then(() => {
+          const btn = document.getElementById('btn-copy-links');
+          const oldText = btn.textContent;
+          btn.textContent = '✓ Copied!';
+          setTimeout(() => btn.textContent = oldText, 2000);
+        });
+      });
+
+      // Auto-trigger if username query parameter is in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const initialUser = urlParams.get('username') || urlParams.get('u') || urlParams.get('target');
+      if (initialUser) {
+        input.value = initialUser;
+        runScan(initialUser);
+      }
+    })();
+  </script>
+</body>
+</html>

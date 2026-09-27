@@ -513,6 +513,7 @@
       { category: 'Navigation', icon: '🔍', title: 'Domain Recon & Security Auditor', action: () => window.location.href = '/recon' },
       { category: 'Navigation', icon: '🎯', title: 'Google Dorking Recon Suite', action: () => window.location.href = '/dorks' },
       { category: 'Navigation', icon: '🛡️', title: 'EXIF Metadata Cleaner & Privacy Scrubber', action: () => window.location.href = '/scrub' },
+      { category: 'Navigation', icon: '🕵️', title: 'OSINT Sherlock Username Recon', action: () => window.location.href = '/sherlock' },
       { category: 'Navigation', icon: '⚖️', title: 'Split-Screen Multi Engine Comparison', action: () => window.location.href = '/split' },
       { category: 'Navigation', icon: '⚙️', title: 'Preferences & Engine Settings', action: () => window.location.href = '/settings' },
       { category: 'Navigation', icon: '📊', title: 'Engine Telemetry & Diagnostics', action: () => window.location.href = '/stats' },
@@ -2009,6 +2010,130 @@
     });
   }
 
+  // --- Mobile Bottom Navigation ---
+  function initMobileBottomNav() {
+    if (document.querySelector('.mobile-bottom-nav')) return;
+
+    const nav = document.createElement('nav');
+    nav.className = 'mobile-bottom-nav';
+
+    const currentPath = window.location.pathname;
+
+    const items = [
+      { path: '/', label: 'Home', icon: '🪐' },
+      { path: '/dorks', label: 'Dorks', icon: '🎯' },
+      { path: '/sherlock', label: 'Sherlock', icon: '🕵️' },
+      { path: '/scrub', label: 'Scrub', icon: '🛡️' },
+      { path: '/settings', label: 'Settings', icon: '⚙️' }
+    ];
+
+    nav.innerHTML = items.map(item => {
+      let isActive = false;
+      if (item.path === '/' && (currentPath === '/' || currentPath === '/search')) {
+        isActive = true;
+      } else if (item.path !== '/' && currentPath.startsWith(item.path)) {
+        isActive = true;
+      }
+      return `
+        <a href="${item.path}" class="mobile-nav-item ${isActive ? 'active' : ''}">
+          <span class="mobile-nav-icon">${item.icon}</span>
+          <span class="mobile-nav-label">${item.label}</span>
+        </a>
+      `;
+    }).join('');
+
+    document.body.appendChild(nav);
+  }
+
+  // --- Mobile Touch Gestures & Category Swiping ---
+  function initMobileTouchGestures() {
+    // 1. Smoothly scroll active category tab to center on mobile load
+    const activeTab = document.querySelector('.results-tabs .tab-link.active');
+    const tabsContainer = document.querySelector('.results-tabs');
+    if (activeTab && tabsContainer) {
+      setTimeout(() => {
+        const offset = activeTab.offsetLeft - (tabsContainer.clientWidth / 2) + (activeTab.clientWidth / 2);
+        tabsContainer.scrollTo({ left: Math.max(0, offset), behavior: 'smooth' });
+      }, 100);
+    }
+
+    // 2. Touch swipe listener across search results
+    const resultsContainer = document.querySelector('.results-container, .main-results, .results-wrapper, body');
+    if (!resultsContainer || !document.querySelector('.results-tabs')) return;
+
+    let startX = 0;
+    let startY = 0;
+    let startTime = 0;
+    let isSwiping = false;
+
+    // Toast element for visual feedback
+    let toast = document.querySelector('.swipe-indicator-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'swipe-indicator-toast';
+      document.body.appendChild(toast);
+    }
+
+    function showSwipeToast(text) {
+      toast.textContent = text;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 800);
+    }
+
+    document.addEventListener('touchstart', function(e) {
+      if (e.touches.length !== 1) return;
+      const target = e.target;
+      // Skip gesture if interacting with input, map, or player
+      if (target.closest('input, textarea, select, button, .leaflet-container, #player-body, .suggestions-dropdown')) {
+        isSwiping = false;
+        return;
+      }
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      startTime = Date.now();
+      isSwiping = true;
+    }, { passive: true });
+
+    document.addEventListener('touchend', function(e) {
+      if (!isSwiping || e.changedTouches.length !== 1) return;
+      isSwiping = false;
+
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const deltaX = endX - startX;
+      const deltaY = endY - startY;
+      const elapsed = Date.now() - startTime;
+
+      // Minimum swipe distance of 60px, max vertical deviation of 50px, under 600ms
+      if (Math.abs(deltaX) > 60 && Math.abs(deltaY) < 50 && elapsed < 600) {
+        const tabs = Array.from(document.querySelectorAll('.results-tabs .tab-link'));
+        if (tabs.length === 0) return;
+
+        const currentIdx = tabs.findIndex(t => t.classList.contains('active'));
+        if (currentIdx === -1) return;
+
+        let targetIdx = -1;
+        if (deltaX < 0 && currentIdx < tabs.length - 1) {
+          // Swipe Left -> Next Tab
+          targetIdx = currentIdx + 1;
+        } else if (deltaX > 0 && currentIdx > 0) {
+          // Swipe Right -> Prev Tab
+          targetIdx = currentIdx - 1;
+        }
+
+        if (targetIdx !== -1 && tabs[targetIdx]) {
+          const nextTab = tabs[targetIdx];
+          showSwipeToast(`Switching to ${nextTab.textContent.trim()} ➔`);
+          setTimeout(() => {
+            window.location.href = nextTab.href;
+          }, 150);
+        }
+      }
+    }, { passive: true });
+  }
+
   // Safe DOM ready initialization
   function initAll() {
     initTheme();
@@ -2029,6 +2154,8 @@
     initTopicClusters();
     initReverseImageSearch();
     initFloatingPlayer();
+    initMobileBottomNav();
+    initMobileTouchGestures();
   }
 
   if (document.readyState === 'loading') {
@@ -2037,5 +2164,6 @@
     initAll();
   }
 })();
+
 
 

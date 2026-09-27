@@ -190,6 +190,12 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /reader", h.ServeReader)
 	mux.HandleFunc("GET /api/reader", h.ServeAPIReader)
 
+	// OSINT Sherlock Workspace & Account Recon
+	mux.HandleFunc("GET /sherlock", h.ServeSherlock)
+	mux.HandleFunc("GET /osint", h.ServeSherlock)
+	mux.HandleFunc("GET /api/sherlock", h.ServeAPISherlock)
+	mux.HandleFunc("POST /api/sherlock", h.ServeAPISherlock)
+
 	// Privacy Proxy
 	mux.HandleFunc("GET /proxy/image", h.imageProxy.ServeHTTP)
 	mux.HandleFunc("GET /image_proxy", h.imageProxy.ServeHTTP) // SearXNG official alias
@@ -1553,6 +1559,71 @@ func (h *Handler) ServeAPIReader(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(art)
 }
+
+// ServeSherlock renders the interactive OSINT Sherlock username reconnaissance workspace
+func (h *Handler) ServeSherlock(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	username := strings.TrimSpace(r.URL.Query().Get("username"))
+	if username == "" {
+		username = strings.TrimSpace(r.URL.Query().Get("u"))
+	}
+	if username == "" {
+		username = strings.TrimSpace(r.URL.Query().Get("target"))
+	}
+
+	platforms := instant.GetSherlockPlatforms("sample")
+
+	data := map[string]interface{}{
+		"Username":  username,
+		"Platforms": platforms,
+	}
+
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "sherlock.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	buf.WriteTo(w)
+}
+
+// ServeAPISherlock scans social and developer platforms for username presence
+func (h *Handler) ServeAPISherlock(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	username := strings.TrimSpace(r.URL.Query().Get("username"))
+	if username == "" {
+		username = strings.TrimSpace(r.URL.Query().Get("u"))
+	}
+	if username == "" {
+		username = strings.TrimSpace(r.URL.Query().Get("target"))
+	}
+
+	if r.Method == http.MethodPost && username == "" {
+		var req struct {
+			Username string `json:"username"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err == nil {
+			username = strings.TrimSpace(req.Username)
+		}
+	}
+
+	if username == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Parameter 'username' is required"})
+		return
+	}
+
+	cleanUser, ok := instant.CleanUsername(username)
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid username format (3-32 alphanumeric/underscore/dot/dash characters)"})
+		return
+	}
+
+	report := instant.ScanUsernameProfiles(r.Context(), cleanUser, 3500*time.Millisecond)
+	json.NewEncoder(w).Encode(report)
+}
+
 
 
 

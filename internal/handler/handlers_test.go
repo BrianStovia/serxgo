@@ -202,4 +202,32 @@ func TestReverseImageSearch(t *testing.T) {
 	if recServeImg.Header().Get("Content-Type") != "image/png" {
 		t.Errorf("expected image/png content-type, got %s", recServeImg.Header().Get("Content-Type"))
 	}
+
+	// 4. Test GET /sherlock UI
+	recSherlock := httptest.NewRecorder()
+	reqSherlock := httptest.NewRequest("GET", "/sherlock?username=torvalds", nil)
+	mux.ServeHTTP(recSherlock, reqSherlock)
+	if recSherlock.Code != http.StatusOK {
+		t.Errorf("GET /sherlock returned %d, want 200", recSherlock.Code)
+	}
+	if !strings.Contains(recSherlock.Body.String(), "OSINT Sherlock Workspace") {
+		t.Errorf("expected page to contain OSINT Sherlock title")
+	}
+
+	// 5. Test GET /api/sherlock without param
+	recAPISherlockEmpty := httptest.NewRecorder()
+	reqAPISherlockEmpty := httptest.NewRequest("GET", "/api/sherlock", nil)
+	mux.ServeHTTP(recAPISherlockEmpty, reqAPISherlockEmpty)
+	if recAPISherlockEmpty.Code != http.StatusBadRequest {
+		t.Errorf("GET /api/sherlock without username returned %d, want 400", recAPISherlockEmpty.Code)
+	}
+
+	// 6. Test GET /api/sherlock with invalid handle
+	recAPISherlockBad := httptest.NewRecorder()
+	reqAPISherlockBad := httptest.NewRequest("GET", "/api/sherlock?username=!invalid", nil)
+	mux.ServeHTTP(recAPISherlockBad, reqAPISherlockBad)
+	if recAPISherlockBad.Code != http.StatusBadRequest {
+		t.Errorf("GET /api/sherlock with invalid user returned %d, want 400", recAPISherlockBad.Code)
+	}
 }
+

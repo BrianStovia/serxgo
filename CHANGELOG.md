@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.5.0] - 2026-09-28
+
+### 🚀 Dedicated OSINT Workspace, Mobile Bottom Nav & Touch Swipe Gestures
+- 🕵️ **Dedicated OSINT Sherlock Recon Workspace (`/sherlock` & `/osint`)**: Standalone cyber-recon portal with asynchronous parallel account probing across 20+ platforms (Dev, Social, Gaming, Media), live progress bars, JSON/CSV exports, and `/api/sherlock` endpoint.
+- 📱 **Mobile Bottom Navigation Bar (< 768px)**: Ergonomic thumb-friendly navigation bar with shortcuts to Home, Dorks, Sherlock, Scrub, and Settings with safe-area support.
+- 👆 **Fluid Mobile Touch Swipe Category Gestures**: Horizontal touch swipe left/right across search results seamlessly switches category tabs with real-time feedback toast.
+
 ## [v1.0.0] - 2026-09-05
 
 ### 🚀 Major Highlights
