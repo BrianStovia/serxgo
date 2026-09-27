@@ -52,7 +52,9 @@ func executeCatalogEngineSearch(ctx context.Context, def EngineDefinition, req m
 		return searchGiphy(ctx, client, def.ID, req.Query)
 	case "pexels", "pixabay_images", "1x", "500px", "artstation", "deviantart", "wallhaven", "pixiv":
 		return searchUnsplash(ctx, client, req.Query, req.Page)
-	case "bing_images", "google_images", "google_cse_images", "mojeek_images", "qwant_images", "startpage_images", "yandex_images", "sogou_images", "naver_images", "baidu_images", "quark_images", "tusksearch_images", "flickr", "pinterest":
+	case "bing_images":
+		return NewBingImagesEngine().Search(ctx, req)
+	case "google_images", "google_cse_images", "mojeek_images", "qwant_images", "startpage_images", "yandex_images", "sogou_images", "naver_images", "baidu_images", "quark_images", "tusksearch_images", "flickr", "pinterest":
 		return searchDDGImageEngine(ctx, client, def.ID, req.Query, req.Page)
 
 	// --- News Engines ---
