@@ -514,6 +514,8 @@
       { category: 'Navigation', icon: '🎯', title: 'Google Dorking Recon Suite', action: () => window.location.href = '/dorks' },
       { category: 'Navigation', icon: '🛡️', title: 'EXIF Metadata Cleaner & Privacy Scrubber', action: () => window.location.href = '/scrub' },
       { category: 'Navigation', icon: '🕵️', title: 'OSINT Sherlock Username Recon', action: () => window.location.href = '/sherlock' },
+      { category: 'Navigation', icon: '⚠️', title: 'URL Threat Intelligence & Phishing Scanner', action: () => window.location.href = '/threat' },
+      { category: 'Navigation', icon: '🕸️', title: 'Interactive Knowledge & Entity Graph', action: () => window.location.href = '/graph' },
       { category: 'Navigation', icon: '⚖️', title: 'Split-Screen Multi Engine Comparison', action: () => window.location.href = '/split' },
       { category: 'Navigation', icon: '⚙️', title: 'Preferences & Engine Settings', action: () => window.location.href = '/settings' },
       { category: 'Navigation', icon: '📊', title: 'Engine Telemetry & Diagnostics', action: () => window.location.href = '/stats' },
@@ -2156,6 +2158,7 @@
     initFloatingPlayer();
     initMobileBottomNav();
     initMobileTouchGestures();
+    initGogglesFilter();
   }
 
   if (document.readyState === 'loading') {
@@ -2165,5 +2168,98 @@
   }
 })();
 
+// ================================================================
+// 🎯 Search Goggles — Client-Side Domain Block/Boost Filter
+// Reads from localStorage and filters search result cards live
+// ================================================================
+(function initGogglesFilter() {
+  function getGoggles() {
+    try { return JSON.parse(localStorage.getItem('searxgo_goggles') || '{"blocklist":[],"boostlist":[]}'); }
+    catch { return { blocklist: [], boostlist: [] }; }
+  }
 
+  function applyGoggles() {
+    const g = getGoggles();
+    if (!g.blocklist.length && !g.boostlist.length) return;
 
+    const resultCards = document.querySelectorAll('.result-card, .result-item, [data-result-url]');
+    let blockedCount = 0;
+    let boostedCount = 0;
+
+    resultCards.forEach(card => {
+      // Try to get the URL from the card
+      let resultURL = card.dataset.resultUrl || '';
+      if (!resultURL) {
+        const link = card.querySelector('a[href^="http"]');
+        if (link) resultURL = link.href;
+      }
+      if (!resultURL) return;
+
+      let domain = '';
+      try {
+        const u = new URL(resultURL);
+        domain = u.hostname.replace(/^www\./, '').toLowerCase();
+      } catch { return; }
+
+      // Block
+      if (g.blocklist.some(b => domain === b || domain.endsWith('.' + b))) {
+        card.style.display = 'none';
+        blockedCount++;
+        return;
+      }
+
+      // Boost — move to top and highlight
+      if (g.boostlist.some(b => domain === b || domain.endsWith('.' + b))) {
+        card.style.outline = '1px solid rgba(16,185,129,0.4)';
+        card.style.background = 'rgba(16,185,129,0.04)';
+        if (!card.querySelector('.goggle-boost-badge')) {
+          const badge = document.createElement('span');
+          badge.className = 'goggle-boost-badge';
+          badge.textContent = '⬆️ Boosted';
+          badge.style.cssText = 'font-size:0.68rem;padding:0.1rem 0.4rem;background:rgba(16,185,129,0.2);color:#10b981;border-radius:4px;font-weight:700;margin-left:0.35rem;';
+          const titleEl = card.querySelector('h2 a, .result-title a, h3 a');
+          if (titleEl) titleEl.parentNode.insertBefore(badge, titleEl.nextSibling);
+        }
+        boostedCount++;
+      }
+    });
+
+    // Show Goggles status banner if anything was filtered
+    if ((blockedCount > 0 || boostedCount > 0) && !document.getElementById('goggles-banner')) {
+      const banner = document.createElement('div');
+      banner.id = 'goggles-banner';
+      banner.style.cssText = `
+        background: rgba(99,102,241,0.1);
+        border: 1px solid rgba(99,102,241,0.25);
+        border-radius: 8px;
+        padding: 0.6rem 1rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        font-size: 0.82rem;
+        color: var(--text-secondary);
+        flex-wrap: wrap;
+      `;
+      banner.innerHTML = `
+        <span>🎯 <strong>Goggles active</strong> —
+          ${blockedCount > 0 ? `<span style="color:#ef4444;">${blockedCount} blocked</span>` : ''}
+          ${blockedCount > 0 && boostedCount > 0 ? ' · ' : ''}
+          ${boostedCount > 0 ? `<span style="color:#10b981;">${boostedCount} boosted</span>` : ''}
+          &nbsp;·&nbsp; <a href="/graph" style="color:var(--accent-primary); text-decoration:none;">Manage in Graph Explorer</a>
+        </span>
+        <button type="button" id="goggles-banner-close" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;">✕</button>
+      `;
+      const container = document.querySelector('.results-container, main, .container');
+      if (container) container.insertBefore(banner, container.firstChild);
+      document.getElementById('goggles-banner-close')?.addEventListener('click', () => banner.remove());
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyGoggles);
+  } else {
+    applyGoggles();
+  }
+})();

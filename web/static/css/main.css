@@ -2240,6 +2240,125 @@ input:checked + .slider:before {
 }
 
 
+/* ======================================================
+   Prop Row - Label/Value pairs (used in recon, threat, etc.)
+   ====================================================== */
+.prop-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 0.82rem;
+}
+.prop-row:last-child {
+  border-bottom: none;
+}
+.prop-label {
+  color: var(--text-muted);
+  font-weight: 600;
+  min-width: 88px;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding-top: 0.1rem;
+}
+.prop-value {
+  color: var(--text-secondary);
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+/* ======================================================
+   Sample Pills (quick preset buttons in threat/graph)
+   ====================================================== */
+.sample-pill {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.65rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-full);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-weight: 600;
+}
+.sample-pill:hover {
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--accent-primary);
+  border-color: rgba(99, 102, 241, 0.35);
+  transform: translateY(-1px);
+}
+
+/* ======================================================
+   OSINT / Threat Scanner Progress Bar
+   ====================================================== */
+.osint-progress-container {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  display: none;
+}
+.osint-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-cyan));
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+/* ======================================================
+   OSINT / Threat Input Field
+   ====================================================== */
+.osint-input {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 0.7rem 1rem;
+  font-size: 0.9rem;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  outline: none;
+  width: 100%;
+}
+.osint-input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+.osint-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* ======================================================
+   Top Nav (minimal layout for tool pages)
+   ====================================================== */
+.top-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--border-glass);
+  background: var(--bg-secondary);
+  overflow-x: auto;
+  scrollbar-width: none;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.top-nav::-webkit-scrollbar { display: none; }
+.top-nav .nav-btn {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.top-nav .nav-btn.active {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.35);
+}
 
 
 

@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URL Threat Intelligence Scanner - SearXGo</title>
+  <meta name="description" content="Analyze any URL for phishing indicators, homoglyph spoofing, redirect chains, SSL validity, and threat signals before clicking.">
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+  <style>
+    .threat-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 5rem;
+    }
+    .threat-input-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    .threat-input-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #ef4444, #f97316, #eab308);
+    }
+    .threat-level-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-full);
+      font-weight: 700;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .level-safe { background: rgba(16,185,129,0.2); color: #10b981; border: 1px solid rgba(16,185,129,0.4); }
+    .level-low { background: rgba(234,179,8,0.15); color: #eab308; border: 1px solid rgba(234,179,8,0.4); }
+    .level-medium { background: rgba(249,115,22,0.15); color: #f97316; border: 1px solid rgba(249,115,22,0.4); }
+    .level-high { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.4); }
+    .level-critical {
+      background: rgba(239,68,68,0.25);
+      color: #ff3333;
+      border: 1px solid rgba(239,68,68,0.7);
+      animation: pulse-danger 1.6s ease infinite;
+    }
+    @keyframes pulse-danger {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+    }
+    .score-ring-wrap {
+      position: relative;
+      width: 110px;
+      height: 110px;
+      flex-shrink: 0;
+    }
+    .score-ring-wrap svg {
+      transform: rotate(-90deg);
+    }
+    .score-ring-number {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.75rem;
+      font-weight: 800;
+      font-family: var(--font-mono);
+    }
+    .signal-card {
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      margin-bottom: 0.6rem;
+      border-left: 4px solid var(--border-glass);
+      transition: all var(--transition-fast);
+    }
+    .signal-card:hover {
+      transform: translateX(3px);
+      border-left-color: var(--accent-primary);
+    }
+    .signal-card.sig-safe { border-left-color: #10b981; }
+    .signal-card.sig-low { border-left-color: #eab308; }
+    .signal-card.sig-medium { border-left-color: #f97316; }
+    .signal-card.sig-high { border-left-color: #ef4444; }
+    .signal-card.sig-critical { border-left-color: #dc2626; }
+    .redirect-hop {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.65rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 0.85rem;
+    }
+    .redirect-hop:last-child { border-bottom: none; }
+    .hop-step {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--accent-primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .ssl-valid { color: #10b981; }
+    .ssl-warn { color: #eab308; }
+    .ssl-invalid { color: #ef4444; }
+    .quick-samples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.75rem;
+      align-items: center;
+    }
+    .sample-chip {
+      font-size: 0.72rem;
+      padding: 0.18rem 0.6rem;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-full);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      font-family: var(--font-mono);
+    }
+    .sample-chip:hover {
+      background: rgba(239,68,68,0.15);
+      color: #f97316;
+      border-color: rgba(239,68,68,0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+
+  <nav class="top-nav container">
+    <a href="/" class="nav-btn"><span>🪐 Home</span></a>
+    <a href="/recon" class="nav-btn"><span>🔍 Recon</span></a>
+    <a href="/sherlock" class="nav-btn"><span>🕵️ Sherlock</span></a>
+    <a href="/dorks" class="nav-btn"><span>🎯 Dorks</span></a>
+    <a href="/threat" class="nav-btn active" style="color:#ef4444; font-weight:700;"><span>🛡️ Threat</span></a>
+    <a href="/graph" class="nav-btn"><span>🕸️ Graph</span></a>
+    <a href="/settings" class="nav-btn"><span>⚙️ Settings</span></a>
+  </nav>
+
+  <div class="threat-container">
+    <div style="text-align:center; margin-bottom:2rem;">
+      <div class="brand-badge" style="margin-bottom:0.75rem;">
+        <span class="engine-dot" style="background:#ef4444;"></span>
+        <span>URL Threat Intelligence & Phishing Detection</span>
+      </div>
+      <h1 class="brand-title" style="font-size:2.2rem; margin-bottom:0.4rem;">URL Sandbox Scanner</h1>
+      <p class="brand-tagline">Detect phishing, homoglyph spoofing, redirect chains, SSL issues, and malicious indicators before you click.</p>
+    </div>
+
+    <!-- Input Card -->
+    <div class="threat-input-card">
+      <form id="threat-form">
+        <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+          <input type="text" id="target-url" class="osint-input" style="flex:1; min-width:260px; font-size:1rem; padding:0.8rem 1rem; font-family:var(--font-mono);" placeholder="Paste any URL, link, or domain to analyze (e.g. https://paypa1.com/login)..." value="{{.TargetURL}}" autocomplete="off" spellcheck="false">
+          <button type="submit" id="btn-scan" class="btn-search" style="padding:0.8rem 1.6rem; font-size:0.95rem; white-space:nowrap; background:linear-gradient(135deg,#ef4444,#f97316);">
+            🔍 Analyze URL
+          </button>
+        </div>
+      </form>
+      <div class="quick-samples">
+        <span style="font-size:0.72rem; color:var(--text-muted); font-weight:600;">Test URLs:</span>
+        <button type="button" class="sample-chip" data-url="https://github.com">github.com (Safe)</button>
+        <button type="button" class="sample-chip" data-url="http://paypa1.verify-login.tk/account">paypa1.verify (Phishing)</button>
+        <button type="button" class="sample-chip" data-url="https://bit.ly/3cXm4nT">bit.ly shortener</button>
+        <button type="button" class="sample-chip" data-url="http://192.168.1.1/admin">Direct IP</button>
+        <button type="button" class="sample-chip" data-url="https://xn--pyp-la.com">Punycode IDN</button>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div id="threat-progress" class="osint-progress-container">
+      <div id="threat-progress-fill" class="osint-progress-fill" style="background:linear-gradient(90deg,#ef4444,#f97316);"></div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="threat-empty-state" style="text-align:center; padding:3rem 1rem; color:var(--text-muted);">
+      <div style="font-size:3.5rem; margin-bottom:1rem;">🛡️</div>
+      <div style="font-size:1.1rem; font-weight:600; color:var(--text-primary); margin-bottom:0.5rem;">URL Analysis Ready</div>
+      <p style="max-width:440px; margin:0 auto; font-size:0.9rem;">Paste any suspicious URL above to run phishing detection, redirect tracing, SSL validation, and threat scoring.</p>
+    </div>
+
+    <!-- Loading -->
+    <div id="threat-loading" style="display:none; text-align:center; padding:3rem 1rem;">
+      <div class="infinite-spinner" style="margin:0 auto 1.5rem auto;"></div>
+      <div style="font-weight:700; font-size:1.1rem; color:var(--text-primary); margin-bottom:0.35rem;">Scanning URL Threat Indicators...</div>
+      <p style="font-size:0.85rem; color:var(--text-secondary);">Tracing redirects, checking SSL, analyzing domain patterns...</p>
+    </div>
+
+    <!-- Results -->
+    <div id="threat-results" style="display:none;">
+      <!-- Threat Banner -->
+      <div style="background:var(--bg-card); border:1px solid var(--border-glass); border-radius:var(--radius-md); padding:1.5rem; margin-bottom:1.5rem; display:flex; align-items:center; gap:1.5rem; flex-wrap:wrap;">
+        <div class="score-ring-wrap">
+          <svg viewBox="0 0 110 110" width="110" height="110">
+            <circle cx="55" cy="55" r="48" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
+            <circle id="score-arc" cx="55" cy="55" r="48" fill="none" stroke="#10b981" stroke-width="10" stroke-dasharray="301.6" stroke-dashoffset="301.6" stroke-linecap="round"/>
+          </svg>
+          <div class="score-ring-number" id="score-number">0</div>
+        </div>
+        <div style="flex:1; min-width:200px;">
+          <div style="margin-bottom:0.5rem;" id="threat-level-badge-wrap">
+            <span class="threat-level-badge level-safe" id="threat-level-badge">✅ Safe</span>
+          </div>
+          <div style="font-size:0.9rem; color:var(--text-secondary); line-height:1.5;" id="threat-summary-text">Analysis complete.</div>
+          <div style="display:flex; gap:0.75rem; margin-top:0.75rem; flex-wrap:wrap; font-size:0.8rem;">
+            <span style="color:var(--text-muted);">Final URL: <code id="result-final-url" style="color:var(--accent-cyan);">—</code></span>
+            <span style="color:var(--text-muted);">Status: <code id="result-status-code" style="color:var(--text-primary);">—</code></span>
+            <span style="color:var(--text-muted);">Scan: <code id="result-duration" style="color:var(--text-secondary);">—</code></span>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:0.5rem; align-items:flex-end;">
+          <button type="button" id="btn-threat-json" class="nav-btn" style="padding:0.35rem 0.75rem; font-size:0.75rem;">📥 JSON</button>
+          <a id="btn-threat-open" href="#" target="_blank" rel="noreferrer noopener" class="nav-btn" style="padding:0.35rem 0.75rem; font-size:0.75rem; text-decoration:none;">🔗 Open (careful)</a>
+        </div>
+      </div>
+
+      <!-- Grid: Signals + SSL + Redirects + Meta -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:1.25rem; margin-bottom:1.5rem;">
+        <!-- Signals -->
+        <div>
+          <div style="font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); font-weight:700; margin-bottom:0.75rem;">
+            ⚠️ Threat Signals (<span id="signal-count">0</span>)
+          </div>
+          <div id="signals-list"></div>
+        </div>
+
+        <!-- Meta Info -->
+        <div>
+          <!-- SSL Card -->
+          <div style="background:var(--bg-card); border:1px solid var(--border-glass); border-radius:var(--radius-sm); padding:1.1rem; margin-bottom:1rem;">
+            <div style="font-weight:700; font-size:0.9rem; margin-bottom:0.75rem; color:var(--text-primary);">🔒 SSL / TLS Certificate</div>
+            <div id="ssl-info"></div>
+          </div>
+
+          <!-- DNS / Meta Card -->
+          <div style="background:var(--bg-card); border:1px solid var(--border-glass); border-radius:var(--radius-sm); padding:1.1rem;">
+            <div style="font-weight:700; font-size:0.9rem; margin-bottom:0.75rem; color:var(--text-primary);">🌐 Request Metadata</div>
+            <div id="meta-info"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Redirect Chain -->
+      <div id="redirect-section" style="background:var(--bg-card); border:1px solid var(--border-glass); border-radius:var(--radius-sm); padding:1.25rem; display:none;">
+        <div style="font-weight:700; font-size:0.9rem; margin-bottom:0.75rem; color:var(--text-primary);">🔀 Redirect Chain (<span id="redirect-count">0</span> hops)</div>
+        <div id="redirect-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+  (function() {
+    let currentReport = null;
+    const form = document.getElementById('threat-form');
+    const input = document.getElementById('target-url');
+    const progress = document.getElementById('threat-progress');
+    const progressFill = document.getElementById('threat-progress-fill');
+    const emptyState = document.getElementById('threat-empty-state');
+    const loadingDiv = document.getElementById('threat-loading');
+    const resultsDiv = document.getElementById('threat-results');
+
+    document.querySelectorAll('.sample-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        input.value = btn.dataset.url;
+        runScan(btn.dataset.url);
+      });
+    });
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const u = input.value.trim();
+      if (u) runScan(u);
+    });
+
+    async function runScan(urlVal) {
+      emptyState.style.display = 'none';
+      resultsDiv.style.display = 'none';
+      loadingDiv.style.display = 'block';
+      progress.style.display = 'block';
+      progressFill.style.width = '40%';
+
+      const newUrl = new URL(window.location);
+      newUrl.searchParams.set('url', urlVal);
+      window.history.pushState({}, '', newUrl);
+
+      try {
+        progressFill.style.width = '75%';
+        const resp = await fetch('/api/threat?url=' + encodeURIComponent(urlVal));
+        if (!resp.ok) throw new Error('Failed to scan URL');
+        currentReport = await resp.json();
+        progressFill.style.width = '100%';
+        setTimeout(() => {
+          progress.style.display = 'none';
+          progressFill.style.width = '0%';
+          loadingDiv.style.display = 'none';
+          displayResults(currentReport);
+        }, 200);
+      } catch(err) {
+        progress.style.display = 'none';
+        loadingDiv.style.display = 'none';
+        emptyState.style.display = 'block';
+        emptyState.innerHTML = `<div style="font-size:2.5rem; margin-bottom:0.75rem;">⚠️</div><div style="font-weight:700; color:var(--text-primary);">Scan Error</div><p style="color:var(--text-muted); font-size:0.9rem;">${err.message}</p>`;
+      }
+    }
+
+    const LEVEL_MAP = {
+      safe: { cls: 'level-safe', icon: '✅', label: 'Safe' },
+      low: { cls: 'level-low', icon: '⚠️', label: 'Low Risk' },
+      medium: { cls: 'level-medium', icon: '🟠', label: 'Medium Risk' },
+      high: { cls: 'level-high', icon: '🔴', label: 'High Risk' },
+      critical: { cls: 'level-critical', icon: '💀', label: 'CRITICAL' },
+    };
+
+    function displayResults(r) {
+      // Score ring
+      const arc = document.getElementById('score-arc');
+      const numEl = document.getElementById('score-number');
+      const score = r.threat_score || 0;
+      const circ = 301.6;
+      const offset = circ - (score / 100) * circ;
+      let scoreColor = '#10b981';
+      if (score > 70) scoreColor = '#ef4444';
+      else if (score > 45) scoreColor = '#f97316';
+      else if (score > 20) scoreColor = '#eab308';
+      arc.style.stroke = scoreColor;
+      arc.style.strokeDashoffset = String(offset);
+      numEl.textContent = score;
+      numEl.style.color = scoreColor;
+
+      // Level badge
+      const lm = LEVEL_MAP[r.threat_level] || LEVEL_MAP.safe;
+      const badge = document.getElementById('threat-level-badge');
+      badge.className = 'threat-level-badge ' + lm.cls;
+      badge.textContent = lm.icon + ' ' + lm.label;
+
+      document.getElementById('threat-summary-text').textContent = r.summary || '';
+      document.getElementById('result-final-url').textContent = r.final_url || r.input_url;
+      document.getElementById('result-status-code').textContent = r.final_status_code || '—';
+      document.getElementById('result-duration').textContent = r.scan_duration;
+
+      const btnOpen = document.getElementById('btn-threat-open');
+      btnOpen.href = r.final_url || r.input_url;
+      btnOpen.style.color = score > 45 ? '#ef4444' : 'var(--text-secondary)';
+
+      // Signals
+      const signalList = document.getElementById('signals-list');
+      document.getElementById('signal-count').textContent = r.signals.length;
+      signalList.innerHTML = r.signals.length === 0
+        ? '<div style="color:var(--accent-emerald); font-size:0.9rem; padding:0.75rem 0;">✅ No threat signals detected.</div>'
+        : r.signals.map(s => `
+          <div class="signal-card sig-${s.level}">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
+              <span style="font-weight:700; font-size:0.875rem; color:var(--text-primary);">${s.title}</span>
+              <span class="threat-level-badge level-${s.level}" style="font-size:0.65rem; padding:0.15rem 0.5rem;">${s.level.toUpperCase()}</span>
+            </div>
+            <div style="font-size:0.8rem; color:var(--text-secondary); line-height:1.45;">${s.description}</div>
+            <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.25rem; font-family:var(--font-mono);">${s.category} · ${s.code}</div>
+          </div>
+        `).join('');
+
+      // SSL
+      const sslInfo = document.getElementById('ssl-info');
+      if (r.has_ssl) {
+        const daysColor = r.ssl_days_left > 30 ? 'ssl-valid' : (r.ssl_days_left > 7 ? 'ssl-warn' : 'ssl-invalid');
+        sslInfo.innerHTML = `
+          <div class="prop-row"><span class="prop-label">Status</span><span class="ssl-valid" style="font-weight:700;">✅ Valid TLS</span></div>
+          <div class="prop-row"><span class="prop-label">Issuer</span><span class="prop-value">${r.ssl_issuer || '—'}</span></div>
+          <div class="prop-row"><span class="prop-label">Expires</span><span class="prop-value ${daysColor}">${r.ssl_valid_to} (${r.ssl_days_left}d left)</span></div>
+        `;
+      } else {
+        sslInfo.innerHTML = '<div class="prop-row"><span class="prop-label">Status</span><span class="ssl-invalid" style="font-weight:700;">❌ No Valid SSL</span></div>';
+      }
+
+      // Meta
+      const metaInfo = document.getElementById('meta-info');
+      const ipList = (r.ipv4 && r.ipv4.length) ? r.ipv4.slice(0, 3).join(', ') : '—';
+      metaInfo.innerHTML = `
+        <div class="prop-row"><span class="prop-label">Domain</span><span class="prop-value" style="font-family:var(--font-mono);">${r.final_domain || '—'}</span></div>
+        <div class="prop-row"><span class="prop-label">IPv4</span><span class="prop-value" style="font-family:var(--font-mono);">${ipList}</span></div>
+        <div class="prop-row"><span class="prop-label">Server</span><span class="prop-value">${r.server_header || '—'}</span></div>
+        <div class="prop-row"><span class="prop-label">Content-Type</span><span class="prop-value">${r.content_type ? r.content_type.split(';')[0] : '—'}</span></div>
+        <div class="prop-row"><span class="prop-label">Shortened</span><span class="prop-value">${r.is_shortened ? '⚠️ Yes (URL Shortener)' : '✅ No'}</span></div>
+      `;
+
+      // Redirect chain
+      const redirectSec = document.getElementById('redirect-section');
+      const redirectList = document.getElementById('redirect-list');
+      if (r.redirect_chain && r.redirect_chain.length > 0) {
+        document.getElementById('redirect-count').textContent = r.redirect_chain.length;
+        redirectList.innerHTML = r.redirect_chain.map(hop => `
+          <div class="redirect-hop">
+            <div class="hop-step">${hop.step}</div>
+            <div style="flex:1; min-width:0;">
+              <div style="font-family:var(--font-mono); font-size:0.78rem; color:var(--text-primary); word-break:break-all;">${hop.url}</div>
+            </div>
+            <div style="display:flex; gap:0.4rem; flex-shrink:0;">
+              <span class="badge-tag" style="font-size:0.7rem; padding:0.1rem 0.45rem; background:rgba(99,102,241,0.15); color:var(--accent-primary); border-radius:4px; font-weight:700;">${hop.status_code}</span>
+              <span class="badge-tag" style="font-size:0.7rem; padding:0.1rem 0.45rem; background:${hop.is_https ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}; color:${hop.is_https ? '#10b981' : '#ef4444'}; border-radius:4px; font-weight:600;">${hop.is_https ? 'HTTPS' : 'HTTP'}</span>
+            </div>
+          </div>
+        `).join('');
+        redirectSec.style.display = 'block';
+      } else {
+        redirectSec.style.display = 'none';
+      }
+
+      resultsDiv.style.display = 'block';
+    }
+
+    document.getElementById('btn-threat-json').addEventListener('click', () => {
+      if (!currentReport) return;
+      const blob = new Blob([JSON.stringify(currentReport, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'threat-report.json';
+      a.click();
+    });
+
+    // Auto trigger from URL param
+    const params = new URLSearchParams(window.location.search);
+    const initUrl = params.get('url') || params.get('u');
+    if (initUrl) {
+      input.value = initUrl;
+      runScan(initUrl);
+    }
+  })();
+  </script>
+</body>
+</html>

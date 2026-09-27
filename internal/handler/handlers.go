@@ -36,6 +36,7 @@ import (
 	"searxgo/internal/recon"
 	"searxgo/internal/scrub"
 	"searxgo/internal/stats"
+	"searxgo/internal/threat"
 	"searxgo/web"
 )
 
@@ -195,6 +196,19 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /osint", h.ServeSherlock)
 	mux.HandleFunc("GET /api/sherlock", h.ServeAPISherlock)
 	mux.HandleFunc("POST /api/sherlock", h.ServeAPISherlock)
+
+	// URL Threat Intelligence Scanner & Sandbox
+	mux.HandleFunc("GET /threat", h.ServeThreat)
+	mux.HandleFunc("GET /scan", h.ServeThreat)
+	mux.HandleFunc("GET /api/threat", h.ServeAPIThreat)
+	mux.HandleFunc("POST /api/threat", h.ServeAPIThreat)
+
+	// Interactive Knowledge & Entity Graph
+	mux.HandleFunc("GET /graph", h.ServeGraph)
+	mux.HandleFunc("GET /api/graph", h.ServeAPIGraph)
+
+	// Search Goggles - Domain Block/Boost API
+	mux.HandleFunc("POST /api/goggles/validate", h.ServeAPIGogglesValidate)
 
 	// Privacy Proxy
 	mux.HandleFunc("GET /proxy/image", h.imageProxy.ServeHTTP)
@@ -1623,6 +1637,256 @@ func (h *Handler) ServeAPISherlock(w http.ResponseWriter, r *http.Request) {
 	report := instant.ScanUsernameProfiles(r.Context(), cleanUser, 3500*time.Millisecond)
 	json.NewEncoder(w).Encode(report)
 }
+
+// ServeThreat renders the URL Threat Intelligence & Sandbox scanner workspace
+func (h *Handler) ServeThreat(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	targetURL := strings.TrimSpace(r.URL.Query().Get("url"))
+	if targetURL == "" {
+		targetURL = strings.TrimSpace(r.URL.Query().Get("u"))
+	}
+
+	data := map[string]interface{}{
+		"TargetURL": targetURL,
+	}
+
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "threat.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	buf.WriteTo(w)
+}
+
+// ServeAPIThreat runs URL threat intelligence analysis and returns structured JSON report
+func (h *Handler) ServeAPIThreat(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	targetURL := strings.TrimSpace(r.URL.Query().Get("url"))
+	if targetURL == "" {
+		targetURL = strings.TrimSpace(r.URL.Query().Get("u"))
+	}
+
+	if r.Method == http.MethodPost && targetURL == "" {
+		var req struct {
+			URL string `json:"url"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err == nil {
+			targetURL = strings.TrimSpace(req.URL)
+		}
+	}
+
+	if targetURL == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Parameter 'url' is required"})
+		return
+	}
+
+	report := threat.ScanURL(r.Context(), targetURL)
+	json.NewEncoder(w).Encode(report)
+}
+
+// ServeGraph renders the interactive keyword/entity knowledge graph workspace
+func (h *Handler) ServeGraph(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	query := strings.TrimSpace(r.URL.Query().Get("q"))
+
+	data := map[string]interface{}{
+		"Query": query,
+	}
+
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "graph.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	buf.WriteTo(w)
+}
+
+// ServeAPIGraph extracts entity/domain/keyword nodes from search results and returns graph JSON
+func (h *Handler) ServeAPIGraph(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	query := strings.TrimSpace(r.URL.Query().Get("q"))
+	if query == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Parameter 'q' is required"})
+		return
+	}
+
+	searchReq := models.SearchRequest{
+		Query:    query,
+		Category: models.CategoryGeneral,
+		Page:     1,
+		PageSize: 20,
+	}
+
+	resp, err := h.aggregator.Search(r.Context(), searchReq)
+	if err != nil || resp == nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Search failed"})
+		return
+	}
+
+	type GraphNode struct {
+		ID    string  `json:"id"`
+		Label string  `json:"label"`
+		Type  string  `json:"type"`
+		URL   string  `json:"url,omitempty"`
+		Score float64 `json:"score"`
+	}
+	type GraphEdge struct {
+		Source string  `json:"source"`
+		Target string  `json:"target"`
+		Weight float64 `json:"weight"`
+		Label  string  `json:"label,omitempty"`
+	}
+	type GraphData struct {
+		Query string      `json:"query"`
+		Nodes []GraphNode `json:"nodes"`
+		Edges []GraphEdge `json:"edges"`
+		Total int         `json:"total"`
+	}
+
+	nodes := []GraphNode{{
+		ID:    "root",
+		Label: query,
+		Type:  "query",
+		Score: 1.0,
+	}}
+	edges := []GraphEdge{}
+	domainsSeen := map[string]bool{}
+	keywordsSeen := map[string]bool{}
+
+	stopWords := map[string]bool{
+		"this": true, "that": true, "with": true, "from": true,
+		"have": true, "will": true, "your": true, "more": true,
+		"about": true, "into": true, "than": true, "they": true,
+		"were": true, "been": true, "when": true, "also": true,
+		"what": true, "which": true, "there": true, "their": true,
+		"would": true, "could": true, "should": true, "after": true,
+		"where": true, "while": true, "these": true, "some": true,
+	}
+
+	for i, result := range resp.Results {
+		if i >= 15 {
+			break
+		}
+
+		parsedU, uErr := url.Parse(result.URL)
+		domainNode := ""
+		if uErr == nil && parsedU.Host != "" {
+			domain := strings.TrimPrefix(strings.ToLower(parsedU.Host), "www.")
+			if !domainsSeen[domain] {
+				domainNode = "domain:" + domain
+				nodes = append(nodes, GraphNode{
+					ID:    domainNode,
+					Label: domain,
+					Type:  "domain",
+					URL:   parsedU.Scheme + "://" + parsedU.Host,
+					Score: result.Score,
+				})
+				domainsSeen[domain] = true
+				edges = append(edges, GraphEdge{
+					Source: "root",
+					Target: domainNode,
+					Weight: result.Score + 0.1,
+					Label:  "source",
+				})
+			} else {
+				domainNode = "domain:" + domain
+			}
+		}
+
+		titleWords := strings.Fields(strings.ToLower(result.Title))
+		for _, word := range titleWords {
+			word = strings.Trim(word, ".,!?;:()[]{}\"'")
+			if len(word) < 4 || stopWords[word] {
+				continue
+			}
+			if keywordsSeen[word] {
+				if domainNode != "" {
+					edges = append(edges, GraphEdge{
+						Source: domainNode,
+						Target: "kw:" + word,
+						Weight: 0.3,
+					})
+				}
+				continue
+			}
+			if len(nodes) >= 80 {
+				break
+			}
+			keywordsSeen[word] = true
+			kwNode := "kw:" + word
+			nodes = append(nodes, GraphNode{
+				ID:    kwNode,
+				Label: word,
+				Type:  "keyword",
+				Score: 0.2,
+			})
+			if domainNode != "" {
+				edges = append(edges, GraphEdge{
+					Source: domainNode,
+					Target: kwNode,
+					Weight: 0.4,
+				})
+			}
+		}
+	}
+
+	json.NewEncoder(w).Encode(GraphData{
+		Query: query,
+		Nodes: nodes,
+		Edges: edges,
+		Total: len(nodes),
+	})
+}
+
+// ServeAPIGogglesValidate validates and normalizes a domain block/boost list
+func (h *Handler) ServeAPIGogglesValidate(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	var req struct {
+		Blocklist []string `json:"blocklist"`
+		Boostlist []string `json:"boostlist"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid JSON body"})
+		return
+	}
+
+	cleanDomain := func(d string) string {
+		d = strings.ToLower(strings.TrimSpace(d))
+		d = strings.TrimPrefix(d, "https://")
+		d = strings.TrimPrefix(d, "http://")
+		d = strings.TrimPrefix(d, "www.")
+		d = strings.Split(d, "/")[0]
+		return d
+	}
+
+	cleanedBlock := []string{}
+	for _, d := range req.Blocklist {
+		if c := cleanDomain(d); c != "" {
+			cleanedBlock = append(cleanedBlock, c)
+		}
+	}
+
+	cleanedBoost := []string{}
+	for _, d := range req.Boostlist {
+		if c := cleanDomain(d); c != "" {
+			cleanedBoost = append(cleanedBoost, c)
+		}
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"blocklist": cleanedBlock,
+		"boostlist": cleanedBoost,
+		"count":     len(cleanedBlock) + len(cleanedBoost),
+	})
+}
+
 
 
 

@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Knowledge Graph Explorer - SearXGo</title>
+  <meta name="description" content="Interactive keyword and entity relationship graph built from live search results. Explore topic clusters, domain relationships, and concept networks.">
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕸️</text></svg>">
+  <style>
+    .graph-layout {
+      display: flex;
+      height: calc(100vh - 60px);
+      overflow: hidden;
+    }
+    .graph-sidebar {
+      width: 320px;
+      flex-shrink: 0;
+      background: var(--bg-card);
+      border-right: 1px solid var(--border-glass);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .graph-sidebar-header {
+      padding: 1.25rem;
+      border-bottom: 1px solid var(--border-glass);
+      background: var(--bg-secondary);
+    }
+    .graph-sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+    .graph-canvas-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: radial-gradient(ellipse at center, rgba(30,41,59,0.8) 0%, var(--bg-primary) 100%);
+    }
+    #graph-canvas {
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+    #graph-canvas:active {
+      cursor: grabbing;
+    }
+    .graph-node-info {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      width: 280px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      display: none;
+      z-index: 10;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    .graph-controls {
+      position: absolute;
+      bottom: 1.25rem;
+      right: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      z-index: 10;
+    }
+    .graph-ctrl-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      color: var(--text-primary);
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-fast);
+    }
+    .graph-ctrl-btn:hover {
+      background: var(--accent-primary);
+      border-color: var(--accent-primary);
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+    }
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .node-list-item {
+      padding: 0.45rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.4rem;
+    }
+    .node-list-item:hover {
+      background: rgba(255,255,255,0.06);
+      color: var(--text-primary);
+    }
+    .graph-loading-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(ellipse at center, rgba(30,41,59,0.9) 0%, var(--bg-primary) 100%);
+      z-index: 20;
+    }
+    .graph-empty {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      user-select: none;
+    }
+    @media (max-width: 768px) {
+      .graph-layout { flex-direction: column; height: auto; }
+      .graph-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border-glass); max-height: 280px; }
+      .graph-canvas-wrap { height: 65vh; }
+    }
+    /* Goggles Panel */
+    .goggles-section {
+      border-top: 1px solid var(--border-glass);
+      padding: 1rem;
+    }
+    .goggle-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.72rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: var(--radius-full);
+      font-weight: 600;
+      cursor: pointer;
+      margin: 0.15rem;
+      transition: all var(--transition-fast);
+    }
+    .goggle-blocked { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+    .goggle-blocked:hover { background: rgba(239,68,68,0.25); }
+    .goggle-boosted { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+    .goggle-boosted:hover { background: rgba(16,185,129,0.25); }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+
+  <!-- Top Nav -->
+  <nav class="top-nav container" style="position:relative; z-index:100;">
+    <a href="/" class="nav-btn"><span>🪐 Home</span></a>
+    <a href="/recon" class="nav-btn"><span>🔍 Recon</span></a>
+    <a href="/sherlock" class="nav-btn"><span>🕵️ Sherlock</span></a>
+    <a href="/threat" class="nav-btn"><span>🛡️ Threat</span></a>
+    <a href="/graph" class="nav-btn active" style="color:var(--accent-cyan); font-weight:700;"><span>🕸️ Graph</span></a>
+    <a href="/settings" class="nav-btn"><span>⚙️ Settings</span></a>
+  </nav>
+
+  <div class="graph-layout">
+    <!-- Sidebar -->
+    <aside class="graph-sidebar">
+      <div class="graph-sidebar-header">
+        <div style="font-size:0.8rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); font-weight:700; margin-bottom:0.75rem;">🕸️ Entity Graph Explorer</div>
+        <form id="graph-form" style="display:flex; gap:0.4rem;">
+          <input type="text" id="graph-query" class="form-select" placeholder="Search topic..." value="{{.Query}}" style="flex:1; padding:0.55rem 0.75rem; font-size:0.88rem;" autocomplete="off">
+          <button type="submit" class="btn-search" style="padding:0.55rem 0.85rem; font-size:0.85rem; white-space:nowrap;">Go</button>
+        </form>
+
+        <!-- Preset quick topics -->
+        <div style="display:flex; flex-wrap:wrap; gap:0.3rem; margin-top:0.6rem;">
+          <button type="button" class="sample-pill" data-q="artificial intelligence">AI</button>
+          <button type="button" class="sample-pill" data-q="cybersecurity OSINT">OSINT</button>
+          <button type="button" class="sample-pill" data-q="golang programming">Go</button>
+          <button type="button" class="sample-pill" data-q="blockchain cryptocurrency">Crypto</button>
+          <button type="button" class="sample-pill" data-q="quantum computing">Quantum</button>
+        </div>
+      </div>
+
+      <div class="graph-sidebar-content">
+        <!-- Stats -->
+        <div id="graph-stats" style="display:none; margin-bottom:1rem;">
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.5rem; margin-bottom:0.75rem;">
+            <div style="text-align:center; background:rgba(255,255,255,0.04); border-radius:8px; padding:0.5rem;">
+              <div style="font-size:1.25rem; font-weight:800; color:var(--accent-cyan);" id="stat-nodes">0</div>
+              <div style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase;">Nodes</div>
+            </div>
+            <div style="text-align:center; background:rgba(255,255,255,0.04); border-radius:8px; padding:0.5rem;">
+              <div style="font-size:1.25rem; font-weight:800; color:var(--accent-primary);" id="stat-edges">0</div>
+              <div style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase;">Links</div>
+            </div>
+            <div style="text-align:center; background:rgba(255,255,255,0.04); border-radius:8px; padding:0.5rem;">
+              <div style="font-size:1.25rem; font-weight:800; color:var(--accent-emerald);" id="stat-domains">0</div>
+              <div style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase;">Sources</div>
+            </div>
+          </div>
+
+          <!-- Legend -->
+          <div style="margin-bottom:0.75rem;">
+            <div class="legend-item"><div class="legend-dot" style="background:#f59e0b;"></div> Query Root</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#6366f1;"></div> Domain Source</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#06b6d4;"></div> Keyword Node</div>
+          </div>
+        </div>
+
+        <!-- Node List -->
+        <div id="node-list-wrap" style="display:none;">
+          <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.5rem;">Domain Sources</div>
+          <div id="domain-node-list"></div>
+        </div>
+
+        <!-- Goggles Section -->
+        <div class="goggles-section" id="goggles-section" style="display:none;">
+          <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:0.6rem;">🎯 Search Goggles</div>
+          <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.75rem;">Click a domain to block or boost it from future search results.</div>
+          
+          <div style="margin-bottom:0.5rem; font-size:0.75rem; color:#ef4444; font-weight:600;">Blocked Domains</div>
+          <div id="blocked-tags" style="min-height:28px;"></div>
+          
+          <div style="margin-top:0.6rem; margin-bottom:0.4rem; font-size:0.75rem; color:#10b981; font-weight:600;">Boosted Domains</div>
+          <div id="boosted-tags" style="min-height:28px;"></div>
+
+          <!-- Preset Goggles -->
+          <div style="margin-top:0.75rem; border-top:1px solid var(--border-glass); padding-top:0.75rem;">
+            <div style="font-size:0.72rem; color:var(--text-muted); margin-bottom:0.4rem; font-weight:600;">PRESET GOGGLES</div>
+            <div style="display:flex; flex-wrap:wrap; gap:0.3rem;">
+              <button type="button" class="nav-btn preset-goggle" data-preset="dev" style="font-size:0.7rem; padding:0.2rem 0.6rem;">💻 Dev Only</button>
+              <button type="button" class="nav-btn preset-goggle" data-preset="academic" style="font-size:0.7rem; padding:0.2rem 0.6rem;">🔬 Academic</button>
+              <button type="button" class="nav-btn preset-goggle" data-preset="nospam" style="font-size:0.7rem; padding:0.2rem 0.6rem;">🚫 No Spam</button>
+              <button type="button" class="nav-btn preset-goggle" data-preset="clear" style="font-size:0.7rem; padding:0.2rem 0.6rem; color:#ef4444;">🗑 Clear All</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Graph Canvas -->
+    <div class="graph-canvas-wrap" id="graph-canvas-wrap">
+      <canvas id="graph-canvas"></canvas>
+
+      <!-- Empty -->
+      <div class="graph-empty" id="graph-empty">
+        <div style="font-size:4rem; margin-bottom:1rem; opacity:0.4;">🕸️</div>
+        <div style="font-size:1.1rem; font-weight:600; color:var(--text-secondary); margin-bottom:0.35rem;">Interactive Knowledge Graph</div>
+        <p style="font-size:0.9rem; max-width:360px; text-align:center; opacity:0.7;">Search any topic to generate a live entity/domain/keyword relationship graph from real search results.</p>
+      </div>
+
+      <!-- Loading overlay -->
+      <div class="graph-loading-overlay" id="graph-loading" style="display:none;">
+        <div class="infinite-spinner" style="margin-bottom:1.5rem;"></div>
+        <div style="font-size:1rem; font-weight:700; color:var(--text-primary); margin-bottom:0.35rem;">Building Knowledge Graph...</div>
+        <p style="font-size:0.85rem; color:var(--text-secondary);">Querying search engines, extracting entities and domains...</p>
+      </div>
+
+      <!-- Node Info panel -->
+      <div class="graph-node-info" id="node-info">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+          <span style="font-weight:700; font-size:0.9rem;" id="node-info-label">—</span>
+          <button type="button" id="close-node-info" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1rem;">✕</button>
+        </div>
+        <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.5rem;" id="node-info-type">type</div>
+        <div id="node-info-actions" style="display:flex; flex-direction:column; gap:0.35rem;"></div>
+      </div>
+
+      <!-- Controls -->
+      <div class="graph-controls">
+        <button class="graph-ctrl-btn" id="btn-zoom-in" title="Zoom In">+</button>
+        <button class="graph-ctrl-btn" id="btn-zoom-out" title="Zoom Out">−</button>
+        <button class="graph-ctrl-btn" id="btn-zoom-reset" title="Reset View">⊙</button>
+        <button class="graph-ctrl-btn" id="btn-export-png" title="Export PNG">💾</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+  (function() {
+    // ================================================================
+    // State
+    // ================================================================
+    let graphData = null;
+    let nodes = [];
+    let edges = [];
+    let positions = {};
+    let velocities = {};
+    let zoom = 1;
+    let panX = 0;
+    let panY = 0;
+    let isPanning = false;
+    let panStart = { x: 0, y: 0 };
+    let hoveredNode = null;
+    let selectedNode = null;
+    let animFrame = null;
+    let simRunning = false;
+    let simStep = 0;
+
+    const canvas = document.getElementById('graph-canvas');
+    const ctx = canvas.getContext('2d');
+    const wrap = document.getElementById('graph-canvas-wrap');
+    const emptyDiv = document.getElementById('graph-empty');
+    const loadingDiv = document.getElementById('graph-loading');
+    const nodeInfo = document.getElementById('node-info');
+
+    // Goggles state from localStorage
+    function getGoggles() {
+      try { return JSON.parse(localStorage.getItem('searxgo_goggles') || '{"blocklist":[],"boostlist":[]}'); }
+      catch { return { blocklist: [], boostlist: [] }; }
+    }
+    function saveGoggles(g) {
+      localStorage.setItem('searxgo_goggles', JSON.stringify(g));
+      renderGogglesUI();
+    }
+
+    // Node colors
+    const NODE_COLORS = { query: '#f59e0b', domain: '#6366f1', keyword: '#06b6d4' };
+    const NODE_RADII = { query: 28, domain: 20, keyword: 12 };
+
+    // ================================================================
+    // Canvas resize
+    // ================================================================
+    function resizeCanvas() {
+      canvas.width = wrap.clientWidth;
+      canvas.height = wrap.clientHeight;
+      if (graphData) draw();
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // ================================================================
+    // Physics-based Force Simulation (Force-Directed)
+    // ================================================================
+    function initPhysics() {
+      positions = {};
+      velocities = {};
+      const W = canvas.width, H = canvas.height;
+      nodes.forEach((n, i) => {
+        const angle = (i / nodes.length) * Math.PI * 2;
+        const r = Math.min(W, H) * 0.3;
+        positions[n.id] = {
+          x: W / 2 + (n.type === 'query' ? 0 : r * Math.cos(angle) * (0.5 + Math.random() * 0.5)),
+          y: H / 2 + (n.type === 'query' ? 0 : r * Math.sin(angle) * (0.5 + Math.random() * 0.5)),
+        };
+        velocities[n.id] = { x: 0, y: 0 };
+      });
+    }
+
+    function stepPhysics() {
+      const W = canvas.width, H = canvas.height;
+      const REPEL = 4500;
+      const SPRING_LEN = 160;
+      const SPRING_K = 0.04;
+      const DAMP = 0.85;
+      const GRAVITY = 0.015;
+
+      // Repulsion between all node pairs
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const a = nodes[i], b = nodes[j];
+          const pa = positions[a.id], pb = positions[b.id];
+          const dx = pb.x - pa.x, dy = pb.y - pa.y;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+          const force = REPEL / (dist * dist);
+          velocities[a.id].x -= (dx / dist) * force;
+          velocities[a.id].y -= (dy / dist) * force;
+          velocities[b.id].x += (dx / dist) * force;
+          velocities[b.id].y += (dy / dist) * force;
+        }
+      }
+
+      // Spring attraction along edges
+      edges.forEach(e => {
+        const pa = positions[e.source], pb = positions[e.target];
+        if (!pa || !pb) return;
+        const dx = pb.x - pa.x, dy = pb.y - pa.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const stretch = dist - SPRING_LEN * (1 + e.weight * 0.5);
+        const force = SPRING_K * stretch;
+        velocities[e.source].x += (dx / dist) * force;
+        velocities[e.source].y += (dy / dist) * force;
+        velocities[e.target].x -= (dx / dist) * force;
+        velocities[e.target].y -= (dy / dist) * force;
+      });
+
+      // Gravity toward center
+      nodes.forEach(n => {
+        const p = positions[n.id];
+        velocities[n.id].x += (W / 2 - p.x) * GRAVITY;
+        velocities[n.id].y += (H / 2 - p.y) * GRAVITY;
+      });
+
+      // Integrate & dampen
+      nodes.forEach(n => {
+        if (n.id === 'root') return; // Pin root
+        const p = positions[n.id], v = velocities[n.id];
+        v.x *= DAMP;
+        v.y *= DAMP;
+        p.x += v.x;
+        p.y += v.y;
+        // Boundary
+        const pad = 40;
+        p.x = Math.max(pad, Math.min(W - pad, p.x));
+        p.y = Math.max(pad, Math.min(H - pad, p.y));
+      });
+    }
+
+    // ================================================================
+    // Drawing
+    // ================================================================
+    function worldToScreen(wx, wy) {
+      return { x: wx * zoom + panX, y: wy * zoom + panY };
+    }
+    function screenToWorld(sx, sy) {
+      return { x: (sx - panX) / zoom, y: (sy - panY) / zoom };
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (!nodes.length) return;
+
+      ctx.save();
+
+      // Draw edges
+      edges.forEach(e => {
+        const pa = positions[e.source], pb = positions[e.target];
+        if (!pa || !pb) return;
+        const sa = worldToScreen(pa.x, pa.y), sb = worldToScreen(pb.x, pb.y);
+        ctx.beginPath();
+        ctx.moveTo(sa.x, sa.y);
+        ctx.lineTo(sb.x, sb.y);
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+        ctx.lineWidth = Math.max(0.5, e.weight * 1.5 * zoom);
+        ctx.stroke();
+      });
+
+      // Draw nodes
+      nodes.forEach(n => {
+        const p = positions[n.id];
+        if (!p) return;
+        const s = worldToScreen(p.x, p.y);
+        const r = (NODE_RADII[n.type] || 10) * Math.sqrt(zoom);
+        const isHovered = hoveredNode === n.id;
+        const isSelected = selectedNode === n.id;
+
+        // Glow effect for hovered/selected
+        if (isHovered || isSelected) {
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, r + 8 * zoom, 0, Math.PI * 2);
+          ctx.fillStyle = NODE_COLORS[n.type] + '33';
+          ctx.fill();
+        }
+
+        // Node circle
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+        const gradient = ctx.createRadialGradient(s.x - r * 0.3, s.y - r * 0.3, 0, s.x, s.y, r);
+        gradient.addColorStop(0, NODE_COLORS[n.type] + 'ff');
+        gradient.addColorStop(1, NODE_COLORS[n.type] + 'aa');
+        ctx.fillStyle = gradient;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+        ctx.lineWidth = (isSelected || isHovered) ? 2 * zoom : 1 * zoom;
+        ctx.stroke();
+
+        // Label
+        const fontSize = n.type === 'query' ? 13 : (n.type === 'domain' ? 11 : 9);
+        const scaledFont = Math.max(8, fontSize * Math.sqrt(zoom));
+        ctx.font = `${n.type === 'query' ? 700 : 600} ${scaledFont}px -apple-system,sans-serif`;
+        ctx.fillStyle = n.type === 'keyword' ? 'rgba(255,255,255,0.65)' : '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Label outside node for non-root
+        if (n.type !== 'query') {
+          ctx.fillText(n.label, s.x, s.y + r + scaledFont * 0.85);
+        } else {
+          ctx.fillText(n.label, s.x, s.y);
+        }
+      });
+
+      ctx.restore();
+    }
+
+    // ================================================================
+    // Animation Loop
+    // ================================================================
+    function tick() {
+      if (simStep < 250) {
+        stepPhysics();
+        simStep++;
+      }
+      draw();
+      animFrame = requestAnimationFrame(tick);
+    }
+
+    // ================================================================
+    // Fetch & Build Graph
+    // ================================================================
+    async function loadGraph(query) {
+      if (!query.trim()) return;
+      emptyDiv.style.display = 'none';
+      loadingDiv.style.display = 'flex';
+      nodeInfo.style.display = 'none';
+
+      // Update URL
+      const u = new URL(window.location);
+      u.searchParams.set('q', query);
+      window.history.pushState({}, '', u);
+
+      try {
+        const resp = await fetch('/api/graph?q=' + encodeURIComponent(query));
+        if (!resp.ok) throw new Error('Graph API failed');
+        graphData = await resp.json();
+        nodes = graphData.nodes || [];
+        edges = graphData.edges || [];
+
+        loadingDiv.style.display = 'none';
+        if (!nodes.length) {
+          emptyDiv.style.display = 'flex';
+          return;
+        }
+
+        // Reset pan/zoom
+        zoom = 1;
+        panX = 0;
+        panY = 0;
+        simStep = 0;
+
+        initPhysics();
+        if (animFrame) cancelAnimationFrame(animFrame);
+        tick();
+
+        updateSidebarStats();
+        updateSidebarNodeList();
+      } catch(err) {
+        loadingDiv.style.display = 'none';
+        emptyDiv.style.display = 'flex';
+        emptyDiv.innerHTML = `<div style="font-size:2rem; margin-bottom:0.75rem;">⚠️</div><div style="color:var(--text-primary); font-weight:700;">Graph Load Error</div><p style="font-size:0.85rem; color:var(--text-muted);">${err.message}</p>`;
+      }
+    }
+
+    function updateSidebarStats() {
+      const statsEl = document.getElementById('graph-stats');
+      const nodeListWrap = document.getElementById('node-list-wrap');
+      const gogglesSection = document.getElementById('goggles-section');
+      statsEl.style.display = 'block';
+      nodeListWrap.style.display = 'block';
+      gogglesSection.style.display = 'block';
+      document.getElementById('stat-nodes').textContent = nodes.length;
+      document.getElementById('stat-edges').textContent = edges.length;
+      const domains = nodes.filter(n => n.type === 'domain').length;
+      document.getElementById('stat-domains').textContent = domains;
+    }
+
+    function updateSidebarNodeList() {
+      const listEl = document.getElementById('domain-node-list');
+      const domainNodes = nodes.filter(n => n.type === 'domain');
+      const goggles = getGoggles();
+      listEl.innerHTML = domainNodes.map(n => {
+        const isBlocked = goggles.blocklist.includes(n.label);
+        const isBoosted = goggles.boostlist.includes(n.label);
+        return `
+          <div class="node-list-item" data-id="${n.id}">
+            <span style="truncate; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:${isBlocked ? '#ef4444' : (isBoosted ? '#10b981' : 'var(--text-secondary)')};">
+              ${isBlocked ? '🚫 ' : (isBoosted ? '⬆️ ' : '')}${n.label}
+            </span>
+            <div style="display:flex; gap:0.2rem; flex-shrink:0;">
+              <button type="button" class="goggle-tag goggle-blocked btn-block-domain" data-domain="${n.label}" title="Block domain">🚫</button>
+              <button type="button" class="goggle-tag goggle-boosted btn-boost-domain" data-domain="${n.label}" title="Boost domain">⬆️</button>
+            </div>
+          </div>
+        `;
+      }).join('') || '<p style="font-size:0.8rem; color:var(--text-muted);">No domain sources found.</p>';
+
+      // Bind block/boost buttons
+      listEl.querySelectorAll('.btn-block-domain').forEach(btn => {
+        btn.addEventListener('click', e => { e.stopPropagation(); toggleGoggles(btn.dataset.domain, 'block'); });
+      });
+      listEl.querySelectorAll('.btn-boost-domain').forEach(btn => {
+        btn.addEventListener('click', e => { e.stopPropagation(); toggleGoggles(btn.dataset.domain, 'boost'); });
+      });
+    }
+
+    function renderGogglesUI() {
+      const g = getGoggles();
+      const blockedTags = document.getElementById('blocked-tags');
+      const boostedTags = document.getElementById('boosted-tags');
+
+      blockedTags.innerHTML = g.blocklist.length === 0
+        ? '<span style="font-size:0.75rem; color:var(--text-muted);">None</span>'
+        : g.blocklist.map(d => `<span class="goggle-tag goggle-blocked" data-domain="${d}" style="cursor:pointer;" title="Remove block">${d} ✕</span>`).join('');
+
+      boostedTags.innerHTML = g.boostlist.length === 0
+        ? '<span style="font-size:0.75rem; color:var(--text-muted);">None</span>'
+        : g.boostlist.map(d => `<span class="goggle-tag goggle-boosted" data-domain="${d}" style="cursor:pointer;" title="Remove boost">${d} ✕</span>`).join('');
+
+      // Remove handlers
+      blockedTags.querySelectorAll('.goggle-tag').forEach(t => {
+        t.addEventListener('click', () => removeGoggles(t.dataset.domain, 'block'));
+      });
+      boostedTags.querySelectorAll('.goggle-tag').forEach(t => {
+        t.addEventListener('click', () => removeGoggles(t.dataset.domain, 'boost'));
+      });
+    }
+
+    function toggleGoggles(domain, mode) {
+      const g = getGoggles();
+      if (mode === 'block') {
+        g.boostlist = g.boostlist.filter(d => d !== domain);
+        if (g.blocklist.includes(domain)) {
+          g.blocklist = g.blocklist.filter(d => d !== domain);
+        } else {
+          g.blocklist.push(domain);
+        }
+      } else {
+        g.blocklist = g.blocklist.filter(d => d !== domain);
+        if (g.boostlist.includes(domain)) {
+          g.boostlist = g.boostlist.filter(d => d !== domain);
+        } else {
+          g.boostlist.push(domain);
+        }
+      }
+      saveGoggles(g);
+      updateSidebarNodeList();
+    }
+
+    function removeGoggles(domain, mode) {
+      const g = getGoggles();
+      if (mode === 'block') g.blocklist = g.blocklist.filter(d => d !== domain);
+      else g.boostlist = g.boostlist.filter(d => d !== domain);
+      saveGoggles(g);
+      updateSidebarNodeList();
+    }
+
+    // Preset goggles
+    document.querySelectorAll('.preset-goggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const preset = btn.dataset.preset;
+        const presets = {
+          dev: { blocklist: ['pinterest.com','quora.com','medium.com'], boostlist: ['github.com','stackoverflow.com','docs.rs','pkg.go.dev','npmjs.com'] },
+          academic: { blocklist: ['pinterest.com','etsy.com','amazon.com'], boostlist: ['arxiv.org','pubmed.ncbi.nlm.nih.gov','scholar.google.com','wikipedia.org'] },
+          nospam: { blocklist: ['pinterest.com','quora.com','answers.com','ehow.com','livestrong.com','wikihow.com'], boostlist: [] },
+          clear: { blocklist: [], boostlist: [] },
+        };
+        if (presets[preset]) {
+          saveGoggles(presets[preset]);
+          updateSidebarNodeList();
+        }
+      });
+    });
+
+    // ================================================================
+    // Mouse Interaction
+    // ================================================================
+    function getNodeAtScreen(sx, sy) {
+      for (let i = nodes.length - 1; i >= 0; i--) {
+        const n = nodes[i];
+        const p = positions[n.id];
+        if (!p) continue;
+        const s = worldToScreen(p.x, p.y);
+        const r = (NODE_RADII[n.type] || 10) * Math.sqrt(zoom);
+        const dx = sx - s.x, dy = sy - s.y;
+        if (dx * dx + dy * dy <= r * r) return n;
+      }
+      return null;
+    }
+
+    canvas.addEventListener('mousemove', e => {
+      const rect = canvas.getBoundingClientRect();
+      const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+      if (isPanning) {
+        panX += e.clientX - panStart.x;
+        panY += e.clientY - panStart.y;
+        panStart = { x: e.clientX, y: e.clientY };
+        return;
+      }
+      const node = getNodeAtScreen(sx, sy);
+      hoveredNode = node ? node.id : null;
+      canvas.style.cursor = node ? 'pointer' : 'grab';
+    });
+
+    canvas.addEventListener('mousedown', e => {
+      const rect = canvas.getBoundingClientRect();
+      const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+      const node = getNodeAtScreen(sx, sy);
+      if (!node) {
+        isPanning = true;
+        panStart = { x: e.clientX, y: e.clientY };
+        canvas.style.cursor = 'grabbing';
+      }
+    });
+
+    canvas.addEventListener('mouseup', e => {
+      const rect = canvas.getBoundingClientRect();
+      const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+      const node = getNodeAtScreen(sx, sy);
+      isPanning = false;
+      canvas.style.cursor = 'grab';
+      if (node && !isPanning) {
+        selectedNode = selectedNode === node.id ? null : node.id;
+        showNodeInfo(node);
+      }
+    });
+
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+      const factor = e.deltaY < 0 ? 1.12 : 0.9;
+      const newZoom = Math.max(0.2, Math.min(5, zoom * factor));
+      panX = sx - (sx - panX) * (newZoom / zoom);
+      panY = sy - (sy - panY) * (newZoom / zoom);
+      zoom = newZoom;
+    }, { passive: false });
+
+    // Touch support
+    let lastTouchDist = null;
+    canvas.addEventListener('touchstart', e => {
+      if (e.touches.length === 2) {
+        lastTouchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      }
+    }, { passive: true });
+    canvas.addEventListener('touchmove', e => {
+      if (e.touches.length === 2 && lastTouchDist) {
+        const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        zoom = Math.max(0.2, Math.min(5, zoom * (d / lastTouchDist)));
+        lastTouchDist = d;
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    function showNodeInfo(node) {
+      const el = nodeInfo;
+      el.style.display = 'block';
+      document.getElementById('node-info-label').textContent = node.label;
+      document.getElementById('node-info-type').textContent = `Type: ${node.type} · Score: ${node.score.toFixed(2)}`;
+      const actions = document.getElementById('node-info-actions');
+      actions.innerHTML = '';
+      if (node.type === 'domain') {
+        const searchBtn = document.createElement('a');
+        searchBtn.href = `/search?q=${encodeURIComponent(node.label)}&category=general`;
+        searchBtn.className = 'nav-btn';
+        searchBtn.style.cssText = 'font-size:0.78rem; padding:0.3rem 0.65rem; text-decoration:none; text-align:center;';
+        searchBtn.textContent = '🔍 Search Results';
+        actions.appendChild(searchBtn);
+        if (node.url) {
+          const visitBtn = document.createElement('a');
+          visitBtn.href = node.url;
+          visitBtn.target = '_blank';
+          visitBtn.rel = 'noreferrer noopener';
+          visitBtn.className = 'nav-btn';
+          visitBtn.style.cssText = 'font-size:0.78rem; padding:0.3rem 0.65rem; text-decoration:none; text-align:center;';
+          visitBtn.textContent = '🌐 Visit Site';
+          actions.appendChild(visitBtn);
+        }
+        const blockBtn = document.createElement('button');
+        blockBtn.type = 'button';
+        blockBtn.className = 'nav-btn';
+        blockBtn.style.cssText = 'font-size:0.78rem; padding:0.3rem 0.65rem; color:#ef4444; border-color:rgba(239,68,68,0.3); cursor:pointer;';
+        blockBtn.textContent = '🚫 Block Domain';
+        blockBtn.addEventListener('click', () => { toggleGoggles(node.label, 'block'); blockBtn.textContent = '✓ Blocked'; });
+        actions.appendChild(blockBtn);
+        const threatBtn = document.createElement('a');
+        threatBtn.href = `/threat?url=${encodeURIComponent(node.url || 'https://' + node.label)}`;
+        threatBtn.className = 'nav-btn';
+        threatBtn.style.cssText = 'font-size:0.78rem; padding:0.3rem 0.65rem; text-decoration:none; text-align:center;';
+        threatBtn.textContent = '🛡️ Threat Scan';
+        actions.appendChild(threatBtn);
+      } else if (node.type === 'keyword') {
+        const searchBtn = document.createElement('a');
+        searchBtn.href = `/search?q=${encodeURIComponent(node.label)}&category=general`;
+        searchBtn.className = 'nav-btn';
+        searchBtn.style.cssText = 'font-size:0.78rem; padding:0.3rem 0.65rem; text-decoration:none; text-align:center;';
+        searchBtn.textContent = '🔍 Search Keyword';
+        actions.appendChild(searchBtn);
+        const graphBtn = document.createElement('button');
+        graphBtn.type = 'button';
+        graphBtn.className = 'nav-btn';
+        graphBtn.style.cssText = 'font-size:0.78rem; padding:0.3rem 0.65rem; cursor:pointer;';
+        graphBtn.textContent = '🕸️ Graph This';
+        graphBtn.addEventListener('click', () => {
+          document.getElementById('graph-query').value = node.label;
+          loadGraph(node.label);
+          nodeInfo.style.display = 'none';
+        });
+        actions.appendChild(graphBtn);
+      }
+    }
+
+    document.getElementById('close-node-info').addEventListener('click', () => {
+      nodeInfo.style.display = 'none';
+      selectedNode = null;
+    });
+
+    // Zoom controls
+    document.getElementById('btn-zoom-in').addEventListener('click', () => { zoom = Math.min(5, zoom * 1.25); });
+    document.getElementById('btn-zoom-out').addEventListener('click', () => { zoom = Math.max(0.2, zoom / 1.25); });
+    document.getElementById('btn-zoom-reset').addEventListener('click', () => { zoom = 1; panX = 0; panY = 0; });
+    document.getElementById('btn-export-png').addEventListener('click', () => {
+      const a = document.createElement('a');
+      a.download = 'knowledge-graph.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    });
+
+    // Form submit
+    document.getElementById('graph-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const q = document.getElementById('graph-query').value.trim();
+      if (q) loadGraph(q);
+    });
+
+    // Quick sample pills
+    document.querySelectorAll('.sample-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('graph-query').value = btn.dataset.q;
+        loadGraph(btn.dataset.q);
+      });
+    });
+
+    // Domain node click from sidebar
+    document.getElementById('domain-node-list').addEventListener('click', e => {
+      const item = e.target.closest('[data-id]');
+      if (!item) return;
+      const node = nodes.find(n => n.id === item.dataset.id);
+      if (node) showNodeInfo(node);
+    });
+
+    // Init goggles UI
+    renderGogglesUI();
+
+    // Auto-load from URL param
+    const params = new URLSearchParams(window.location.search);
+    const initQ = params.get('q') || '{{.Query}}';
+    if (initQ && initQ !== '{{.Query}}' && initQ.trim()) {
+      document.getElementById('graph-query').value = initQ;
+      loadGraph(initQ);
+    }
+  })();
+  </script>
+</body>
+</html>
