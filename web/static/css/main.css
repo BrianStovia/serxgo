@@ -2412,6 +2412,11 @@ input:checked + .slider:before {
   pointer-events: auto;
 }
 
+.header-nav .nav-dropdown-panel {
+  left: auto;
+  right: 0;
+}
+
 .dropdown-section-label {
   font-size: 0.65rem;
   font-weight: 700;

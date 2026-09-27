@@ -128,12 +128,113 @@
 
   <nav class="top-nav container">
     <a href="/" class="nav-btn"><span>🪐 Home</span></a>
-    <a href="/dorks" class="nav-btn"><span>🎯 Dorks</span></a>
-    <a href="/scrub" class="nav-btn"><span>🛡️ Scrub</span></a>
-    <a href="/recon" class="nav-btn active" style="color:var(--accent-primary); font-weight:700;"><span>🔍 Recon</span></a>
-    <a href="/sherlock" class="nav-btn"><span>🕵️ Sherlock</span></a>
-    <a href="/stats" class="nav-btn"><span>Telemetry</span></a>
-    <a href="/settings" class="nav-btn"><span>Settings</span></a>
+
+    <!-- Tools Dropdown -->
+    <div class="nav-dropdown">
+      <button type="button" class="nav-btn nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false">
+        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </svg>
+        <span>Tools</span>
+        <svg class="dropdown-chevron" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+
+      <div class="nav-dropdown-panel" role="menu">
+        <div class="dropdown-section-label">🔍 Intelligence</div>
+        <a href="/recon" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">🔬</span>
+          <div>
+            <div class="dropdown-item-title">Domain Recon</div>
+            <div class="dropdown-item-desc">Security audit, SSL &amp; headers</div>
+          </div>
+        </a>
+        <a href="/sherlock" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">🕵️</span>
+          <div>
+            <div class="dropdown-item-title">Sherlock OSINT</div>
+            <div class="dropdown-item-desc">Username recon across 20+ platforms</div>
+          </div>
+        </a>
+        <a href="/threat" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">🛡️</span>
+          <div>
+            <div class="dropdown-item-title">Threat Scanner</div>
+            <div class="dropdown-item-desc">Phishing, redirect &amp; URL analysis</div>
+          </div>
+        </a>
+        <a href="/dorks" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">🎯</span>
+          <div>
+            <div class="dropdown-item-title">Dorks Suite</div>
+            <div class="dropdown-item-desc">Google dorking &amp; recon operators</div>
+          </div>
+        </a>
+
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-section-label">🛠️ Utilities</div>
+        <a href="/graph" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">🕸️</span>
+          <div>
+            <div class="dropdown-item-title">Knowledge Graph</div>
+            <div class="dropdown-item-desc">Entity &amp; domain relationship explorer</div>
+          </div>
+        </a>
+        <a href="/scrub" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">🧹</span>
+          <div>
+            <div class="dropdown-item-title">EXIF Scrubber</div>
+            <div class="dropdown-item-desc">Strip metadata from images</div>
+          </div>
+        </a>
+        <a href="/reader" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">📖</span>
+          <div>
+            <div class="dropdown-item-title">Reader View</div>
+            <div class="dropdown-item-desc">Clean distraction-free reading</div>
+          </div>
+        </a>
+        <a href="/split" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">⚖️</span>
+          <div>
+            <div class="dropdown-item-title">Split Compare</div>
+            <div class="dropdown-item-desc">Side-by-side engine comparison</div>
+          </div>
+        </a>
+
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-section-label">📊 System</div>
+        <a href="/stats" class="dropdown-item" role="menuitem">
+          <span class="dropdown-item-icon">📈</span>
+          <div>
+            <div class="dropdown-item-title">Telemetry</div>
+            <div class="dropdown-item-desc">Engine performance &amp; health</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Bookmarks -->
+    <button type="button" class="nav-btn btn-open-bookmarks" title="Saved Bookmarks">
+      <span>🔖</span>
+      <span>Bookmarks</span>
+      <span class="bookmark-counter" style="display:none; background:var(--accent-primary); color:white; border-radius:10px; padding:1px 6px; font-size:0.7rem; font-weight:700;">0</span>
+    </button>
+
+    <!-- Settings -->
+    <a href="/settings" class="nav-btn" title="Preferences &amp; Engines">
+      <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      </svg>
+      <span>Settings</span>
+    </a>
+
+    <!-- Command Palette -->
+    <button type="button" class="cmd-k-badge btn-open-cmd-palette" title="Quick Command Palette (Ctrl+K)">
+      <span>⌘K</span>
+    </button>
   </nav>
 
   <div class="recon-container">
