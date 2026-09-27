@@ -2293,9 +2293,10 @@ func (h *Handler) ServeNewsHub(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ServeAPINewsHub(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	topic := r.URL.Query().Get("topic")
+	region := r.URL.Query().Get("region")
 	query := r.URL.Query().Get("q")
 
-	articles, err := h.newsHubService.GetNews(r.Context(), topic, query)
+	articles, err := h.newsHubService.GetNews(r.Context(), topic, region, query)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
@@ -2304,6 +2305,7 @@ func (h *Handler) ServeAPINewsHub(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"topic":    topic,
+		"region":   region,
 		"count":    len(articles),
 		"articles": articles,
 	})

@@ -15,6 +15,9 @@
     .channel-tabs::-webkit-scrollbar { display: none; }
     .channel-btn { padding: 8px 18px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-muted); font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
     .channel-btn:hover, .channel-btn.active { background: var(--accent-primary); color: white; border-color: var(--accent-primary); }
+    .region-btn { padding: 5px 14px; border-radius: 14px; border: 1px solid var(--border-glass, rgba(255,255,255,0.08)); background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 0.78rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.15s ease; }
+    .region-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
+    .region-btn.active { background: rgba(99, 102, 241, 0.2); color: #818cf8; border-color: rgba(99, 102, 241, 0.45); }
     .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
     .news-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s, border-color 0.2s; }
     .news-card:hover { transform: translateY(-3px); border-color: var(--accent-primary); }
@@ -99,6 +102,9 @@
         <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         <span>Settings</span>
       </a>
+      <button type="button" class="nav-btn btn-toggle-theme" title="Toggle Dark/Light Mode" aria-label="Toggle Dark/Light Mode">
+        <span>🌙</span>
+      </button>
       <button type="button" class="cmd-k-badge btn-open-cmd-palette" title="Quick Command Palette (Ctrl+K)">
         <span>⌘K</span>
       </button>
@@ -123,14 +129,25 @@
       <input type="text" id="news-search" class="search-filter-input" placeholder="Filter headlines by keyword (e.g. OpenAI, Gaza, IHSG, Apple)...">
     </div>
 
+    <!-- Region Tabs -->
+    <div style="margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;">
+      <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-right: 4px;">Region:</span>
+      <button type="button" class="region-btn active" data-region="all">🌐 Global</button>
+      <button type="button" class="region-btn" data-region="indonesia">🇮🇩 Indonesia</button>
+      <button type="button" class="region-btn" data-region="us">🇺🇸 United States</button>
+      <button type="button" class="region-btn" data-region="europe">🇪🇺 Europe</button>
+      <button type="button" class="region-btn" data-region="asia">🇯🇵 Asia-Pacific</button>
+    </div>
+
     <!-- Topic Tabs -->
     <div class="channel-tabs" id="topic-tabs">
-      <button type="button" class="channel-btn active" data-category="all">🌟 All Headlines</button>
-      <button type="button" class="channel-btn" data-category="world">🌍 World News</button>
-      <button type="button" class="channel-btn" data-category="indonesia">🇮🇩 Indonesia Terkini</button>
+      <button type="button" class="channel-btn active" data-category="all">🌟 All Topics</button>
+      <button type="button" class="channel-btn" data-category="world">🌍 World</button>
       <button type="button" class="channel-btn" data-category="tech">💻 Tech &amp; AI</button>
-      <button type="button" class="channel-btn" data-category="business">📈 Business &amp; Markets</button>
-      <button type="button" class="channel-btn" data-category="science">🔬 Science &amp; Space</button>
+      <button type="button" class="channel-btn" data-category="cyber">🛡️ Cybersecurity</button>
+      <button type="button" class="channel-btn" data-category="business">📈 Business</button>
+      <button type="button" class="channel-btn" data-category="crypto">🪙 Crypto</button>
+      <button type="button" class="channel-btn" data-category="science">🔬 Science</button>
       <button type="button" class="channel-btn" data-category="sports">⚽ Sports</button>
     </div>
 
@@ -145,18 +162,29 @@
 
     <div id="no-articles" style="display: none; text-align: center; padding: 60px 0; color: var(--text-muted);">
       <h3>No news matching your filter</h3>
-      <p style="margin-top: 6px;">Try clearing the search box or selecting another topic.</p>
+      <p style="margin-top: 6px;">Try clearing the search box or selecting another topic or region.</p>
     </div>
   </main>
 
   <script>
     let currentCategory = 'all';
+    let currentRegion = 'all';
     let allArticles = [];
     const newsGrid = document.getElementById('news-grid');
     const loading = document.getElementById('loading');
     const noArticles = document.getElementById('no-articles');
     const searchInput = document.getElementById('news-search');
     const tickerText = document.getElementById('ticker-text');
+
+    // Region tab switching
+    document.querySelectorAll('.region-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.region-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentRegion = btn.dataset.region;
+        loadNews();
+      });
+    });
 
     // Topic tab switching
     document.querySelectorAll('.channel-btn').forEach(btn => {
@@ -182,7 +210,7 @@
       noArticles.style.display = 'none';
 
       try {
-        const url = `/api/news-hub?topic=${encodeURIComponent(currentCategory)}${force ? '&refresh=1' : ''}`;
+        const url = `/api/news-hub?topic=${encodeURIComponent(currentCategory)}&region=${encodeURIComponent(currentRegion)}${force ? '&refresh=1' : ''}`;
         const res = await fetch(url);
         const data = await res.json();
         loading.style.display = 'none';

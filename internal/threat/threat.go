@@ -260,13 +260,13 @@ func ScanURL(ctx context.Context, rawURL string) *ThreatReport {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		probeSSL(parsedInput.Hostname(), report, &probeMu)
+		probeSSL(ctx, parsedInput.Hostname(), report, &probeMu)
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		probeDNS(parsedInput.Hostname(), report, &probeMu)
+		probeDNS(ctx, parsedInput.Hostname(), report, &probeMu)
 	}()
 
 	wg.Wait()
@@ -426,13 +426,12 @@ func traceRedirects(ctx context.Context, rawURL string, report *ThreatReport, mu
 	}
 }
 
-func probeSSL(hostname string, report *ThreatReport, mu *sync.Mutex) {
-	conn, err := tls.DialWithDialer(
-		&net.Dialer{Timeout: 3 * time.Second},
-		"tcp",
-		hostname+":443",
-		&tls.Config{InsecureSkipVerify: false, ServerName: hostname},
-	)
+func probeSSL(ctx context.Context, hostname string, report *ThreatReport, mu *sync.Mutex) {
+	d := &tls.Dialer{
+		NetDialer: &net.Dialer{Timeout: 3 * time.Second},
+		Config:    &tls.Config{InsecureSkipVerify: false, ServerName: hostname},
+	}
+	conn, err := d.DialContext(ctx, "tcp", hostname+":443")
 	if err != nil {
 		mu.Lock()
 		report.HasSSL = false
@@ -449,7 +448,12 @@ func probeSSL(hostname string, report *ThreatReport, mu *sync.Mutex) {
 	}
 	defer conn.Close()
 
-	certs := conn.ConnectionState().PeerCertificates
+	tlsConn, ok := conn.(*tls.Conn)
+	if !ok {
+		return
+	}
+
+	certs := tlsConn.ConnectionState().PeerCertificates
 	if len(certs) == 0 {
 		return
 	}
@@ -478,8 +482,8 @@ func probeSSL(hostname string, report *ThreatReport, mu *sync.Mutex) {
 	}
 }
 
-func probeDNS(hostname string, report *ThreatReport, mu *sync.Mutex) {
-	addrs, err := net.DefaultResolver.LookupHost(context.Background(), hostname)
+func probeDNS(ctx context.Context, hostname string, report *ThreatReport, mu *sync.Mutex) {
+	addrs, err := net.DefaultResolver.LookupHost(ctx, hostname)
 	if err != nil {
 		mu.Lock()
 		report.Signals = append(report.Signals, ThreatSignal{

@@ -2747,5 +2747,80 @@ input:checked + .slider:before {
   right: 0 !important;
 }
 
+.btn-toggle-theme {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  user-select: none;
+  font-size: 0.95rem !important;
+  padding: 0.4rem 0.6rem !important;
+  border-radius: 9px !important;
+  transition: all 0.15s ease !important;
+}
+
+/* Light Theme Header Overrides */
+[data-theme="light"] .app-header {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .app-header .brand-logo,
+[data-theme="light"] .app-header .brand-name {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .app-header .nav-link {
+  color: #475569 !important;
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .app-header .nav-link:hover {
+  color: #0f172a !important;
+  background: rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .app-header .nav-link.active {
+  color: #4f46e5 !important;
+  background: rgba(99, 102, 241, 0.12) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}
+
+[data-theme="light"] .app-header .nav-btn {
+  color: #334155 !important;
+  background: rgba(0, 0, 0, 0.04) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .app-header .nav-btn:hover {
+  color: #0f172a !important;
+  background: rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .app-header .cmd-k-badge {
+  color: #64748b !important;
+  background: rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="light"] .app-header .nav-dropdown-panel {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme="light"] .app-header .dropdown-item {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .app-header .dropdown-item:hover {
+  background: rgba(99, 102, 241, 0.08) !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .app-header .dropdown-section-label {
+  color: #94a3b8 !important;
+}
+
 
 

@@ -9,13 +9,36 @@
   function initTheme() {
     const savedTheme = localStorage.getItem('searxgo_theme') || getCookie('searxgo_theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeToggleIcons();
   }
 
   window.setTheme = function (theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('searxgo_theme', theme);
     setCookie('searxgo_theme', theme, 365);
+    updateThemeToggleIcons();
   };
+
+  window.toggleTheme = function () {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    const next = current === 'light' ? 'dark' : 'light';
+    window.setTheme(next);
+  };
+
+  function updateThemeToggleIcons() {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    document.querySelectorAll('.btn-toggle-theme').forEach(btn => {
+      btn.innerHTML = current === 'light' ? '<span>🌙</span>' : '<span>☀️</span>';
+      btn.setAttribute('title', current === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode');
+    });
+  }
+
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('.btn-toggle-theme')) {
+      e.preventDefault();
+      window.toggleTheme();
+    }
+  });
 
   // --- Cookie Helpers ---
   function setCookie(name, value, days) {
