@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live CVE &amp; Zero-Day Vulnerability Feed - SearXGo</title>
+  <meta name="description" content="Real-time Common Vulnerabilities and Exposures (CVE) intelligence feed, CISA KEV tracker, and critical zero-day security advisories.">
+  <link rel="stylesheet" href="/static/css/main.css">
+  <style>
+    .cve-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 4rem;
+    }
+    .cve-hero {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    .cve-hero h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.75rem;
+      background: linear-gradient(135deg, #f87171, #fb923c, #ef4444);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .cve-hero p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      max-width: 650px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    .cve-search-bar {
+      display: flex;
+      gap: 0.75rem;
+      max-width: 750px;
+      margin: 2rem auto 1.5rem;
+    }
+    .cve-search-input {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.25rem;
+      font-size: 1rem;
+      color: var(--text-color);
+      outline: none;
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+    .cve-search-input:focus {
+      border-color: #ef4444;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+    }
+    .cve-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 2.5rem;
+    }
+    .cve-pill {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 0.45rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .cve-pill:hover, .cve-pill.active {
+      background: #ef4444;
+      border-color: #ef4444;
+      color: #fff;
+    }
+    .cve-kev-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-left: 1rem;
+      padding: 0.45rem 1rem;
+      border-radius: 9999px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .cve-kev-toggle input {
+      accent-color: #ef4444;
+    }
+    .cve-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 1.5rem;
+    }
+    .cve-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+    .cve-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(239, 68, 68, 0.4);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+    .cve-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+    }
+    .cve-id-badge {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--accent-color);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .cve-id-badge:hover {
+      text-decoration: underline;
+    }
+    .cve-severity {
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .sev-CRITICAL {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+    .sev-HIGH {
+      background: rgba(249, 115, 22, 0.2);
+      color: #fb923c;
+      border: 1px solid rgba(249, 115, 22, 0.4);
+    }
+    .sev-MEDIUM {
+      background: rgba(234, 179, 8, 0.2);
+      color: #fde047;
+      border: 1px solid rgba(234, 179, 8, 0.4);
+    }
+    .sev-LOW {
+      background: rgba(59, 130, 246, 0.2);
+      color: #93c5fd;
+      border: 1px solid rgba(59, 130, 246, 0.4);
+    }
+    .cve-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      line-height: 1.4;
+      color: var(--text-color);
+    }
+    .cve-desc {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.55;
+      margin-bottom: 1rem;
+      flex-grow: 1;
+    }
+    .cve-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      font-size: 0.8rem;
+    }
+    .cve-tag {
+      background: var(--bg-hover);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      color: var(--text-muted);
+    }
+    .cve-kev-badge {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .cve-actions {
+      border-top: 1px solid var(--border-color);
+      padding-top: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+    }
+    .cve-ref-link {
+      color: var(--accent-color);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .cve-ref-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-left">
+      <a href="/" class="logo-link" title="SearXGo Home">
+        <span class="logo-text">Sear<span class="logo-accent">X</span>Go</span>
+      </a>
+      <span class="header-badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);">CVE Intel</span>
+    </div>
+
+    <nav class="header-nav">
+      <a href="/" class="nav-link">Home</a>
+      <a href="/news-hub" class="nav-link">News Hub</a>
+      <a href="/threat" class="nav-link">Threat Scanner</a>
+      <a href="/cve" class="nav-link active">CVE Tracker</a>
+      <a href="/ip-intel" class="nav-link">IP Intel</a>
+      <a href="/api-tester" class="nav-link">API Tester</a>
+      <a href="/cloud-recon" class="nav-link">Cloud Recon</a>
+
+      <div class="dropdown" id="toolsDropdown">
+        <button class="nav-btn dropdown-toggle" type="button" aria-expanded="false" aria-haspopup="true">
+          <span>Tools</span>
+          <svg class="dropdown-arrow" viewBox="0 0 12 12" width="12" height="12"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <div class="dropdown-menu" role="menu">
+          <div class="dropdown-section-label">🛡️ Security &amp; Recon</div>
+          <a href="/threat" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🛡️</span><div><div class="dropdown-item-title">Threat Scanner</div><div class="dropdown-item-desc">Phishing &amp; URL analysis</div></div></a>
+          <a href="/cve" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🚨</span><div><div class="dropdown-item-title">CVE &amp; Zero-Day Feed</div><div class="dropdown-item-desc">Live vulnerability intelligence</div></div></a>
+          <a href="/ip-intel" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🌐</span><div><div class="dropdown-item-title">IP Intel &amp; ASN</div><div class="dropdown-item-desc">Geo &amp; reputation inspection</div></div></a>
+          <a href="/cloud-recon" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">☁️</span><div><div class="dropdown-item-title">Cloud Storage Recon</div><div class="dropdown-item-desc">S3, Azure &amp; GCS bucket audit</div></div></a>
+          <a href="/tech" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">⚡</span><div><div class="dropdown-item-title">Tech Stack Inspector</div><div class="dropdown-item-desc">Frameworks &amp; headers</div></div></a>
+          <a href="/subdomains" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🔍</span><div><div class="dropdown-item-title">Subdomain Finder</div><div class="dropdown-item-desc">Certificate Transparency logs</div></div></a>
+          <a href="/recon" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🌐</span><div><div class="dropdown-item-title">Domain Recon</div><div class="dropdown-item-desc">WHOIS &amp; security posture</div></div></a>
+          <a href="/sherlock" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🕵️</span><div><div class="dropdown-item-title">Sherlock OSINT</div><div class="dropdown-item-desc">Username recon across 20+ sites</div></div></a>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-section-label">🛠️ Utilities</div>
+          <a href="/api-tester" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">⚡</span><div><div class="dropdown-item-title">API &amp; cURL Tester</div><div class="dropdown-item-desc">REST client &amp; code generator</div></div></a>
+          <a href="/dns" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">📡</span><div><div class="dropdown-item-title">DNS Propagation</div><div class="dropdown-item-desc">Global DNS resolver check</div></div></a>
+          <a href="/ping" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">📶</span><div><div class="dropdown-item-title">Is It Down &amp; Ping</div><div class="dropdown-item-desc">Uptime &amp; port latency</div></div></a>
+          <a href="/bypass" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🔓</span><div><div class="dropdown-item-title">Paywall Bypass</div><div class="dropdown-item-desc">Clean mirror article reader</div></div></a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="header-right">
+      <button type="button" class="nav-btn btn-toggle-theme" title="Toggle Dark/Light Mode" aria-label="Toggle Dark/Light Mode"><span>🌙</span></button>
+      <a href="/settings" class="nav-btn" title="Settings">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </a>
+    </div>
+  </header>
+
+  <main class="cve-container">
+    <div class="cve-hero">
+      <h1>Live CVE &amp; Zero-Day Vulnerability Feed</h1>
+      <p>Real-time vulnerability intelligence tracking critical zero-days, CISA KEV (Known Exploited Vulnerabilities), and high-impact software security advisories.</p>
+    </div>
+
+    <div class="cve-search-bar">
+      <input type="text" id="cveQuery" class="cve-search-input" placeholder="Search by vendor, software, or CVE ID (e.g. OpenSSH, WordPress, CVE-2024-38077)..." autocomplete="off">
+    </div>
+
+    <div class="cve-filters">
+      <button type="button" class="cve-pill active" data-sev="ALL">All Severities</button>
+      <button type="button" class="cve-pill" data-sev="CRITICAL">Critical</button>
+      <button type="button" class="cve-pill" data-sev="HIGH">High</button>
+      <button type="button" class="cve-pill" data-sev="MEDIUM">Medium</button>
+
+      <label class="cve-kev-toggle">
+        <input type="checkbox" id="cveKevCheck">
+        <span>Actively Exploited (CISA KEV)</span>
+      </label>
+    </div>
+
+    <div id="cveLoading" style="text-align: center; padding: 3rem; color: var(--text-muted); display: none;">
+      Loading vulnerability advisories...
+    </div>
+
+    <div id="cveGrid" class="cve-grid">
+      <!-- Injected via JavaScript -->
+    </div>
+
+    <div id="cveEmpty" style="text-align: center; padding: 4rem 1rem; color: var(--text-muted); display: none;">
+      <h3>No matching CVE advisories found</h3>
+      <p>Try refining your query or resetting the severity filter.</p>
+    </div>
+  </main>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    let currentSeverity = 'ALL';
+    let currentQuery = '';
+    let isKEVOnly = false;
+    let debounceTimer = null;
+
+    async function loadCVEs() {
+      const loading = document.getElementById('cveLoading');
+      const grid = document.getElementById('cveGrid');
+      const empty = document.getElementById('cveEmpty');
+
+      loading.style.display = 'block';
+      grid.style.display = 'none';
+      empty.style.display = 'none';
+
+      try {
+        const params = new URLSearchParams();
+        if (currentQuery) params.set('q', currentQuery);
+        if (currentSeverity && currentSeverity !== 'ALL') params.set('severity', currentSeverity);
+        if (isKEVOnly) params.set('kev', 'true');
+
+        const resp = await fetch('/api/cve?' + params.toString());
+        const data = await resp.json();
+
+        loading.style.display = 'none';
+
+        if (!data.items || data.items.length === 0) {
+          empty.style.display = 'block';
+          return;
+        }
+
+        grid.innerHTML = data.items.map(item => `
+          <article class="cve-card">
+            <div>
+              <div class="cve-header">
+                <span class="cve-id-badge" onclick="navigator.clipboard.writeText('${item.id}'); alert('Copied ${item.id}');" title="Click to copy CVE ID">
+                  ${item.id} 📋
+                </span>
+                <span class="cve-severity sev-${item.severity}">
+                  ${item.severity} ${item.cvss ? item.cvss.toFixed(1) : ''}
+                </span>
+              </div>
+              <h2 class="cve-title">${escapeHTML(item.title)}</h2>
+              <div class="cve-meta">
+                <span class="cve-tag">🏢 ${escapeHTML(item.vendor || 'Unknown')}</span>
+                <span class="cve-tag">📦 ${escapeHTML(item.product || 'Universal')}</span>
+                ${item.is_kev ? '<span class="cve-kev-badge">🔥 Exploited in Wild</span>' : ''}
+                ${item.published ? `<span class="cve-tag">📅 ${escapeHTML(item.published)}</span>` : ''}
+              </div>
+              <p class="cve-desc">${escapeHTML(item.description)}</p>
+            </div>
+            <div class="cve-actions">
+              <span style="font-size: 0.78rem; color: var(--text-muted);">${escapeHTML(item.cwe || '')}</span>
+              ${item.references && item.references.length > 0 ? `
+                <a href="${item.references[0]}" target="_blank" rel="noopener noreferrer" class="cve-ref-link">Advisory &rarr;</a>
+              ` : ''}
+            </div>
+          </article>
+        `).join('');
+
+        grid.style.display = 'grid';
+      } catch (err) {
+        loading.style.display = 'none';
+        empty.style.display = 'block';
+        empty.innerHTML = `<h3>Failed to load advisories</h3><p>${escapeHTML(err.message)}</p>`;
+      }
+    }
+
+    function escapeHTML(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    document.querySelectorAll('.cve-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.cve-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentSeverity = btn.getAttribute('data-sev');
+        loadCVEs();
+      });
+    });
+
+    document.getElementById('cveKevCheck').addEventListener('change', (e) => {
+      isKEVOnly = e.target.checked;
+      loadCVEs();
+    });
+
+    document.getElementById('cveQuery').addEventListener('input', (e) => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        currentQuery = e.target.value.trim();
+        loadCVEs();
+      }, 300);
+    });
+
+    // Initial load
+    loadCVEs();
+  </script>
+</body>
+</html>

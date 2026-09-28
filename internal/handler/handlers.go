@@ -47,6 +47,10 @@ import (
 	"searxgo/internal/subdomains"
 	"searxgo/internal/tech"
 	"searxgo/internal/threat"
+	"searxgo/internal/apitester"
+	"searxgo/internal/cloudrecon"
+	"searxgo/internal/cve"
+	"searxgo/internal/ipintel"
 	"searxgo/internal/weather"
 	"searxgo/web"
 )
@@ -294,6 +298,22 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 
 	// Search Goggles - Domain Block/Boost API
 	mux.HandleFunc("POST /api/goggles/validate", h.ServeAPIGogglesValidate)
+
+	// Live CVE & Zero-Day Vulnerability Feed
+	mux.HandleFunc("GET /cve", h.ServeCVE)
+	mux.HandleFunc("GET /api/cve", h.ServeAPICVE)
+
+	// IP Intelligence & ASN Visualizer
+	mux.HandleFunc("GET /ip-intel", h.ServeIPIntel)
+	mux.HandleFunc("GET /api/ip-intel", h.ServeAPIIPIntel)
+
+	// In-Browser API & cURL Playground
+	mux.HandleFunc("GET /api-tester", h.ServeAPITester)
+	mux.HandleFunc("POST /api/api-tester/execute", h.ServeAPIExecuteRequest)
+
+	// Cloud Bucket & Public Storage Recon
+	mux.HandleFunc("GET /cloud-recon", h.ServeCloudRecon)
+	mux.HandleFunc("GET /api/cloud-recon", h.ServeAPICloudRecon)
 
 	// Privacy Proxy
 	mux.HandleFunc("GET /proxy/image", h.imageProxy.ServeHTTP)
@@ -2421,6 +2441,115 @@ func (h *Handler) ServeAPICurrencyRates(w http.ResponseWriter, r *http.Request) 
 	rates := h.currencyService.GetRatesSnapshot()
 	json.NewEncoder(w).Encode(rates)
 }
+
+// ServeCVE renders the Live CVE & Zero-Day feed workspace
+func (h *Handler) ServeCVE(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "cve.html", nil); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	buf.WriteTo(w)
+}
+
+// ServeAPICVE returns filtered CVE items in JSON format
+func (h *Handler) ServeAPICVE(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	query := r.URL.Query().Get("q")
+	severity := r.URL.Query().Get("severity")
+	kevOnly := r.URL.Query().Get("kev") == "true" || r.URL.Query().Get("kev") == "1"
+
+	svc := cve.GetService()
+	res := svc.GetCVEs(r.Context(), query, severity, kevOnly)
+	json.NewEncoder(w).Encode(res)
+}
+
+// ServeIPIntel renders the IP Intelligence & ASN Visualizer
+func (h *Handler) ServeIPIntel(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "ipintel.html", nil); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	buf.WriteTo(w)
+}
+
+// ServeAPIIPIntel handles IP & ASN intelligence lookups
+func (h *Handler) ServeAPIIPIntel(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	target := strings.TrimSpace(r.URL.Query().Get("ip"))
+	if target == "" {
+		target = strings.TrimSpace(r.URL.Query().Get("target"))
+	}
+	if target == "" {
+		// Use client IP
+		host, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err == nil && host != "" {
+			target = host
+		} else {
+			target = r.RemoteAddr
+		}
+	}
+
+	report := ipintel.Investigate(r.Context(), target)
+	json.NewEncoder(w).Encode(report)
+}
+
+// ServeAPITester renders the in-browser API & cURL testing playground
+func (h *Handler) ServeAPITester(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "apitester.html", nil); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	buf.WriteTo(w)
+}
+
+// ServeAPIExecuteRequest executes an API test request safely
+func (h *Handler) ServeAPIExecuteRequest(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	var payload apitester.RequestPayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid request payload: " + err.Error()})
+		return
+	}
+
+	res := apitester.ExecuteRequest(r.Context(), payload)
+	json.NewEncoder(w).Encode(res)
+}
+
+// ServeCloudRecon renders the cloud storage and bucket exposure workspace
+func (h *Handler) ServeCloudRecon(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "cloudrecon.html", nil); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	buf.WriteTo(w)
+}
+
+// ServeAPICloudRecon audits public cloud bucket exposure for a target name
+func (h *Handler) ServeAPICloudRecon(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	target := strings.TrimSpace(r.URL.Query().Get("target"))
+	if target == "" {
+		target = strings.TrimSpace(r.URL.Query().Get("name"))
+	}
+	if target == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Parameter 'target' is required"})
+		return
+	}
+
+	report := cloudrecon.ScanBuckets(r.Context(), target)
+	json.NewEncoder(w).Encode(report)
+}
+
 
 
 

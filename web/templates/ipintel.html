@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IP Intelligence &amp; ASN Visualizer - SearXGo</title>
+  <meta name="description" content="Investigate IP addresses and domain names with ASN routing details, ISP organization, geolocation coordinates, and DNSBL reputation checks.">
+  <link rel="stylesheet" href="/static/css/main.css">
+  <style>
+    .ip-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 4rem;
+    }
+    .ip-hero {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    .ip-hero h1 {
+      font-size: 2.3rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.75rem;
+      background: linear-gradient(135deg, #38bdf8, #818cf8, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .ip-hero p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    .ip-form {
+      display: flex;
+      gap: 0.75rem;
+      max-width: 700px;
+      margin: 2rem auto;
+    }
+    .ip-input {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.25rem;
+      font-size: 1rem;
+      color: var(--text-color);
+      outline: none;
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+    .ip-input:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+    }
+    .ip-btn {
+      background: #0284c7;
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.75rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background var(--transition-fast);
+    }
+    .ip-btn:hover {
+      background: #0369a1;
+    }
+    .btn-my-ip {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+      padding: 0.85rem 1.25rem;
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .btn-my-ip:hover {
+      background: var(--bg-hover);
+      border-color: #38bdf8;
+    }
+    .ip-results {
+      margin-top: 2rem;
+      display: none;
+    }
+    .ip-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .ip-kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+    }
+    .ip-kpi-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.4rem;
+    }
+    .ip-kpi-val {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-color);
+      word-break: break-all;
+    }
+    .ip-details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    @media (max-width: 768px) {
+      .ip-details-grid {
+        grid-template-columns: 1fr;
+      }
+      .ip-form {
+        flex-direction: column;
+      }
+    }
+    .ip-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+    }
+    .ip-panel-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .ip-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .ip-table th, .ip-table td {
+      padding: 0.65rem 0.5rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .ip-table th {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+    .badge-clean {
+      background: rgba(34, 197, 94, 0.2);
+      color: #4ade80;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+    .badge-listed {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .badge-hosting {
+      background: rgba(168, 85, 247, 0.2);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+    .map-frame {
+      width: 100%;
+      height: 250px;
+      border: none;
+      border-radius: var(--radius-md);
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-left">
+      <a href="/" class="logo-link" title="SearXGo Home">
+        <span class="logo-text">Sear<span class="logo-accent">X</span>Go</span>
+      </a>
+      <span class="header-badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4);">IP Intel</span>
+    </div>
+
+    <nav class="header-nav">
+      <a href="/" class="nav-link">Home</a>
+      <a href="/threat" class="nav-link">Threat Scanner</a>
+      <a href="/cve" class="nav-link">CVE Tracker</a>
+      <a href="/ip-intel" class="nav-link active">IP Intel</a>
+      <a href="/api-tester" class="nav-link">API Tester</a>
+      <a href="/cloud-recon" class="nav-link">Cloud Recon</a>
+
+      <div class="dropdown" id="toolsDropdown">
+        <button class="nav-btn dropdown-toggle" type="button" aria-expanded="false" aria-haspopup="true">
+          <span>Tools</span>
+          <svg class="dropdown-arrow" viewBox="0 0 12 12" width="12" height="12"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <div class="dropdown-menu" role="menu">
+          <div class="dropdown-section-label">🛡️ Security &amp; Recon</div>
+          <a href="/threat" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🛡️</span><div><div class="dropdown-item-title">Threat Scanner</div><div class="dropdown-item-desc">Phishing &amp; URL analysis</div></div></a>
+          <a href="/cve" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🚨</span><div><div class="dropdown-item-title">CVE &amp; Zero-Day Feed</div><div class="dropdown-item-desc">Live vulnerability intelligence</div></div></a>
+          <a href="/ip-intel" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🌐</span><div><div class="dropdown-item-title">IP Intel &amp; ASN</div><div class="dropdown-item-desc">Geo &amp; reputation inspection</div></div></a>
+          <a href="/cloud-recon" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">☁️</span><div><div class="dropdown-item-title">Cloud Storage Recon</div><div class="dropdown-item-desc">S3, Azure &amp; GCS bucket audit</div></div></a>
+          <a href="/tech" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">⚡</span><div><div class="dropdown-item-title">Tech Stack Inspector</div><div class="dropdown-item-desc">Frameworks &amp; headers</div></div></a>
+          <a href="/dns" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">📡</span><div><div class="dropdown-item-title">DNS Propagation</div><div class="dropdown-item-desc">Global DNS resolver check</div></div></a>
+          <a href="/ping" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">📶</span><div><div class="dropdown-item-title">Is It Down &amp; Ping</div><div class="dropdown-item-desc">Uptime &amp; port latency</div></div></a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="header-right">
+      <button type="button" class="nav-btn btn-toggle-theme" title="Toggle Dark/Light Mode" aria-label="Toggle Dark/Light Mode"><span>🌙</span></button>
+      <a href="/settings" class="nav-btn" title="Settings">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </a>
+    </div>
+  </header>
+
+  <main class="ip-container">
+    <div class="ip-hero">
+      <h1>IP Intelligence &amp; ASN Routing Explorer</h1>
+      <p>Analyze any IP address or domain to uncover autonomous system routes (ASN), hosting datacenter flags, geolocation coordinates, and blacklist status.</p>
+    </div>
+
+    <form class="ip-form" id="ipForm">
+      <input type="text" id="ipTarget" class="ip-input" placeholder="Enter IP address or domain (e.g. 1.1.1.1, github.com)..." required autofocus>
+      <button type="button" id="btnMyIP" class="btn-my-ip">Detect My IP</button>
+      <button type="submit" class="ip-btn">Investigate</button>
+    </form>
+
+    <div id="ipLoading" style="text-align: center; padding: 2rem; color: var(--text-muted); display: none;">
+      Resolving IP intelligence &amp; ASN routing...
+    </div>
+
+    <div id="ipError" style="display: none; padding: 1.5rem; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: var(--radius-md); color: #f87171; text-align: center; margin-top: 1.5rem;">
+    </div>
+
+    <div id="ipResults" class="ip-results">
+      <div class="ip-kpi-grid">
+        <div class="ip-kpi-card">
+          <div class="ip-kpi-label">Target IP</div>
+          <div class="ip-kpi-val" id="resIP">-</div>
+        </div>
+        <div class="ip-kpi-card">
+          <div class="ip-kpi-label">Reverse DNS (PTR)</div>
+          <div class="ip-kpi-val" id="resHostname" style="font-size: 0.95rem; font-family: monospace;">-</div>
+        </div>
+        <div class="ip-kpi-card">
+          <div class="ip-kpi-label">Autonomous System (ASN)</div>
+          <div class="ip-kpi-val" id="resASN" style="font-size: 0.95rem;">-</div>
+        </div>
+        <div class="ip-kpi-card">
+          <div class="ip-kpi-label">Type &amp; Reputation</div>
+          <div class="ip-kpi-val" id="resBadge">-</div>
+        </div>
+      </div>
+
+      <div class="ip-details-grid">
+        <div class="ip-panel">
+          <div class="ip-panel-title">📍 Geolocation &amp; Organization</div>
+          <table class="ip-table">
+            <tbody>
+              <tr><th>Country:</th><td id="resCountry">-</td></tr>
+              <tr><th>Region / City:</th><td id="resCity">-</td></tr>
+              <tr><th>Timezone:</th><td id="resTimezone">-</td></tr>
+              <tr><th>ISP / Carrier:</th><td id="resISP">-</td></tr>
+              <tr><th>Organization:</th><td id="resOrg">-</td></tr>
+              <tr><th>Coordinates:</th><td id="resCoords">-</td></tr>
+            </tbody>
+          </table>
+
+          <iframe id="mapFrame" class="map-frame" loading="lazy" src="about:blank"></iframe>
+        </div>
+
+        <div class="ip-panel">
+          <div class="ip-panel-title">🛡️ Security &amp; DNSBL Reputation</div>
+          <table class="ip-table">
+            <thead>
+              <tr><th>Blacklist (DNSBL)</th><th>Status</th></tr>
+            </thead>
+            <tbody id="dnsblTableBody">
+              <!-- Injected via JS -->
+            </tbody>
+          </table>
+
+          <div style="margin-top: 1.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <a id="btnScanThreat" href="#" class="ip-btn" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: var(--bg-hover); color: var(--text-color); border: 1px solid var(--border-color);">Scan Threat &rarr;</a>
+            <a id="btnCheckDNS" href="#" class="ip-btn" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: var(--bg-hover); color: var(--text-color); border: 1px solid var(--border-color);">DNS Records &rarr;</a>
+            <a id="btnPing" href="#" class="ip-btn" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: var(--bg-hover); color: var(--text-color); border: 1px solid var(--border-color);">Ping Latency &rarr;</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/js/app.js"></script>
+  <script>
+    const form = document.getElementById('ipForm');
+    const input = document.getElementById('ipTarget');
+    const btnMyIP = document.getElementById('btnMyIP');
+    const loading = document.getElementById('ipLoading');
+    const errorBox = document.getElementById('ipError');
+    const results = document.getElementById('ipResults');
+
+    async function queryIP(target) {
+      if (!target) return;
+      loading.style.display = 'block';
+      errorBox.style.display = 'none';
+      results.style.display = 'none';
+
+      try {
+        const resp = await fetch('/api/ip-intel?ip=' + encodeURIComponent(target));
+        const data = await resp.json();
+
+        loading.style.display = 'none';
+
+        if (data.error) {
+          errorBox.textContent = data.error;
+          errorBox.style.display = 'block';
+          return;
+        }
+
+        document.getElementById('resIP').textContent = data.ip || target;
+        document.getElementById('resHostname').textContent = data.hostname || 'None (no PTR)';
+        document.getElementById('resASN').textContent = data.asn || 'Not Announced';
+
+        let badgeHTML = '';
+        if (data.is_hosting) {
+          badgeHTML += '<span class="status-badge badge-hosting">Datacenter / Cloud</span> ';
+        } else if (data.is_private) {
+          badgeHTML += '<span class="status-badge">Private IP</span> ';
+        } else {
+          badgeHTML += '<span class="status-badge badge-clean">Residential / ISP</span> ';
+        }
+        document.getElementById('resBadge').innerHTML = badgeHTML;
+
+        document.getElementById('resCountry').textContent = (data.country || 'Unknown') + (data.country_code ? ` (${data.country_code})` : '');
+        document.getElementById('resCity').textContent = (data.region || '') + (data.city ? `, ${data.city}` : '');
+        document.getElementById('resTimezone').textContent = data.timezone || 'UTC';
+        document.getElementById('resISP').textContent = data.isp || 'N/A';
+        document.getElementById('resOrg').textContent = data.org || 'N/A';
+        document.getElementById('resCoords').textContent = (data.latitude && data.longitude) ? `${data.latitude.toFixed(4)}, ${data.longitude.toFixed(4)}` : 'N/A';
+
+        // Map frame
+        if (data.latitude && data.longitude) {
+          const lat = data.latitude;
+          const lon = data.longitude;
+          document.getElementById('mapFrame').src = `https://www.openstreetmap.org/export/embed.html?bbox=${lon-0.05}%2C${lat-0.05}%2C${lon+0.05}%2C${lat+0.05}&layer=mapnik&marker=${lat}%2C${lon}`;
+          document.getElementById('mapFrame').style.display = 'block';
+        } else {
+          document.getElementById('mapFrame').style.display = 'none';
+        }
+
+        // DNSBL
+        const dnsblBody = document.getElementById('dnsblTableBody');
+        if (data.dnsbl_status && data.dnsbl_status.length > 0) {
+          dnsblBody.innerHTML = data.dnsbl_status.map(item => `
+            <tr>
+              <td><code>${escapeHTML(item.list)}</code></td>
+              <td>
+                ${item.is_listed 
+                  ? `<span class="status-badge badge-listed">LISTED (${escapeHTML(item.status_code || 'Positive')})</span>` 
+                  : '<span class="status-badge badge-clean">CLEAN (Not Listed)</span>'}
+              </td>
+            </tr>
+          `).join('');
+        } else {
+          dnsblBody.innerHTML = '<tr><td colspan="2" style="color: var(--text-muted);">DNSBL checks not applicable for private ranges.</td></tr>';
+        }
+
+        // Quick links
+        document.getElementById('btnScanThreat').href = '/threat?url=https://' + encodeURIComponent(data.ip);
+        document.getElementById('btnCheckDNS').href = '/dns?domain=' + encodeURIComponent(data.hostname || data.ip);
+        document.getElementById('btnPing').href = '/ping?target=' + encodeURIComponent(data.ip);
+
+        results.style.display = 'block';
+      } catch (err) {
+        loading.style.display = 'none';
+        errorBox.textContent = 'Failed to fetch IP intelligence: ' + err.message;
+        errorBox.style.display = 'block';
+      }
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      queryIP(input.value.trim());
+    });
+
+    btnMyIP.addEventListener('click', async () => {
+      try {
+        btnMyIP.textContent = 'Detecting...';
+        const res = await fetch('https://api.ipify.org?format=json');
+        const d = await res.json();
+        input.value = d.ip;
+        btnMyIP.textContent = 'Detect My IP';
+        queryIP(d.ip);
+      } catch (e) {
+        btnMyIP.textContent = 'Detect My IP';
+        queryIP('1.1.1.1');
+      }
+    });
+
+    function escapeHTML(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // Auto-query from URL param
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialTarget = urlParams.get('ip') || urlParams.get('target');
+    if (initialTarget) {
+      input.value = initialTarget;
+      queryIP(initialTarget);
+    }
+  </script>
+</body>
+</html>

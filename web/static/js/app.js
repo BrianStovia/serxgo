@@ -533,6 +533,10 @@
     const commands = [
       // Navigation
       { category: 'Navigation', icon: '🪐', title: 'Home Page', action: () => window.location.href = '/' },
+      { category: 'Navigation', icon: '🚨', title: 'Live CVE & Zero-Day Vulnerability Feed', action: () => window.location.href = '/cve' },
+      { category: 'Navigation', icon: '🌐', title: 'IP Intelligence, ASN & BGP Route Visualizer', action: () => window.location.href = '/ip-intel' },
+      { category: 'Navigation', icon: '⚡', title: 'In-Browser API & cURL Playground', action: () => window.location.href = '/api-tester' },
+      { category: 'Navigation', icon: '☁️', title: 'Cloud Bucket & Public Storage Recon', action: () => window.location.href = '/cloud-recon' },
       { category: 'Navigation', icon: '🔍', title: 'Domain Recon & Security Auditor', action: () => window.location.href = '/recon' },
       { category: 'Navigation', icon: '🎯', title: 'Google Dorking Recon Suite', action: () => window.location.href = '/dorks' },
       { category: 'Navigation', icon: '🛡️', title: 'EXIF Metadata Cleaner & Privacy Scrubber', action: () => window.location.href = '/scrub' },
