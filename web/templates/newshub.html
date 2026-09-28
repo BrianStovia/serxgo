@@ -36,8 +36,9 @@
     .search-filter-input { width: 100%; padding: 10px 16px 10px 38px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 0.9rem; outline: none; box-sizing: border-box; }
     .search-filter-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 0.9rem; color: var(--text-muted); pointer-events: none; }
   </style>
+  <script src="/static/js/htmx.min.js"></script>
 </head>
-<body>
+<body hx-boost="true">
   <!-- Standard Global Header Navbar -->
   <header class="app-header">
     <div class="header-left">

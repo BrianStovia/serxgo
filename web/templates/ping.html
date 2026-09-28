@@ -27,8 +27,9 @@
     .port-badge.closed { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
     .port-badge.timeout { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
   </style>
+  <script src="/static/js/htmx.min.js"></script>
 </head>
-<body>
+<body hx-boost="true">
   <!-- Standard Global Header Navbar -->
   <header class="app-header">
     <div class="header-left">

@@ -21,8 +21,9 @@
     .qr-box { background: white; padding: 18px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); margin-bottom: 20px; }
     .qr-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
   </style>
+  <script src="/static/js/htmx.min.js"></script>
 </head>
-<body>
+<body hx-boost="true">
   <!-- Standard Global Header Navbar -->
   <header class="app-header">
     <div class="header-left">

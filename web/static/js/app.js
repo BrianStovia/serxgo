@@ -2616,4 +2616,10 @@
     applyGoggles();
     initNavDropdowns();
   }
+
+  // HTMX Lifecycle Hook: Ensure client utilities reinitialize seamlessly on boosted swaps
+  document.addEventListener('htmx:load', function () {
+    initTheme();
+    applyGoggles();
+  });
 })();

@@ -18,8 +18,9 @@
     .btn-download-secondary { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px 20px; border-radius: 10px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
     .btn-download-secondary:hover { border-color: var(--accent-primary); }
   </style>
+  <script src="/static/js/htmx.min.js"></script>
 </head>
-<body>
+<body hx-boost="true">
   <!-- Standard Global Header Navbar -->
   <header class="app-header">
     <div class="header-left">
