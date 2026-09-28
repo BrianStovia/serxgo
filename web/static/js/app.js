@@ -1,10 +1,15 @@
 /**
  * SearXGo Pro - Client Application Script
+ * Modular Bundle assembled from web/static/js/modules/
+ * (theme.js, search.js, navigation.js, settings.js, features.js, core.js)
  */
 
 (function () {
   'use strict';
 
+  // ================================================================
+  // Module: Theme & Service Worker
+  // ================================================================
   // --- Theme Management ---
   function initTheme() {
     const savedTheme = localStorage.getItem('searxgo_theme') || getCookie('searxgo_theme') || 'dark';
@@ -62,6 +67,28 @@
     return null;
   }
 
+
+  // --- PWA Service Worker Registration ---
+  let swInitialized = false;
+  function initServiceWorker() {
+    if (swInitialized) return;
+    swInitialized = true;
+    if ('serviceWorker' in navigator) {
+      if (document.readyState === 'complete') {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      } else {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    }
+  }
+
+
+
+  // ================================================================
+  // Module: Search, Autocomplete & Modals
+  // ================================================================
   // --- Autocomplete & Search Box ---
   let searchBoxDropdownClickInit = false;
   function initSearchBox() {
@@ -359,23 +386,210 @@
     });
   }
 
-  // --- Universal Toast Notification Helper ---
-  function showToast(msg, icon = '✓') {
-    let toast = document.getElementById('searxgo-toast');
-    if (!toast) {
-      toast = document.createElement('div');
-      toast.id = 'searxgo-toast';
-      toast.className = 'searxgo-toast';
-      document.body.appendChild(toast);
+
+  // --- Dynamic Infinite Scroll & Unlimited Search ---
+  function initInfiniteScroll() {
+    const resultsList = document.querySelector('.results-list');
+    const imageGrid = document.querySelector('.image-grid');
+    const videoGrid = document.querySelector('.video-grid');
+    const pagination = document.querySelector('.pagination');
+    const loadMoreBtn = document.getElementById('btn-load-more');
+
+    const container = resultsList || imageGrid || videoGrid;
+    if (!container) return;
+    if (container.dataset.infiniteScrollInit) return;
+    container.dataset.infiniteScrollInit = 'true';
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const query = urlParams.get('q');
+    if (!query) return;
+
+    const isAutoInfinite = getCookie('searxgo_infinite_scroll') === 'true' || urlParams.get('infinite_scroll') === '1' || urlParams.get('unlimited') === '1';
+
+    let currentPage = parseInt(urlParams.get('page') || '1', 10);
+    const category = urlParams.get('category') || 'general';
+    const timeRange = urlParams.get('time_range') || '';
+    let isFetching = false;
+    let hasMore = true;
+
+    // Create spinner element
+    const spinner = document.createElement('div');
+    spinner.className = 'infinite-loading';
+    spinner.style.display = 'none';
+    spinner.innerHTML = '<div class="infinite-spinner"></div><span>Streaming more results from engines...</span>';
+    container.parentNode.appendChild(spinner);
+
+    if (isAutoInfinite && pagination) {
+      pagination.style.display = 'none'; // Hide static pagination when auto infinite scroll is active
     }
-    toast.innerHTML = `<span style="font-size:1.1rem;">${icon}</span><span>${msg}</span>`;
-    toast.classList.add('show');
-    clearTimeout(toast._timer);
-    toast._timer = setTimeout(() => {
-      toast.classList.remove('show');
-    }, 2800);
+
+    function checkScroll() {
+      if (!isAutoInfinite || isFetching || !hasMore) return;
+      const scrollPos = window.innerHeight + window.scrollY;
+      const threshold = document.body.offsetHeight - 650;
+
+      if (scrollPos >= threshold) {
+        fetchNextPage();
+      }
+    }
+
+    function fetchNextPage() {
+      if (isFetching || !hasMore) return;
+      isFetching = true;
+      spinner.style.display = 'flex';
+      if (loadMoreBtn) {
+        loadMoreBtn.disabled = true;
+        loadMoreBtn.innerHTML = '<span>⏳ Fetching Page ' + (currentPage + 1) + '...</span>';
+      }
+
+      const nextPage = currentPage + 1;
+      const fetchUrl = `/search?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&time_range=${encodeURIComponent(timeRange)}&page=${nextPage}&format=json`;
+
+      fetch(fetchUrl)
+        .then(res => {
+          if (!res.ok) throw new Error('Network response not ok');
+          return res.json();
+        })
+        .then(data => {
+          spinner.style.display = 'none';
+          isFetching = false;
+
+          if (!data || !data.results || data.results.length === 0) {
+            hasMore = false;
+            if (loadMoreBtn) {
+              loadMoreBtn.disabled = true;
+              loadMoreBtn.innerHTML = '<span>✓ All results loaded</span>';
+            }
+            return;
+          }
+
+          currentPage = nextPage;
+          if (loadMoreBtn) {
+            loadMoreBtn.disabled = false;
+            loadMoreBtn.innerHTML = '<span>⚡ Load More Results (Page ' + (currentPage + 1) + ')</span>';
+          }
+
+          renderAppendResults(data.results, data.category);
+        })
+        .catch(err => {
+          spinner.style.display = 'none';
+          isFetching = false;
+          if (loadMoreBtn) {
+            loadMoreBtn.disabled = false;
+            loadMoreBtn.innerHTML = '<span>⚠️ Retry Loading Page ' + (currentPage + 1) + '</span>';
+          }
+        });
+    }
+
+    if (loadMoreBtn && !loadMoreBtn.hasAttribute('hx-get')) {
+      loadMoreBtn.addEventListener('click', function () {
+        fetchNextPage();
+      });
+    }
+
+    if (isAutoInfinite && (!loadMoreBtn || !loadMoreBtn.hasAttribute('hx-get'))) {
+      window.addEventListener('scroll', checkScroll, { passive: true });
+    }
+
+    function renderAppendResults(results, cat) {
+      if (cat === 'images' && imageGrid) {
+        results.forEach(it => {
+          const card = document.createElement('div');
+          card.className = 'image-card';
+          card.innerHTML = `
+            <a href="${escapeHtml(it.url)}" target="_blank" rel="noreferrer noopener" class="image-thumb-wrap">
+              <img src="/proxy/image?url=${encodeURIComponent(it.thumbnail || it.url)}" alt="${escapeHtml(it.title)}" class="image-thumb" loading="lazy" onerror="this.onerror=null; this.src='${escapeHtml(it.thumbnail || it.url)}';" />
+            </a>
+            <div class="image-info">
+              <div class="image-title" title="${escapeHtml(it.title)}">${escapeHtml(it.title)}</div>
+              <div class="image-source">${escapeHtml(it.pretty_url || '')}</div>
+            </div>
+          `;
+          imageGrid.appendChild(card);
+        });
+      } else if (cat === 'videos' && videoGrid) {
+        results.forEach(it => {
+          const card = document.createElement('div');
+          card.className = 'video-card';
+          card.innerHTML = `
+            <div class="video-thumb-wrap" data-video-url="${escapeHtml(it.video_url || '')}" data-video-title="${escapeHtml(it.title)}">
+              <img src="/proxy/image?url=${encodeURIComponent(it.thumbnail || '')}" alt="${escapeHtml(it.title)}" class="video-thumb" loading="lazy" onerror="this.onerror=null; this.src='${escapeHtml(it.thumbnail || '')}';" />
+              ${it.duration ? `<span class="video-duration">${escapeHtml(it.duration)}</span>` : ''}
+              <div class="video-play-overlay">▶</div>
+            </div>
+            <div class="video-info">
+              <h3 class="video-title">
+                <a href="${escapeHtml(it.url)}" target="_blank" rel="noreferrer noopener">${escapeHtml(it.title)}</a>
+              </h3>
+              <div class="video-channel">${escapeHtml(it.author || '')} &bull; ${escapeHtml(it.pretty_url || '')}</div>
+            </div>
+          `;
+          videoGrid.appendChild(card);
+        });
+        initVideoModal();
+      } else if (resultsList) {
+        results.forEach(it => {
+          const domain = (it.url || '').replace(/^https?:\/\//, '').split('/')[0].replace(/^www\./, '');
+          const article = document.createElement('article');
+          article.className = 'result-item';
+          
+          let enginesBadges = '';
+          if (Array.isArray(it.engines)) {
+            it.engines.forEach(eng => {
+              enginesBadges += `<span class="engine-badge">${escapeHtml(eng)}</span>`;
+            });
+          }
+
+          let extraPills = '';
+          if (it.file_size) extraPills += `<span class="extra-pill">📦 ${escapeHtml(it.file_size)}</span>`;
+          if (it.seeders && it.seeders > 0) extraPills += `<span class="extra-pill" style="color:var(--accent-emerald);">▲ ${it.seeders} seeds</span>`;
+
+          article.innerHTML = `
+            <div class="result-url-wrap">
+              <img src="/proxy/image?url=https://icons.duckduckgo.com/ip2/${domain}.ico" class="site-favicon" onerror="this.style.display='none'" alt="" />
+              <span class="result-url">${escapeHtml(it.pretty_url || it.url)}</span>
+              ${it.cached_url ? `<a href="${escapeHtml(it.cached_url)}" target="_blank" rel="noreferrer noopener" class="cached-link" title="View cached snapshot">[Cached]</a>` : ''}
+              ${it.magnet_url ? `<button type="button" class="btn-magnet" data-magnet="${escapeHtml(it.magnet_url)}" title="Copy Magnet Link">🧲 Copy Magnet</button>` : ''}
+            </div>
+            <h2 class="result-title">
+              <a href="${escapeHtml(it.url)}" target="_blank" rel="noreferrer noopener">${escapeHtml(it.title)}</a>
+            </h2>
+            <div class="result-snippet">${escapeHtml(it.content || '')}</div>
+            <div class="result-footer">
+              <div class="result-badges">
+                ${enginesBadges}
+                ${extraPills}
+              </div>
+              ${it.author ? `<span class="result-author">By ${escapeHtml(it.author)}</span>` : ''}
+            </div>
+          `;
+          resultsList.appendChild(article);
+        });
+        initMagnetButtons();
+      }
+    }
   }
 
+
+  // --- Category Tabs Switcher (Search Homepage) ---
+  function initCategoryTabs() {
+    document.querySelectorAll('.category-tab').forEach(tab => {
+      if (tab.dataset.tabInit) return;
+      tab.dataset.tabInit = 'true';
+      tab.addEventListener('click', function () {
+        document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        const inp = this.querySelector('input');
+        if (inp) inp.checked = true;
+      });
+    });
+  }
+
+
+
+  // ================================================================
+  // Module: Navigation, Command Palette & Gestures
+  // ================================================================
   // --- Keyboard Shortcuts Cheatsheet Modal ---
   function showShortcutsModal() {
     let modal = document.getElementById('searxgo-shortcuts-modal');
@@ -755,6 +969,184 @@
     });
   }
 
+
+  // --- Mobile Bottom Navigation ---
+  function initMobileBottomNav() {
+    let nav = document.querySelector('.mobile-bottom-nav');
+    const currentPath = window.location.pathname;
+
+    const items = [
+      { path: '/', label: 'Home', icon: '🪐' },
+      { path: '/dorks', label: 'Dorks', icon: '🎯' },
+      { path: '/sherlock', label: 'Sherlock', icon: '🕵️' },
+      { path: '/scrub', label: 'Scrub', icon: '🛡️' },
+      { path: '/settings', label: 'Settings', icon: '⚙️' }
+    ];
+
+    if (!nav) {
+      nav = document.createElement('nav');
+      nav.className = 'mobile-bottom-nav';
+      document.body.appendChild(nav);
+    }
+
+    nav.innerHTML = items.map(item => {
+      let isActive = false;
+      if (item.path === '/' && (currentPath === '/' || currentPath === '/search')) {
+        isActive = true;
+      } else if (item.path !== '/' && currentPath.startsWith(item.path)) {
+        isActive = true;
+      }
+      return `
+        <a href="${item.path}" class="mobile-nav-item ${isActive ? 'active' : ''}">
+          <span class="mobile-nav-icon">${item.icon}</span>
+          <span class="mobile-nav-label">${item.label}</span>
+        </a>
+      `;
+    }).join('');
+  }
+
+  // --- Mobile Touch Gestures & Category Swiping ---
+  let touchGesturesInitialized = false;
+  function initMobileTouchGestures() {
+    // 1. Smoothly scroll active category tab to center on mobile load
+    const activeTab = document.querySelector('.results-tabs .tab-link.active');
+    const tabsContainer = document.querySelector('.results-tabs');
+    if (activeTab && tabsContainer) {
+      setTimeout(() => {
+        const offset = activeTab.offsetLeft - (tabsContainer.clientWidth / 2) + (activeTab.clientWidth / 2);
+        tabsContainer.scrollTo({ left: Math.max(0, offset), behavior: 'smooth' });
+      }, 100);
+    }
+
+    if (touchGesturesInitialized) return;
+    touchGesturesInitialized = true;
+
+    // 2. Touch swipe listener across search results
+    const resultsContainer = document.querySelector('.results-container, .main-results, .results-wrapper, body');
+    if (!resultsContainer || !document.querySelector('.results-tabs')) return;
+
+    let startX = 0;
+    let startY = 0;
+    let startTime = 0;
+    let isSwiping = false;
+
+    // Toast element for visual feedback
+    let toast = document.querySelector('.swipe-indicator-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'swipe-indicator-toast';
+      document.body.appendChild(toast);
+    }
+
+    function showSwipeToast(text) {
+      toast.textContent = text;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 800);
+    }
+
+    document.addEventListener('touchstart', function(e) {
+      if (e.touches.length !== 1) return;
+      const target = e.target;
+      // Skip gesture if interacting with input, map, or player
+      if (target.closest('input, textarea, select, button, .leaflet-container, #player-body, .suggestions-dropdown')) {
+        isSwiping = false;
+        return;
+      }
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      startTime = Date.now();
+      isSwiping = true;
+    }, { passive: true });
+
+    document.addEventListener('touchend', function(e) {
+      if (!isSwiping || e.changedTouches.length !== 1) return;
+      isSwiping = false;
+
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const deltaX = endX - startX;
+      const deltaY = endY - startY;
+      const elapsed = Date.now() - startTime;
+
+      // Minimum swipe distance of 60px, max vertical deviation of 50px, under 600ms
+      if (Math.abs(deltaX) > 60 && Math.abs(deltaY) < 50 && elapsed < 600) {
+        const tabs = Array.from(document.querySelectorAll('.results-tabs .tab-link'));
+        if (tabs.length === 0) return;
+
+        const currentIdx = tabs.findIndex(t => t.classList.contains('active'));
+        if (currentIdx === -1) return;
+
+        let targetIdx = -1;
+        if (deltaX < 0 && currentIdx < tabs.length - 1) {
+          // Swipe Left -> Next Tab
+          targetIdx = currentIdx + 1;
+        } else if (deltaX > 0 && currentIdx > 0) {
+          // Swipe Right -> Prev Tab
+          targetIdx = currentIdx - 1;
+        }
+
+        if (targetIdx !== -1 && tabs[targetIdx]) {
+          const nextTab = tabs[targetIdx];
+          showSwipeToast(`Switching to ${nextTab.textContent.trim()} ➔`);
+          setTimeout(() => {
+            window.location.href = nextTab.href;
+          }, 150);
+        }
+      }
+    }, { passive: true });
+  }
+
+
+  // --- Tools Nav Dropdown (Consolidated, Accessible & Delegated) ---
+  let navDropdownInitialized = false;
+  function initNavDropdown() {
+    if (navDropdownInitialized) return;
+    navDropdownInitialized = true;
+
+    document.addEventListener('click', function (e) {
+      const trigger = e.target.closest('.nav-dropdown-trigger');
+      if (trigger) {
+        e.preventDefault();
+        e.stopPropagation();
+        const dropdown = trigger.closest('.nav-dropdown');
+        if (!dropdown) return;
+        const isOpen = dropdown.classList.contains('open');
+        document.querySelectorAll('.nav-dropdown.open').forEach(d => {
+          if (d !== dropdown) {
+            d.classList.remove('open');
+            d.querySelector('.nav-dropdown-trigger')?.setAttribute('aria-expanded', 'false');
+          }
+        });
+        dropdown.classList.toggle('open', !isOpen);
+        trigger.setAttribute('aria-expanded', !isOpen ? 'true' : 'false');
+        return;
+      }
+
+      if (!e.target.closest('.nav-dropdown-panel')) {
+        document.querySelectorAll('.nav-dropdown.open').forEach(d => {
+          d.classList.remove('open');
+          d.querySelector('.nav-dropdown-trigger')?.setAttribute('aria-expanded', 'false');
+        });
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.nav-dropdown.open').forEach(d => {
+          d.classList.remove('open');
+          d.querySelector('.nav-dropdown-trigger')?.setAttribute('aria-expanded', 'false');
+        });
+      }
+    });
+  }
+
+
+
+  // ================================================================
+  // Module: Settings, Custom Bangs & Vault
+  // ================================================================
   // --- Custom Bangs & Custom Engines Builder ---
   let customBangsSubmitInitialized = false;
   function initCustomBangs() {
@@ -985,188 +1377,6 @@
     }
   }
 
-  // --- Dynamic Infinite Scroll & Unlimited Search ---
-  function initInfiniteScroll() {
-    const resultsList = document.querySelector('.results-list');
-    const imageGrid = document.querySelector('.image-grid');
-    const videoGrid = document.querySelector('.video-grid');
-    const pagination = document.querySelector('.pagination');
-    const loadMoreBtn = document.getElementById('btn-load-more');
-
-    const container = resultsList || imageGrid || videoGrid;
-    if (!container) return;
-    if (container.dataset.infiniteScrollInit) return;
-    container.dataset.infiniteScrollInit = 'true';
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const query = urlParams.get('q');
-    if (!query) return;
-
-    const isAutoInfinite = getCookie('searxgo_infinite_scroll') === 'true' || urlParams.get('infinite_scroll') === '1' || urlParams.get('unlimited') === '1';
-
-    let currentPage = parseInt(urlParams.get('page') || '1', 10);
-    const category = urlParams.get('category') || 'general';
-    const timeRange = urlParams.get('time_range') || '';
-    let isFetching = false;
-    let hasMore = true;
-
-    // Create spinner element
-    const spinner = document.createElement('div');
-    spinner.className = 'infinite-loading';
-    spinner.style.display = 'none';
-    spinner.innerHTML = '<div class="infinite-spinner"></div><span>Streaming more results from engines...</span>';
-    container.parentNode.appendChild(spinner);
-
-    if (isAutoInfinite && pagination) {
-      pagination.style.display = 'none'; // Hide static pagination when auto infinite scroll is active
-    }
-
-    function checkScroll() {
-      if (!isAutoInfinite || isFetching || !hasMore) return;
-      const scrollPos = window.innerHeight + window.scrollY;
-      const threshold = document.body.offsetHeight - 650;
-
-      if (scrollPos >= threshold) {
-        fetchNextPage();
-      }
-    }
-
-    function fetchNextPage() {
-      if (isFetching || !hasMore) return;
-      isFetching = true;
-      spinner.style.display = 'flex';
-      if (loadMoreBtn) {
-        loadMoreBtn.disabled = true;
-        loadMoreBtn.innerHTML = '<span>⏳ Fetching Page ' + (currentPage + 1) + '...</span>';
-      }
-
-      const nextPage = currentPage + 1;
-      const fetchUrl = `/search?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&time_range=${encodeURIComponent(timeRange)}&page=${nextPage}&format=json`;
-
-      fetch(fetchUrl)
-        .then(res => {
-          if (!res.ok) throw new Error('Network response not ok');
-          return res.json();
-        })
-        .then(data => {
-          spinner.style.display = 'none';
-          isFetching = false;
-
-          if (!data || !data.results || data.results.length === 0) {
-            hasMore = false;
-            if (loadMoreBtn) {
-              loadMoreBtn.disabled = true;
-              loadMoreBtn.innerHTML = '<span>✓ All results loaded</span>';
-            }
-            return;
-          }
-
-          currentPage = nextPage;
-          if (loadMoreBtn) {
-            loadMoreBtn.disabled = false;
-            loadMoreBtn.innerHTML = '<span>⚡ Load More Results (Page ' + (currentPage + 1) + ')</span>';
-          }
-
-          renderAppendResults(data.results, data.category);
-        })
-        .catch(err => {
-          spinner.style.display = 'none';
-          isFetching = false;
-          if (loadMoreBtn) {
-            loadMoreBtn.disabled = false;
-            loadMoreBtn.innerHTML = '<span>⚠️ Retry Loading Page ' + (currentPage + 1) + '</span>';
-          }
-        });
-    }
-
-    if (loadMoreBtn && !loadMoreBtn.hasAttribute('hx-get')) {
-      loadMoreBtn.addEventListener('click', function () {
-        fetchNextPage();
-      });
-    }
-
-    if (isAutoInfinite && (!loadMoreBtn || !loadMoreBtn.hasAttribute('hx-get'))) {
-      window.addEventListener('scroll', checkScroll, { passive: true });
-    }
-
-    function renderAppendResults(results, cat) {
-      if (cat === 'images' && imageGrid) {
-        results.forEach(it => {
-          const card = document.createElement('div');
-          card.className = 'image-card';
-          card.innerHTML = `
-            <a href="${escapeHtml(it.url)}" target="_blank" rel="noreferrer noopener" class="image-thumb-wrap">
-              <img src="/proxy/image?url=${encodeURIComponent(it.thumbnail || it.url)}" alt="${escapeHtml(it.title)}" class="image-thumb" loading="lazy" onerror="this.onerror=null; this.src='${escapeHtml(it.thumbnail || it.url)}';" />
-            </a>
-            <div class="image-info">
-              <div class="image-title" title="${escapeHtml(it.title)}">${escapeHtml(it.title)}</div>
-              <div class="image-source">${escapeHtml(it.pretty_url || '')}</div>
-            </div>
-          `;
-          imageGrid.appendChild(card);
-        });
-      } else if (cat === 'videos' && videoGrid) {
-        results.forEach(it => {
-          const card = document.createElement('div');
-          card.className = 'video-card';
-          card.innerHTML = `
-            <div class="video-thumb-wrap" data-video-url="${escapeHtml(it.video_url || '')}" data-video-title="${escapeHtml(it.title)}">
-              <img src="/proxy/image?url=${encodeURIComponent(it.thumbnail || '')}" alt="${escapeHtml(it.title)}" class="video-thumb" loading="lazy" onerror="this.onerror=null; this.src='${escapeHtml(it.thumbnail || '')}';" />
-              ${it.duration ? `<span class="video-duration">${escapeHtml(it.duration)}</span>` : ''}
-              <div class="video-play-overlay">▶</div>
-            </div>
-            <div class="video-info">
-              <h3 class="video-title">
-                <a href="${escapeHtml(it.url)}" target="_blank" rel="noreferrer noopener">${escapeHtml(it.title)}</a>
-              </h3>
-              <div class="video-channel">${escapeHtml(it.author || '')} &bull; ${escapeHtml(it.pretty_url || '')}</div>
-            </div>
-          `;
-          videoGrid.appendChild(card);
-        });
-        initVideoModal();
-      } else if (resultsList) {
-        results.forEach(it => {
-          const domain = (it.url || '').replace(/^https?:\/\//, '').split('/')[0].replace(/^www\./, '');
-          const article = document.createElement('article');
-          article.className = 'result-item';
-          
-          let enginesBadges = '';
-          if (Array.isArray(it.engines)) {
-            it.engines.forEach(eng => {
-              enginesBadges += `<span class="engine-badge">${escapeHtml(eng)}</span>`;
-            });
-          }
-
-          let extraPills = '';
-          if (it.file_size) extraPills += `<span class="extra-pill">📦 ${escapeHtml(it.file_size)}</span>`;
-          if (it.seeders && it.seeders > 0) extraPills += `<span class="extra-pill" style="color:var(--accent-emerald);">▲ ${it.seeders} seeds</span>`;
-
-          article.innerHTML = `
-            <div class="result-url-wrap">
-              <img src="/proxy/image?url=https://icons.duckduckgo.com/ip2/${domain}.ico" class="site-favicon" onerror="this.style.display='none'" alt="" />
-              <span class="result-url">${escapeHtml(it.pretty_url || it.url)}</span>
-              ${it.cached_url ? `<a href="${escapeHtml(it.cached_url)}" target="_blank" rel="noreferrer noopener" class="cached-link" title="View cached snapshot">[Cached]</a>` : ''}
-              ${it.magnet_url ? `<button type="button" class="btn-magnet" data-magnet="${escapeHtml(it.magnet_url)}" title="Copy Magnet Link">🧲 Copy Magnet</button>` : ''}
-            </div>
-            <h2 class="result-title">
-              <a href="${escapeHtml(it.url)}" target="_blank" rel="noreferrer noopener">${escapeHtml(it.title)}</a>
-            </h2>
-            <div class="result-snippet">${escapeHtml(it.content || '')}</div>
-            <div class="result-footer">
-              <div class="result-badges">
-                ${enginesBadges}
-                ${extraPills}
-              </div>
-              ${it.author ? `<span class="result-author">By ${escapeHtml(it.author)}</span>` : ''}
-            </div>
-          `;
-          resultsList.appendChild(article);
-        });
-        initMagnetButtons();
-      }
-    }
-  }
 
   // --- Settings Page Tabs & Operations ---
   function initSettingsPage() {
@@ -1704,21 +1914,28 @@
     }
   }
 
-  // --- PWA Service Worker Registration ---
-  let swInitialized = false;
-  function initServiceWorker() {
-    if (swInitialized) return;
-    swInitialized = true;
-    if ('serviceWorker' in navigator) {
-      if (document.readyState === 'complete') {
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
-      } else {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {});
-        });
-      }
+
+
+  // ================================================================
+  // Module: Features, Bookmarks, Goggles & Topics
+  // ================================================================
+  // --- Universal Toast Notification Helper ---
+  function showToast(msg, icon = '✓') {
+    let toast = document.getElementById('searxgo-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'searxgo-toast';
+      toast.className = 'searxgo-toast';
+      document.body.appendChild(toast);
     }
+    toast.innerHTML = `<span style="font-size:1.1rem;">${icon}</span><span>${msg}</span>`;
+    toast.classList.add('show');
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => {
+      toast.classList.remove('show');
+    }, 2800);
   }
+
 
   // --- Private Bookmarks & Saved Searches ---
   function initBookmarks() {
@@ -2372,190 +2589,6 @@
     }
   }
 
-  // --- Mobile Bottom Navigation ---
-  function initMobileBottomNav() {
-    let nav = document.querySelector('.mobile-bottom-nav');
-    const currentPath = window.location.pathname;
-
-    const items = [
-      { path: '/', label: 'Home', icon: '🪐' },
-      { path: '/dorks', label: 'Dorks', icon: '🎯' },
-      { path: '/sherlock', label: 'Sherlock', icon: '🕵️' },
-      { path: '/scrub', label: 'Scrub', icon: '🛡️' },
-      { path: '/settings', label: 'Settings', icon: '⚙️' }
-    ];
-
-    if (!nav) {
-      nav = document.createElement('nav');
-      nav.className = 'mobile-bottom-nav';
-      document.body.appendChild(nav);
-    }
-
-    nav.innerHTML = items.map(item => {
-      let isActive = false;
-      if (item.path === '/' && (currentPath === '/' || currentPath === '/search')) {
-        isActive = true;
-      } else if (item.path !== '/' && currentPath.startsWith(item.path)) {
-        isActive = true;
-      }
-      return `
-        <a href="${item.path}" class="mobile-nav-item ${isActive ? 'active' : ''}">
-          <span class="mobile-nav-icon">${item.icon}</span>
-          <span class="mobile-nav-label">${item.label}</span>
-        </a>
-      `;
-    }).join('');
-  }
-
-  // --- Mobile Touch Gestures & Category Swiping ---
-  let touchGesturesInitialized = false;
-  function initMobileTouchGestures() {
-    // 1. Smoothly scroll active category tab to center on mobile load
-    const activeTab = document.querySelector('.results-tabs .tab-link.active');
-    const tabsContainer = document.querySelector('.results-tabs');
-    if (activeTab && tabsContainer) {
-      setTimeout(() => {
-        const offset = activeTab.offsetLeft - (tabsContainer.clientWidth / 2) + (activeTab.clientWidth / 2);
-        tabsContainer.scrollTo({ left: Math.max(0, offset), behavior: 'smooth' });
-      }, 100);
-    }
-
-    if (touchGesturesInitialized) return;
-    touchGesturesInitialized = true;
-
-    // 2. Touch swipe listener across search results
-    const resultsContainer = document.querySelector('.results-container, .main-results, .results-wrapper, body');
-    if (!resultsContainer || !document.querySelector('.results-tabs')) return;
-
-    let startX = 0;
-    let startY = 0;
-    let startTime = 0;
-    let isSwiping = false;
-
-    // Toast element for visual feedback
-    let toast = document.querySelector('.swipe-indicator-toast');
-    if (!toast) {
-      toast = document.createElement('div');
-      toast.className = 'swipe-indicator-toast';
-      document.body.appendChild(toast);
-    }
-
-    function showSwipeToast(text) {
-      toast.textContent = text;
-      toast.classList.add('show');
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, 800);
-    }
-
-    document.addEventListener('touchstart', function(e) {
-      if (e.touches.length !== 1) return;
-      const target = e.target;
-      // Skip gesture if interacting with input, map, or player
-      if (target.closest('input, textarea, select, button, .leaflet-container, #player-body, .suggestions-dropdown')) {
-        isSwiping = false;
-        return;
-      }
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-      startTime = Date.now();
-      isSwiping = true;
-    }, { passive: true });
-
-    document.addEventListener('touchend', function(e) {
-      if (!isSwiping || e.changedTouches.length !== 1) return;
-      isSwiping = false;
-
-      const endX = e.changedTouches[0].clientX;
-      const endY = e.changedTouches[0].clientY;
-      const deltaX = endX - startX;
-      const deltaY = endY - startY;
-      const elapsed = Date.now() - startTime;
-
-      // Minimum swipe distance of 60px, max vertical deviation of 50px, under 600ms
-      if (Math.abs(deltaX) > 60 && Math.abs(deltaY) < 50 && elapsed < 600) {
-        const tabs = Array.from(document.querySelectorAll('.results-tabs .tab-link'));
-        if (tabs.length === 0) return;
-
-        const currentIdx = tabs.findIndex(t => t.classList.contains('active'));
-        if (currentIdx === -1) return;
-
-        let targetIdx = -1;
-        if (deltaX < 0 && currentIdx < tabs.length - 1) {
-          // Swipe Left -> Next Tab
-          targetIdx = currentIdx + 1;
-        } else if (deltaX > 0 && currentIdx > 0) {
-          // Swipe Right -> Prev Tab
-          targetIdx = currentIdx - 1;
-        }
-
-        if (targetIdx !== -1 && tabs[targetIdx]) {
-          const nextTab = tabs[targetIdx];
-          showSwipeToast(`Switching to ${nextTab.textContent.trim()} ➔`);
-          setTimeout(() => {
-            window.location.href = nextTab.href;
-          }, 150);
-        }
-      }
-    }, { passive: true });
-  }
-
-  // --- Category Tabs Switcher (Search Homepage) ---
-  function initCategoryTabs() {
-    document.querySelectorAll('.category-tab').forEach(tab => {
-      if (tab.dataset.tabInit) return;
-      tab.dataset.tabInit = 'true';
-      tab.addEventListener('click', function () {
-        document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
-        this.classList.add('active');
-        const inp = this.querySelector('input');
-        if (inp) inp.checked = true;
-      });
-    });
-  }
-
-  // --- Tools Nav Dropdown (Consolidated, Accessible & Delegated) ---
-  let navDropdownInitialized = false;
-  function initNavDropdown() {
-    if (navDropdownInitialized) return;
-    navDropdownInitialized = true;
-
-    document.addEventListener('click', function (e) {
-      const trigger = e.target.closest('.nav-dropdown-trigger');
-      if (trigger) {
-        e.preventDefault();
-        e.stopPropagation();
-        const dropdown = trigger.closest('.nav-dropdown');
-        if (!dropdown) return;
-        const isOpen = dropdown.classList.contains('open');
-        document.querySelectorAll('.nav-dropdown.open').forEach(d => {
-          if (d !== dropdown) {
-            d.classList.remove('open');
-            d.querySelector('.nav-dropdown-trigger')?.setAttribute('aria-expanded', 'false');
-          }
-        });
-        dropdown.classList.toggle('open', !isOpen);
-        trigger.setAttribute('aria-expanded', !isOpen ? 'true' : 'false');
-        return;
-      }
-
-      if (!e.target.closest('.nav-dropdown-panel')) {
-        document.querySelectorAll('.nav-dropdown.open').forEach(d => {
-          d.classList.remove('open');
-          d.querySelector('.nav-dropdown-trigger')?.setAttribute('aria-expanded', 'false');
-        });
-      }
-    });
-
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') {
-        document.querySelectorAll('.nav-dropdown.open').forEach(d => {
-          d.classList.remove('open');
-          d.querySelector('.nav-dropdown-trigger')?.setAttribute('aria-expanded', 'false');
-        });
-      }
-    });
-  }
 
   // ================================================================
   // 🎯 Search Goggles — Client-Side Domain Block/Boost Filter
@@ -2644,6 +2677,11 @@
     }
   }
 
+
+
+  // ================================================================
+  // Module: Core Orchestrator & Lifecycle Hooks
+  // ================================================================
   // Safe DOM ready initialization
   function initAll() {
     initTheme();
@@ -2703,4 +2741,5 @@
     initAll();
     applyGoggles();
   });
+
 })();
