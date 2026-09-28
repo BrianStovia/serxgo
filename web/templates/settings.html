@@ -55,8 +55,12 @@
           <a href="/threat" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🛡️</span><div><div class="dropdown-item-title">Threat Scanner</div><div class="dropdown-item-desc">Phishing, redirect &amp; URL analysis</div></div></a>
           <a href="/sherlock" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🕵️</span><div><div class="dropdown-item-title">Sherlock OSINT</div><div class="dropdown-item-desc">Username recon across 20+ platforms</div></div></a>
           <a href="/dorks" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🎯</span><div><div class="dropdown-item-title">Dorks Suite</div><div class="dropdown-item-desc">Google dorking &amp; recon operators</div></div></a>
+          <a href="/cve" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🚨</span><div><div class="dropdown-item-title">CVE &amp; Zero-Day Feed</div><div class="dropdown-item-desc">Live vulnerability intelligence &amp; exploits</div></div></a>
+          <a href="/ip-intel" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🌐</span><div><div class="dropdown-item-title">IP Intel &amp; ASN</div><div class="dropdown-item-desc">BGP routes, ISP &amp; geo visualizer</div></div></a>
+          <a href="/cloud-recon" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">☁️</span><div><div class="dropdown-item-title">Cloud Storage Recon</div><div class="dropdown-item-desc">Audit AWS S3, GCP &amp; Azure buckets</div></div></a>
           <div class="dropdown-divider"></div>
           <div class="dropdown-section-label">🛠️ Utilities</div>
+          <a href="/api-tester" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🧪</span><div><div class="dropdown-item-title">API &amp; cURL Tester</div><div class="dropdown-item-desc">In-browser HTTP &amp; endpoint playground</div></div></a>
           <a href="/bypass" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🔓</span><div><div class="dropdown-item-title">Paywall Bypass</div><div class="dropdown-item-desc">Clean mirror article reader</div></div></a>
           <a href="/media" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">📥</span><div><div class="dropdown-item-title">Media Downloader</div><div class="dropdown-item-desc">Ad-free video &amp; audio extractor</div></div></a>
           <a href="/qr" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">📱</span><div><div class="dropdown-item-title">QR &amp; WiFi Studio</div><div class="dropdown-item-desc">Generator &amp; scanner</div></div></a>
@@ -229,7 +233,7 @@
                 <div class="settings-label">Engine Tokens</div>
                 <div class="settings-sublabel">Access tokens for private search engines</div>
               </div>
-              <input type="text" id="engine-tokens" class="form-select" placeholder="token1, token2..." style="min-width: 200px;">
+              <input type="text" id="engine-tokens" name="engine_tokens" value="{{.EngineTokens}}" class="form-select" placeholder="token1, token2..." style="min-width: 200px;">
             </div>
 
             <!-- Unit Converter Plugin -->
@@ -239,7 +243,7 @@
                 <div class="settings-sublabel">Instant currency and measurement unit conversion widget</div>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" id="unit-converter-toggle" checked>
+                <input type="checkbox" id="unit-converter-toggle" name="unit_converter" value="true" {{if .UnitConverter}}checked{{end}}>
                 <span class="slider"></span>
               </label>
             </div>
@@ -251,7 +255,7 @@
                 <div class="settings-sublabel">Avoid paywalls by redirecting to open-access versions of publications when available</div>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" id="doi-rewrite-toggle" checked>
+                <input type="checkbox" id="doi-rewrite-toggle" name="doi_rewrite" value="true" {{if .DoiRewrite}}checked{{end}}>
                 <span class="slider"></span>
               </label>
             </div>
@@ -424,7 +428,7 @@
                 <div class="settings-sublabel">Display cached version link next to each result</div>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" id="cached-links-toggle" checked>
+                <input type="checkbox" id="cached-links-toggle" name="cached_links" value="true" {{if .CachedLinks}}checked{{end}}>
                 <span class="slider"></span>
               </label>
             </div>
@@ -435,7 +439,7 @@
                 <div class="settings-sublabel">Protect engine dispatch from automated bot scans</div>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" id="spam-guard-toggle" checked>
+                <input type="checkbox" id="spam-guard-toggle" name="spam_guard" value="true" {{if .SpamGuard}}checked{{end}}>
                 <span class="slider"></span>
               </label>
             </div>
@@ -454,14 +458,14 @@
                 <div class="settings-label">Interface Language</div>
                 <div class="settings-sublabel">Change the language of the layout</div>
               </div>
-              <select id="ui-locale" class="form-select" style="min-width:200px;">
-                <option value="en" {{if eq .Language "en"}}selected{{end}}>English</option>
-                <option value="id" {{if eq .Language "id"}}selected{{end}}>Bahasa Indonesia</option>
-                <option value="de" {{if eq .Language "de"}}selected{{end}}>Deutsch</option>
-                <option value="fr" {{if eq .Language "fr"}}selected{{end}}>Français</option>
-                <option value="es" {{if eq .Language "es"}}selected{{end}}>Español</option>
-                <option value="ja" {{if eq .Language "ja"}}selected{{end}}>日本語</option>
-                <option value="zh" {{if eq .Language "zh"}}selected{{end}}>中文</option>
+              <select id="ui-locale" name="ui_locale" class="form-select" style="min-width:200px;">
+                <option value="en" {{if or (eq .UILocale "en") (not .UILocale)}}selected{{end}}>English</option>
+                <option value="id" {{if eq .UILocale "id"}}selected{{end}}>Bahasa Indonesia</option>
+                <option value="de" {{if eq .UILocale "de"}}selected{{end}}>Deutsch</option>
+                <option value="fr" {{if eq .UILocale "fr"}}selected{{end}}>Français</option>
+                <option value="es" {{if eq .UILocale "es"}}selected{{end}}>Español</option>
+                <option value="ja" {{if eq .UILocale "ja"}}selected{{end}}>日本語</option>
+                <option value="zh" {{if eq .UILocale "zh"}}selected{{end}}>中文</option>
               </select>
             </div>
 
@@ -520,7 +524,7 @@
                 <div class="settings-sublabel">Perform search immediately when a category tab is clicked</div>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" id="search-on-cat-toggle" checked>
+                <input type="checkbox" id="search-on-cat-toggle" name="search_on_category" value="true" {{if .SearchOnCategory}}checked{{end}}>
                 <span class="slider"></span>
               </label>
             </div>
@@ -530,10 +534,10 @@
                 <div class="settings-label">Hotkeys / Vim Navigation</div>
                 <div class="settings-sublabel">Navigate results with hotkeys (<code>j</code>/<code>k</code> move, <code>/</code> search, <code>c</code> cached)</div>
               </div>
-              <select id="hotkeys-select" class="form-select" style="min-width:200px;">
-                <option value="vim" selected>Vim-like (j/k, /, c)</option>
-                <option value="default">SearXNG Default</option>
-                <option value="off">Off</option>
+              <select id="hotkeys-select" name="hotkeys" class="form-select" style="min-width:200px;">
+                <option value="vim" {{if or (eq .Hotkeys "vim") (not .Hotkeys)}}selected{{end}}>Vim-like (j/k, /, c)</option>
+                <option value="default" {{if eq .Hotkeys "default"}}selected{{end}}>SearXNG Default</option>
+                <option value="off" {{if eq .Hotkeys "off"}}selected{{end}}>Off</option>
               </select>
             </div>
 
@@ -542,10 +546,10 @@
                 <div class="settings-label">URL Formatting</div>
                 <div class="settings-sublabel">Change result URL formatting</div>
               </div>
-              <select id="url-formatting-select" class="form-select" style="min-width:200px;">
-                <option value="pretty" selected>Pretty (domain/path)</option>
-                <option value="full">Full (https://...)</option>
-                <option value="host">Host only</option>
+              <select id="url-formatting-select" name="url_formatting" class="form-select" style="min-width:200px;">
+                <option value="pretty" {{if or (eq .URLFormatting "pretty") (not .URLFormatting)}}selected{{end}}>Pretty (domain/path)</option>
+                <option value="full" {{if eq .URLFormatting "full"}}selected{{end}}>Full (https://...)</option>
+                <option value="host" {{if eq .URLFormatting "host"}}selected{{end}}>Host only</option>
               </select>
             </div>
 
@@ -574,9 +578,9 @@
                 <div class="settings-label">HTTP Method</div>
                 <div class="settings-sublabel">Change how forms are submitted (POST hides query string from browser URL bar &amp; proxy logs)</div>
               </div>
-              <select id="http-method-select" class="form-select" style="min-width:200px;">
-                <option value="GET" selected>GET (Standard URL query)</option>
-                <option value="POST">POST (Private Payload)</option>
+              <select id="http-method-select" name="method" class="form-select" style="min-width:200px;">
+                <option value="GET" {{if or (eq .Method "GET") (not .Method)}}selected{{end}}>GET (Standard URL query)</option>
+                <option value="POST" {{if eq .Method "POST"}}selected{{end}}>POST (Private Payload)</option>
               </select>
             </div>
 
@@ -586,7 +590,7 @@
                 <div class="settings-sublabel">When enabled, the result page title contains your query</div>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" id="query-in-title-toggle" checked>
+                <input type="checkbox" id="query-in-title-toggle" name="query_in_title" value="true" {{if .QueryInTitle}}checked{{end}}>
                 <span class="slider"></span>
               </label>
             </div>

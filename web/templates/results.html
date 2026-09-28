@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{.Response.Query}} - SearXGo Search</title>
+  <title>{{if .QueryInTitle}}{{.Response.Query}} - {{end}}SearXGo Search</title>
   <link rel="stylesheet" href="/static/css/main.css?v=4.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   <link rel="search" type="application/opensearchdescription+xml" title="SearXGo" href="/opensearch.xml">
@@ -165,9 +165,37 @@
                   <div class="dropdown-item-desc">Google dorking &amp; recon operators</div>
                 </div>
               </a>
+              <a href="/cve" class="dropdown-item" role="menuitem">
+                <span class="dropdown-item-icon">🚨</span>
+                <div>
+                  <div class="dropdown-item-title">CVE &amp; Zero-Day Feed</div>
+                  <div class="dropdown-item-desc">Live vulnerability intelligence &amp; exploits</div>
+                </div>
+              </a>
+              <a href="/ip-intel" class="dropdown-item" role="menuitem">
+                <span class="dropdown-item-icon">🌐</span>
+                <div>
+                  <div class="dropdown-item-title">IP Intel &amp; ASN</div>
+                  <div class="dropdown-item-desc">BGP routes, ISP &amp; geo visualizer</div>
+                </div>
+              </a>
+              <a href="/cloud-recon" class="dropdown-item" role="menuitem">
+                <span class="dropdown-item-icon">☁️</span>
+                <div>
+                  <div class="dropdown-item-title">Cloud Storage Recon</div>
+                  <div class="dropdown-item-desc">Audit AWS S3, GCP &amp; Azure buckets</div>
+                </div>
+              </a>
 
               <div class="dropdown-divider"></div>
               <div class="dropdown-section-label">🛠️ Utilities</div>
+              <a href="/api-tester" class="dropdown-item" role="menuitem">
+                <span class="dropdown-item-icon">🧪</span>
+                <div>
+                  <div class="dropdown-item-title">API &amp; cURL Tester</div>
+                  <div class="dropdown-item-desc">In-browser HTTP &amp; endpoint playground</div>
+                </div>
+              </a>
               <a href="/bypass" class="dropdown-item" role="menuitem">
                 <span class="dropdown-item-icon">🔓</span>
                 <div>

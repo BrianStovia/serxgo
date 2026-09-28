@@ -696,6 +696,11 @@ func (h *Handler) ServeSearch(w http.ResponseWriter, r *http.Request) {
 		faviconResolver = fav
 	}
 
+	queryInTitle := true
+	if cookie, err := r.Cookie("searxgo_query_in_title"); err == nil && cookie.Value == "false" {
+		queryInTitle = false
+	}
+
 	data := map[string]interface{}{
 		"Response":        resp,
 		"TimeRange":       req.TimeRange,
@@ -704,6 +709,7 @@ func (h *Handler) ServeSearch(w http.ResponseWriter, r *http.Request) {
 		"AllEngines":      engine.DefaultRegistry.GetByCategory(resp.Category),
 		"OpenInNewTab":    req.OpenInNewTab,
 		"FaviconResolver": faviconResolver,
+		"QueryInTitle":    queryInTitle,
 	}
 
 	var buf bytes.Buffer
@@ -889,6 +895,58 @@ func (h *Handler) ServeSettings(w http.ResponseWriter, r *http.Request) {
 			setPrefCookie("searxgo_center_alignment", "false")
 		}
 
+		if m := getFormVal("method"); m != "" {
+			setPrefCookie("searxgo_method", m)
+		}
+		if hk := getFormVal("hotkeys"); hk != "" {
+			setPrefCookie("searxgo_hotkeys", hk)
+		}
+		if uf := getFormVal("url_formatting"); uf != "" {
+			setPrefCookie("searxgo_url_formatting", uf)
+		}
+		if uil := getFormVal("ui_locale"); uil != "" {
+			setPrefCookie("searxgo_ui_locale", uil)
+		}
+		if tok := getFormVal("engine_tokens"); tok != "" {
+			setPrefCookie("searxgo_tokens", tok)
+		}
+
+		if v := getFormVal("unit_converter"); v == "true" || v == "on" || v == "1" {
+			setPrefCookie("searxgo_unit_converter", "true")
+		} else {
+			setPrefCookie("searxgo_unit_converter", "false")
+		}
+
+		if v := getFormVal("doi_rewrite"); v == "true" || v == "on" || v == "1" {
+			setPrefCookie("searxgo_doi_rewrite", "true")
+		} else {
+			setPrefCookie("searxgo_doi_rewrite", "false")
+		}
+
+		if v := getFormVal("cached_links"); v == "true" || v == "on" || v == "1" {
+			setPrefCookie("searxgo_cached_links", "true")
+		} else {
+			setPrefCookie("searxgo_cached_links", "false")
+		}
+
+		if v := getFormVal("spam_guard"); v == "true" || v == "on" || v == "1" {
+			setPrefCookie("searxgo_spam_guard", "true")
+		} else {
+			setPrefCookie("searxgo_spam_guard", "false")
+		}
+
+		if v := getFormVal("search_on_category"); v == "true" || v == "on" || v == "1" {
+			setPrefCookie("searxgo_search_on_cat", "true")
+		} else {
+			setPrefCookie("searxgo_search_on_cat", "false")
+		}
+
+		if v := getFormVal("query_in_title"); v == "true" || v == "on" || v == "1" {
+			setPrefCookie("searxgo_query_in_title", "true")
+		} else {
+			setPrefCookie("searxgo_query_in_title", "false")
+		}
+
 		// Categories
 		defaultCats := getFormVals("default_categories")
 		if len(defaultCats) > 0 {
@@ -962,6 +1020,17 @@ func (h *Handler) ServeSettings(w http.ResponseWriter, r *http.Request) {
 	proxy := getCookieVal("searxgo_proxy", "true") != "false"
 	trackerRemover := getCookieVal("searxgo_tracker_remover", "true") != "false"
 	centerAlignment := getCookieVal("searxgo_center_alignment", "false") == "true"
+	method := getCookieVal("searxgo_method", "GET")
+	hotkeys := getCookieVal("searxgo_hotkeys", "vim")
+	urlFormatting := getCookieVal("searxgo_url_formatting", "pretty")
+	uiLocale := getCookieVal("searxgo_ui_locale", "en")
+	engineTokens := getCookieVal("searxgo_tokens", "")
+	unitConverter := getCookieVal("searxgo_unit_converter", "true") != "false"
+	doiRewrite := getCookieVal("searxgo_doi_rewrite", "true") != "false"
+	cachedLinks := getCookieVal("searxgo_cached_links", "true") != "false"
+	spamGuard := getCookieVal("searxgo_spam_guard", "true") != "false"
+	searchOnCategory := getCookieVal("searxgo_search_on_cat", "true") != "false"
+	queryInTitle := getCookieVal("searxgo_query_in_title", "true") != "false"
 
 	enginesCookie := getCookieVal("searxgo_engines", "")
 	enabledEnginesMap := make(map[string]bool)
@@ -1001,6 +1070,17 @@ func (h *Handler) ServeSettings(w http.ResponseWriter, r *http.Request) {
 		"Proxy":             proxy,
 		"TrackerRemover":    trackerRemover,
 		"CenterAlignment":   centerAlignment,
+		"Method":            method,
+		"Hotkeys":           hotkeys,
+		"URLFormatting":     urlFormatting,
+		"UILocale":          uiLocale,
+		"EngineTokens":      engineTokens,
+		"UnitConverter":     unitConverter,
+		"DoiRewrite":        doiRewrite,
+		"CachedLinks":       cachedLinks,
+		"SpamGuard":         spamGuard,
+		"SearchOnCategory":  searchOnCategory,
+		"QueryInTitle":      queryInTitle,
 		"EnabledEngines":    enabledEnginesMap,
 		"HasCustomEngines":  hasCustomEngines,
 		"EnabledCategories": enabledCatsMap,

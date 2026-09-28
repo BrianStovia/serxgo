@@ -335,5 +335,46 @@ func TestReverseImageSearch(t *testing.T) {
 	if parsedReq.Category != models.CategoryIT {
 		t.Errorf("expected parsed category to be CategoryIT from cookie, got %s", parsedReq.Category)
 	}
+
+	// 9. Test POST /settings with full settings suite (hotkeys, method, query_in_title, url_formatting)
+	fullForm := strings.NewReader("theme=black&method=POST&hotkeys=off&url_formatting=host&query_in_title=false&doi_rewrite=true")
+	reqPostFull := httptest.NewRequest("POST", "/settings", fullForm)
+	reqPostFull.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	recPostFull := httptest.NewRecorder()
+	mux.ServeHTTP(recPostFull, reqPostFull)
+
+	fullCookies := recPostFull.Result().Cookies()
+	fullCookieMap := make(map[string]string)
+	for _, c := range fullCookies {
+		fullCookieMap[c.Name] = c.Value
+	}
+	if fullCookieMap["searxgo_method"] != "POST" {
+		t.Errorf("expected searxgo_method=POST, got %s", fullCookieMap["searxgo_method"])
+	}
+	if fullCookieMap["searxgo_hotkeys"] != "off" {
+		t.Errorf("expected searxgo_hotkeys=off, got %s", fullCookieMap["searxgo_hotkeys"])
+	}
+	if fullCookieMap["searxgo_url_formatting"] != "host" {
+		t.Errorf("expected searxgo_url_formatting=host, got %s", fullCookieMap["searxgo_url_formatting"])
+	}
+	if fullCookieMap["searxgo_query_in_title"] != "false" {
+		t.Errorf("expected searxgo_query_in_title=false, got %s", fullCookieMap["searxgo_query_in_title"])
+	}
+
+	// Verify GET /settings renders these values selected/checked
+	reqGetFullSettings := httptest.NewRequest("GET", "/settings", nil)
+	for _, c := range fullCookies {
+		reqGetFullSettings.AddCookie(c)
+	}
+	recGetFullSettings := httptest.NewRecorder()
+	mux.ServeHTTP(recGetFullSettings, reqGetFullSettings)
+	fullSettingsBody := recGetFullSettings.Body.String()
+
+	if !strings.Contains(fullSettingsBody, `value="off" selected`) {
+		t.Errorf("expected hotkeys=off selected in settings HTML")
+	}
+	if !strings.Contains(fullSettingsBody, `value="POST" selected`) {
+		t.Errorf("expected method=POST selected in settings HTML")
+	}
 }
 

@@ -415,6 +415,9 @@
 
   // --- Enhanced Vim Navigation Shortcuts ---
   function initVimKeybindings() {
+    const savedHotkeys = getCookie('searxgo_hotkeys');
+    if (savedHotkeys === 'off') return;
+
     let currentIndex = -1;
     const input = document.querySelector('.search-input');
 
@@ -564,7 +567,28 @@
       { category: 'Appearance', icon: '🧛', title: 'Theme: Dracula Theme', action: () => { window.setTheme('dracula'); showToast('Switched to Dracula theme'); } },
       { category: 'Appearance', icon: '⚡', title: 'Theme: Cyberpunk Neon', action: () => { window.setTheme('cyberpunk'); showToast('Switched to Cyberpunk Neon theme'); } },
 
-      // Tools & Utilities
+      // Tools & Intelligence Suite
+      { category: 'Tools & Intelligence', icon: '🚨', title: 'Live CVE & Zero-Day Feed (/cve)', action: () => window.location.href = '/cve' },
+      { category: 'Tools & Intelligence', icon: '🌐', title: 'IP Intelligence, ASN & BGP Route Visualizer (/ip-intel)', action: () => window.location.href = '/ip-intel' },
+      { category: 'Tools & Intelligence', icon: '☁️', title: 'Cloud Bucket & Storage Recon (/cloud-recon)', action: () => window.location.href = '/cloud-recon' },
+      { category: 'Tools & Intelligence', icon: '🧪', title: 'In-Browser API & cURL Playground (/api-tester)', action: () => window.location.href = '/api-tester' },
+      { category: 'Tools & Intelligence', icon: '🕵️', title: 'Sherlock OSINT Username Recon (/sherlock)', action: () => window.location.href = '/sherlock' },
+      { category: 'Tools & Intelligence', icon: '⚡', title: 'Tech Stack Inspector (/tech)', action: () => window.location.href = '/tech' },
+      { category: 'Tools & Intelligence', icon: '🔬', title: 'Domain Recon & SSL Audit (/recon)', action: () => window.location.href = '/recon' },
+      { category: 'Tools & Intelligence', icon: '🛡️', title: 'Threat Scanner & Phishing Check (/threat)', action: () => window.location.href = '/threat' },
+      { category: 'Tools & Intelligence', icon: '📰', title: 'World News Pulse Live Portals (/news-hub)', action: () => window.location.href = '/news-hub' },
+      { category: 'Tools & Intelligence', icon: '⛅', title: 'Weather Radar & 7-Day Forecast (/weather)', action: () => window.location.href = '/weather' },
+      { category: 'Tools & Intelligence', icon: '💱', title: 'Currency & Crypto Exchange Converter (/currency)', action: () => window.location.href = '/currency' },
+      { category: 'Tools & Intelligence', icon: '🔓', title: 'Paywall Bypass Clean Mirror Reader (/bypass)', action: () => window.location.href = '/bypass' },
+      { category: 'Tools & Intelligence', icon: '📥', title: 'Media Downloader (/media)', action: () => window.location.href = '/media' },
+      { category: 'Tools & Intelligence', icon: '📱', title: 'QR & WiFi Studio Generator (/qr)', action: () => window.location.href = '/qr' },
+      { category: 'Tools & Intelligence', icon: '📖', title: 'Distraction-Free Reader View (/reader)', action: () => window.location.href = '/reader' },
+      { category: 'Tools & Intelligence', icon: '🕸️', title: 'Knowledge Graph Explorer (/graph)', action: () => window.location.href = '/graph' },
+      { category: 'Tools & Intelligence', icon: '🧹', title: 'EXIF & GPS Metadata Stripper (/scrub)', action: () => window.location.href = '/scrub' },
+      { category: 'Tools & Intelligence', icon: '⚖️', title: 'Split Compare Dual Engine Search (/split)', action: () => window.location.href = '/split' },
+
+      // Quick Actions
+      { category: 'Actions', icon: '⚙️', title: 'Open Search Preferences & Settings (/settings)', action: () => window.location.href = '/settings' },
       { category: 'Actions', icon: '🔖', title: 'Open Saved Bookmarks Workspace', action: () => {
         const bmBtn = document.querySelector('.btn-open-bookmarks');
         if (bmBtn) bmBtn.click();
@@ -1265,6 +1289,66 @@
       if (savedCenter !== null) centerToggle.checked = (savedCenter === 'true');
     }
 
+    const hotkeysSelect = document.getElementById('hotkeys-select');
+    if (hotkeysSelect) {
+      const saved = getCookie('searxgo_hotkeys');
+      if (saved) hotkeysSelect.value = saved;
+    }
+
+    const urlFormatSelect = document.getElementById('url-formatting-select');
+    if (urlFormatSelect) {
+      const saved = getCookie('searxgo_url_formatting');
+      if (saved) urlFormatSelect.value = saved;
+    }
+
+    const uiLocaleSelect = document.getElementById('ui-locale');
+    if (uiLocaleSelect) {
+      const saved = getCookie('searxgo_ui_locale');
+      if (saved) uiLocaleSelect.value = saved;
+    }
+
+    const engineTokensInput = document.getElementById('engine-tokens');
+    if (engineTokensInput) {
+      const saved = getCookie('searxgo_tokens');
+      if (saved) engineTokensInput.value = saved;
+    }
+
+    const unitConverterToggle = document.getElementById('unit-converter-toggle');
+    if (unitConverterToggle) {
+      const saved = getCookie('searxgo_unit_converter');
+      if (saved !== null) unitConverterToggle.checked = (saved === 'true');
+    }
+
+    const doiRewriteToggle = document.getElementById('doi-rewrite-toggle');
+    if (doiRewriteToggle) {
+      const saved = getCookie('searxgo_doi_rewrite');
+      if (saved !== null) doiRewriteToggle.checked = (saved === 'true');
+    }
+
+    const cachedLinksToggle = document.getElementById('cached-links-toggle');
+    if (cachedLinksToggle) {
+      const saved = getCookie('searxgo_cached_links');
+      if (saved !== null) cachedLinksToggle.checked = (saved === 'true');
+    }
+
+    const spamGuardToggle = document.getElementById('spam-guard-toggle');
+    if (spamGuardToggle) {
+      const saved = getCookie('searxgo_spam_guard');
+      if (saved !== null) spamGuardToggle.checked = (saved === 'true');
+    }
+
+    const searchOnCatToggle = document.getElementById('search-on-cat-toggle');
+    if (searchOnCatToggle) {
+      const saved = getCookie('searxgo_search_on_cat');
+      if (saved !== null) searchOnCatToggle.checked = (saved === 'true');
+    }
+
+    const queryInTitleToggle = document.getElementById('query-in-title-toggle');
+    if (queryInTitleToggle) {
+      const saved = getCookie('searxgo_query_in_title');
+      if (saved !== null) queryInTitleToggle.checked = (saved === 'true');
+    }
+
     const savedCats = getCookie('searxgo_categories');
     if (savedCats) {
       const activeCats = savedCats.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
@@ -1288,6 +1372,16 @@
           infinite_scroll: infiniteToggle ? infiniteToggle.checked : false,
           new_tab: newtabToggle ? newtabToggle.checked : true,
           method: methodSelect ? methodSelect.value : 'GET',
+          hotkeys: hotkeysSelect ? hotkeysSelect.value : 'vim',
+          url_formatting: urlFormatSelect ? urlFormatSelect.value : 'pretty',
+          ui_locale: uiLocaleSelect ? uiLocaleSelect.value : 'en',
+          engine_tokens: engineTokensInput ? engineTokensInput.value : '',
+          unit_converter: unitConverterToggle ? unitConverterToggle.checked : true,
+          doi_rewrite: doiRewriteToggle ? doiRewriteToggle.checked : true,
+          cached_links: cachedLinksToggle ? cachedLinksToggle.checked : true,
+          spam_guard: spamGuardToggle ? spamGuardToggle.checked : true,
+          search_on_category: searchOnCatToggle ? searchOnCatToggle.checked : true,
+          query_in_title: queryInTitleToggle ? queryInTitleToggle.checked : true,
           categories: categories,
           engines: engines,
           redirects: document.getElementById('redirects-toggle')?.checked ?? true,
@@ -1321,6 +1415,17 @@
             if (conf.infinite_scroll !== undefined && infiniteToggle) infiniteToggle.checked = conf.infinite_scroll;
             if (conf.new_tab !== undefined && newtabToggle) newtabToggle.checked = conf.new_tab;
             if (conf.method && methodSelect) methodSelect.value = conf.method;
+            if (conf.hotkeys && hotkeysSelect) hotkeysSelect.value = conf.hotkeys;
+            if (conf.url_formatting && urlFormatSelect) urlFormatSelect.value = conf.url_formatting;
+            if (conf.ui_locale && uiLocaleSelect) uiLocaleSelect.value = conf.ui_locale;
+            if (conf.engine_tokens !== undefined && engineTokensInput) engineTokensInput.value = conf.engine_tokens;
+            if (conf.unit_converter !== undefined && unitConverterToggle) unitConverterToggle.checked = conf.unit_converter;
+            if (conf.doi_rewrite !== undefined && doiRewriteToggle) doiRewriteToggle.checked = conf.doi_rewrite;
+            if (conf.cached_links !== undefined && cachedLinksToggle) cachedLinksToggle.checked = conf.cached_links;
+            if (conf.spam_guard !== undefined && spamGuardToggle) spamGuardToggle.checked = conf.spam_guard;
+            if (conf.search_on_category !== undefined && searchOnCatToggle) searchOnCatToggle.checked = conf.search_on_category;
+            if (conf.query_in_title !== undefined && queryInTitleToggle) queryInTitleToggle.checked = conf.query_in_title;
+
             if (Array.isArray(conf.categories)) {
               form.querySelectorAll('input[name="default_categories"]').forEach(cb => {
                 cb.checked = conf.categories.includes(cb.value);
@@ -1359,6 +1464,16 @@
           setCookie('searxgo_doi_resolver', '', -1);
           setCookie('searxgo_center_alignment', '', -1);
           setCookie('searxgo_categories', '', -1);
+          setCookie('searxgo_hotkeys', '', -1);
+          setCookie('searxgo_url_formatting', '', -1);
+          setCookie('searxgo_ui_locale', '', -1);
+          setCookie('searxgo_tokens', '', -1);
+          setCookie('searxgo_unit_converter', '', -1);
+          setCookie('searxgo_doi_rewrite', '', -1);
+          setCookie('searxgo_cached_links', '', -1);
+          setCookie('searxgo_spam_guard', '', -1);
+          setCookie('searxgo_search_on_cat', '', -1);
+          setCookie('searxgo_query_in_title', '', -1);
           localStorage.removeItem('searxgo_theme');
           window.location.reload();
         }
@@ -1389,6 +1504,17 @@
         setCookie('searxgo_new_tab', newtabToggle.checked ? 'true' : 'false', 365);
       }
       if (methodSelect) setCookie('searxgo_method', methodSelect.value, 365);
+      if (hotkeysSelect) setCookie('searxgo_hotkeys', hotkeysSelect.value, 365);
+      if (urlFormatSelect) setCookie('searxgo_url_formatting', urlFormatSelect.value, 365);
+      if (uiLocaleSelect) setCookie('searxgo_ui_locale', uiLocaleSelect.value, 365);
+      if (engineTokensInput) setCookie('searxgo_tokens', engineTokensInput.value.trim(), 365);
+
+      if (unitConverterToggle) setCookie('searxgo_unit_converter', unitConverterToggle.checked ? 'true' : 'false', 365);
+      if (doiRewriteToggle) setCookie('searxgo_doi_rewrite', doiRewriteToggle.checked ? 'true' : 'false', 365);
+      if (cachedLinksToggle) setCookie('searxgo_cached_links', cachedLinksToggle.checked ? 'true' : 'false', 365);
+      if (spamGuardToggle) setCookie('searxgo_spam_guard', spamGuardToggle.checked ? 'true' : 'false', 365);
+      if (searchOnCatToggle) setCookie('searxgo_search_on_cat', searchOnCatToggle.checked ? 'true' : 'false', 365);
+      if (queryInTitleToggle) setCookie('searxgo_query_in_title', queryInTitleToggle.checked ? 'true' : 'false', 365);
 
       const redirectsToggle = document.getElementById('redirects-toggle');
       if (redirectsToggle) {
@@ -1490,6 +1616,12 @@
       document.querySelectorAll('.result-title a, .image-thumb-wrap, .video-title a').forEach(a => {
         a.removeAttribute('target');
       });
+    }
+
+    // Apply Query In Title preference
+    const savedQueryInTitle = getCookie('searxgo_query_in_title');
+    if (savedQueryInTitle === 'false') {
+      document.title = 'SearXGo Search';
     }
 
     // Reflect default category on search home page category tabs
