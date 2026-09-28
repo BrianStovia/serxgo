@@ -182,16 +182,18 @@
         document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentType = btn.dataset.type;
-        if (domainInput.value.trim()) {
+        if (domainInput && domainInput.value.trim()) {
           runLookup();
         }
       });
     });
 
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      runLookup();
-    });
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        runLookup();
+      });
+    }
 
     async function runLookup() {
       const domain = domainInput.value.trim();
@@ -303,22 +305,10 @@
     // Auto-run if domain query present in URL
     const urlParams = new URLSearchParams(window.location.search);
     const qDomain = urlParams.get('domain');
-    if (qDomain) {
+    if (qDomain && domainInput) {
       domainInput.value = qDomain;
       runLookup();
     }
-
-    // Dropdown toggle logic
-    document.querySelectorAll('.nav-dropdown-trigger').forEach(trigger => {
-      trigger.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const parent = trigger.closest('.nav-dropdown');
-        parent.classList.toggle('open');
-      });
-    });
-    document.addEventListener('click', () => {
-      document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
-    });
   </script>
   <script src="/static/js/app.js"></script>
 </body>

@@ -426,14 +426,5 @@
   </div>
 
   <script src="/static/js/app.js"></script>
-  <script>
-    document.querySelectorAll('.category-tab').forEach(tab => {
-      tab.addEventListener('click', function() {
-        document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
-        this.classList.add('active');
-        this.querySelector('input').checked = true;
-      });
-    });
-  </script>
 </body>
 </html>

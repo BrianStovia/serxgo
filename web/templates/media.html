@@ -157,10 +157,12 @@
     const mediaResult = document.getElementById('media-result');
     const previewBox = document.getElementById('preview-box');
 
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      runExtract();
-    });
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        runExtract();
+      });
+    }
 
     async function runExtract() {
       const target = urlInput.value.trim();
@@ -219,21 +221,10 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const qURL = urlParams.get('url');
-    if (qURL) {
+    if (qURL && urlInput) {
       urlInput.value = qURL;
       runExtract();
     }
-
-    document.querySelectorAll('.nav-dropdown-trigger').forEach(trigger => {
-      trigger.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const parent = trigger.closest('.nav-dropdown');
-        parent.classList.toggle('open');
-      });
-    });
-    document.addEventListener('click', () => {
-      document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
-    });
   </script>
   <script src="/static/js/app.js"></script>
 </body>

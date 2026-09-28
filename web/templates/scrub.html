@@ -318,22 +318,24 @@
 
       let currentFile = null;
 
-      dropzone.addEventListener('click', () => fileInput.click());
-      dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
-      dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
-      dropzone.addEventListener('drop', e => {
-        e.preventDefault();
-        dropzone.classList.remove('dragover');
-        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-          processFile(e.dataTransfer.files[0]);
-        }
-      });
+      if (dropzone && fileInput) {
+        dropzone.addEventListener('click', () => fileInput.click());
+        dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+        dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+        dropzone.addEventListener('drop', e => {
+          e.preventDefault();
+          dropzone.classList.remove('dragover');
+          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            processFile(e.dataTransfer.files[0]);
+          }
+        });
 
-      fileInput.addEventListener('change', function() {
-        if (this.files && this.files.length > 0) {
-          processFile(this.files[0]);
-        }
-      });
+        fileInput.addEventListener('change', function() {
+          if (this.files && this.files.length > 0) {
+            processFile(this.files[0]);
+          }
+        });
+      }
 
       document.addEventListener('paste', function(e) {
         if (!e.clipboardData || !e.clipboardData.items) return;
@@ -461,38 +463,42 @@
       });
 
       // Send to Reverse Image Search
-      btnReverse.addEventListener('click', function() {
-        if (!currentFile) return;
-        const formData = new FormData();
-        formData.append('image', currentFile, currentFile.name || 'image.jpg');
-        fetch('/api/scrub/clean', { method: 'POST', body: formData })
-        .then(res => res.blob())
-        .then(cleanBlob => {
-          const cleanFile = new File([cleanBlob], 'clean_' + (currentFile.name || 'image.jpg'), { type: cleanBlob.type });
-          const uploadData = new FormData();
-          uploadData.append('image', cleanFile);
-          return fetch('/upload/image', { method: 'POST', body: uploadData });
-        })
-        .then(res => res.json())
-        .then(data => {
-          if (data.url) {
-            window.location.href = '/?reverse_url=' + encodeURIComponent(data.url);
-          } else {
+      if (btnReverse) {
+        btnReverse.addEventListener('click', function() {
+          if (!currentFile) return;
+          const formData = new FormData();
+          formData.append('image', currentFile, currentFile.name || 'image.jpg');
+          fetch('/api/scrub/clean', { method: 'POST', body: formData })
+          .then(res => res.blob())
+          .then(cleanBlob => {
+            const cleanFile = new File([cleanBlob], 'clean_' + (currentFile.name || 'image.jpg'), { type: cleanBlob.type });
+            const uploadData = new FormData();
+            uploadData.append('image', cleanFile);
+            return fetch('/upload/image', { method: 'POST', body: uploadData });
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.url) {
+              window.location.href = '/?reverse_url=' + encodeURIComponent(data.url);
+            } else {
+              window.location.href = '/';
+            }
+          })
+          .catch(() => {
             window.location.href = '/';
-          }
-        })
-        .catch(() => {
-          window.location.href = '/';
+          });
         });
-      });
+      }
 
       // Reset
-      btnReset.addEventListener('click', function() {
-        currentFile = null;
-        fileInput.value = '';
-        resultSec.style.display = 'none';
-        dropzone.style.display = 'block';
-      });
+      if (btnReset) {
+        btnReset.addEventListener('click', function() {
+          currentFile = null;
+          if (fileInput) fileInput.value = '';
+          if (resultSec) resultSec.style.display = 'none';
+          if (dropzone) dropzone.style.display = 'block';
+        });
+      }
     })();
   </script>
 </body>

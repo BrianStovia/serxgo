@@ -268,67 +268,75 @@
 
     async function runRecon(target) {
       if (!target) return;
-      btn.disabled = true;
-      loading.style.display = 'block';
-      results.style.display = 'none';
+      if (btn) btn.disabled = true;
+      if (loading) loading.style.display = 'block';
+      if (results) results.style.display = 'none';
 
       try {
         const resp = await fetch('/api/cloud-recon?target=' + encodeURIComponent(target));
         const data = await resp.json();
 
-        btn.disabled = false;
-        loading.style.display = 'none';
+        if (btn) btn.disabled = false;
+        if (loading) loading.style.display = 'none';
 
         if (data.error) {
           alert(data.error);
           return;
         }
 
-        document.getElementById('kpiTotal').textContent = data.total_scanned || 0;
-        document.getElementById('kpiOpen').textContent = (data.open_buckets || []).length;
-        document.getElementById('kpiProtected').textContent = (data.protected_buckets || []).length;
-        document.getElementById('kpiNotFound').textContent = data.not_found_count || 0;
+        const kpiTotal = document.getElementById('kpiTotal');
+        const kpiOpen = document.getElementById('kpiOpen');
+        const kpiProtected = document.getElementById('kpiProtected');
+        const kpiNotFound = document.getElementById('kpiNotFound');
+        if (kpiTotal) kpiTotal.textContent = data.total_scanned || 0;
+        if (kpiOpen) kpiOpen.textContent = (data.open_buckets || []).length;
+        if (kpiProtected) kpiProtected.textContent = (data.protected_buckets || []).length;
+        if (kpiNotFound) kpiNotFound.textContent = data.not_found_count || 0;
 
         const list = document.getElementById('cloudList');
         const allFindings = [...(data.open_buckets || []), ...(data.protected_buckets || [])];
 
-        if (allFindings.length === 0) {
-          list.innerHTML = `
-            <div style="text-align: center; padding: 3rem; background: var(--bg-card); border-radius: var(--radius-md); color: var(--text-muted);">
-              <h3>No active cloud buckets identified</h3>
-              <p>No open or protected storage containers responded for '${escapeHTML(target)}' permutations.</p>
-            </div>
-          `;
-        } else {
-          list.innerHTML = allFindings.map(f => {
-            const isOpen = f.status === 'OPEN';
-            return `
-              <div class="bucket-card ${isOpen ? 'bucket-open' : 'bucket-protected'}">
-                <div>
-                  <div class="bucket-name">${escapeHTML(f.bucket_name)} <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">(${escapeHTML(f.provider)})</span></div>
-                  <div class="bucket-desc">${escapeHTML(f.details)}</div>
-                </div>
-                <div style="display: flex; align-items: center; gap: 0.75rem;">
-                  <span class="bucket-badge ${isOpen ? 'b-open' : 'b-protected'}">${f.status} (${f.status_code})</span>
-                  <a href="${f.url}" target="_blank" rel="noopener noreferrer" class="btn-visit">Inspect &rarr;</a>
-                </div>
+        if (list) {
+          if (allFindings.length === 0) {
+            list.innerHTML = `
+              <div style="text-align: center; padding: 3rem; background: var(--bg-card); border-radius: var(--radius-md); color: var(--text-muted);">
+                <h3>No active cloud buckets identified</h3>
+                <p>No open or protected storage containers responded for '${escapeHTML(target)}' permutations.</p>
               </div>
             `;
-          }).join('');
+          } else {
+            list.innerHTML = allFindings.map(f => {
+              const isOpen = f.status === 'OPEN';
+              return `
+                <div class="bucket-card ${isOpen ? 'bucket-open' : 'bucket-protected'}">
+                  <div>
+                    <div class="bucket-name">${escapeHTML(f.bucket_name)} <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">(${escapeHTML(f.provider)})</span></div>
+                    <div class="bucket-desc">${escapeHTML(f.details)}</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span class="bucket-badge ${isOpen ? 'b-open' : 'b-protected'}">${f.status} (${f.status_code})</span>
+                    <a href="${f.url}" target="_blank" rel="noopener noreferrer" class="btn-visit">Inspect &rarr;</a>
+                  </div>
+                </div>
+              `;
+            }).join('');
+          }
         }
 
-        results.style.display = 'block';
+        if (results) results.style.display = 'block';
       } catch (err) {
-        btn.disabled = false;
-        loading.style.display = 'none';
+        if (btn) btn.disabled = false;
+        if (loading) loading.style.display = 'none';
         alert('Cloud reconnaissance failed: ' + err.message);
       }
     }
 
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      runRecon(input.value.trim());
-    });
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (input) runRecon(input.value.trim());
+      });
+    }
 
     function escapeHTML(str) {
       if (!str) return '';

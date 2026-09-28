@@ -181,10 +181,12 @@
     const loading = document.getElementById('loading');
     const results = document.getElementById('results');
 
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      runPing();
-    });
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        runPing();
+      });
+    }
 
     async function runPing() {
       const target = targetInput.value.trim();
@@ -276,21 +278,10 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const qTarget = urlParams.get('target');
-    if (qTarget) {
+    if (qTarget && targetInput) {
       targetInput.value = qTarget;
       runPing();
     }
-
-    document.querySelectorAll('.nav-dropdown-trigger').forEach(trigger => {
-      trigger.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const parent = trigger.closest('.nav-dropdown');
-        parent.classList.toggle('open');
-      });
-    });
-    document.addEventListener('click', () => {
-      document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
-    });
   </script>
   <script src="/static/js/app.js"></script>
 </body>

@@ -564,15 +564,17 @@
         });
       });
 
-      chkOnlyFound.addEventListener('change', renderCards);
+      if (chkOnlyFound) chkOnlyFound.addEventListener('change', renderCards);
 
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const user = input.value.trim().replace(/^@/, '');
-        if (user) {
-          runScan(user);
-        }
-      });
+      if (form) {
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const user = input ? input.value.trim().replace(/^@/, '') : '';
+          if (user) {
+            runScan(user);
+          }
+        });
+      }
 
       async function runScan(user) {
         if (!user) return;
@@ -715,53 +717,61 @@
       });
 
       // Action: Export JSON
-      document.getElementById('btn-export-json').addEventListener('click', () => {
-        if (!currentReport) return;
-        const blob = new Blob([JSON.stringify(currentReport, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `sherlock-${currentReport.username}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-      });
+      const btnExportJson = document.getElementById('btn-export-json');
+      if (btnExportJson) {
+        btnExportJson.addEventListener('click', () => {
+          if (!currentReport) return;
+          const blob = new Blob([JSON.stringify(currentReport, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `sherlock-${currentReport.username}.json`;
+          a.click();
+          URL.revokeObjectURL(url);
+        });
+      }
 
       // Action: Export CSV
-      document.getElementById('btn-export-csv').addEventListener('click', () => {
-        if (!currentReport) return;
-        let csv = 'Platform,Category,Found,ProfileURL\n';
-        currentReport.results.forEach(r => {
-          csv += `"${r.platform}","${r.category}",${r.found ? 'YES' : 'NO'},"${r.url}"\n`;
+      const btnExportCsv = document.getElementById('btn-export-csv');
+      if (btnExportCsv) {
+        btnExportCsv.addEventListener('click', () => {
+          if (!currentReport) return;
+          let csv = 'Platform,Category,Found,ProfileURL\n';
+          currentReport.results.forEach(r => {
+            csv += `"${r.platform}","${r.category}",${r.found ? 'YES' : 'NO'},"${r.url}"\n`;
+          });
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `sherlock-${currentReport.username}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
         });
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `sherlock-${currentReport.username}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
-      });
+      }
 
       // Action: Copy Summary
-      document.getElementById('btn-copy-links').addEventListener('click', () => {
-        if (!currentReport) return;
-        const found = currentReport.results.filter(r => r.found);
-        let summary = `🕵️ OSINT Sherlock Recon for @${currentReport.username}\nFound: ${found.length} / ${currentReport.total} platforms\n\n`;
-        found.forEach(r => {
-          summary += `- ${r.platform}: ${r.url}\n`;
+      const btnCopyLinks = document.getElementById('btn-copy-links');
+      if (btnCopyLinks) {
+        btnCopyLinks.addEventListener('click', () => {
+          if (!currentReport) return;
+          const found = currentReport.results.filter(r => r.found);
+          let summary = `🕵️ OSINT Sherlock Recon for @${currentReport.username}\nFound: ${found.length} / ${currentReport.total} platforms\n\n`;
+          found.forEach(r => {
+            summary += `- ${r.platform}: ${r.url}\n`;
+          });
+          navigator.clipboard.writeText(summary).then(() => {
+            const oldText = btnCopyLinks.textContent;
+            btnCopyLinks.textContent = '✓ Copied!';
+            setTimeout(() => btnCopyLinks.textContent = oldText, 2000);
+          });
         });
-        navigator.clipboard.writeText(summary).then(() => {
-          const btn = document.getElementById('btn-copy-links');
-          const oldText = btn.textContent;
-          btn.textContent = '✓ Copied!';
-          setTimeout(() => btn.textContent = oldText, 2000);
-        });
-      });
+      }
 
       // Auto-trigger if username query parameter is in URL
       const urlParams = new URLSearchParams(window.location.search);
       const initialUser = urlParams.get('username') || urlParams.get('u') || urlParams.get('target');
-      if (initialUser) {
+      if (initialUser && input) {
         input.value = initialUser;
         runScan(initialUser);
       }

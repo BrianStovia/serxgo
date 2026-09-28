@@ -492,16 +492,6 @@
     let currentFrom = "USD";
     let currentTo = "IDR";
 
-    // Toggle dropdown
-    const toolsBtn = document.getElementById('toolsBtn');
-    const toolsPanel = document.getElementById('toolsPanel');
-    if (toolsBtn && toolsPanel) {
-      toolsBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toolsPanel.classList.toggle('show');
-      });
-      document.addEventListener('click', () => toolsPanel.classList.remove('show'));
-    }
 
     async function initCurrencies() {
       try {
@@ -647,9 +637,11 @@
     }
 
     // Auto calculate on load
-    window.addEventListener('DOMContentLoaded', () => {
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', initCurrencies);
+    } else {
       initCurrencies();
-    });
+    }
   </script>
   <script src="/static/js/app.js"></script>
 </body>

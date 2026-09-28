@@ -347,12 +347,14 @@
       const loading = document.getElementById('recon-loading');
       const results = document.getElementById('recon-results');
 
-      form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const target = input.value.trim();
-        if (!target) return;
-        runAudit(target);
-      });
+      if (form) {
+        form.addEventListener('submit', function(e) {
+          e.preventDefault();
+          const target = input ? input.value.trim() : '';
+          if (!target) return;
+          runAudit(target);
+        });
+      }
 
       function runAudit(target) {
         loading.style.display = 'block';
@@ -442,7 +444,7 @@
         }
       }
 
-      if (input.value.trim()) {
+      if (input && input.value.trim()) {
         runAudit(input.value.trim());
       }
     })();

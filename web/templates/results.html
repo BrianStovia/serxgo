@@ -640,6 +640,21 @@
                 <p style="margin-top: 0.5rem;">Try adjusting keywords or using Bangs (e.g. <code>!ddg</code>, <code>!gh</code>, <code>!yt</code>).</p>
               </div>
             {{end}}
+
+            <!-- Infinite Scroll / Load More Trigger (HTMX Powered) -->
+            {{if and (gt .Response.TotalPages 1) (lt .Response.Page .Response.TotalPages)}}
+              <div id="load-more-wrap" class="load-more-container" style="display:flex; justify-content:center; margin: 2rem 0;">
+                <button type="button" id="btn-load-more" class="btn-search"
+                        hx-get="/search?q={{urlquery .Response.Query}}&category={{.Response.Category}}&time_range={{.TimeRange}}&page={{add .Response.Page 1}}"
+                        hx-select=".results-list .result-item, #load-more-wrap"
+                        hx-target="#load-more-wrap"
+                        hx-swap="outerHTML"
+                        {{if .InfiniteScroll}}hx-trigger="revealed"{{end}}
+                        style="padding: 0.75rem 2.5rem; font-size: 0.95rem; border-radius: var(--radius-full); cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: var(--shadow-sm);">
+                  <span>⚡ Load More Results (Page {{add .Response.Page 1}} of {{.Response.TotalPages}})</span>
+                </button>
+              </div>
+            {{end}}
           </div>
 
           <!-- Related Search Suggestions (SearXNG elements/suggestions.html Parity) -->
@@ -653,21 +668,6 @@
                   </a>
                 {{end}}
               </div>
-            </div>
-          {{end}}
-
-          <!-- Infinite Scroll / Load More Trigger (HTMX Powered) -->
-          {{if and (gt .Response.TotalPages 1) (lt .Response.Page .Response.TotalPages)}}
-            <div id="load-more-wrap" class="load-more-container" style="display:flex; justify-content:center; margin: 2rem 0;">
-              <button type="button" id="btn-load-more" class="btn-search"
-                      hx-get="/search?q={{urlquery .Response.Query}}&category={{.Response.Category}}&time_range={{.TimeRange}}&page={{add .Response.Page 1}}"
-                      hx-select=".results-list .result-item, #load-more-wrap"
-                      hx-target="#load-more-wrap"
-                      hx-swap="outerHTML"
-                      {{if .InfiniteScroll}}hx-trigger="revealed"{{end}}
-                      style="padding: 0.75rem 2.5rem; font-size: 0.95rem; border-radius: var(--radius-full); cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: var(--shadow-sm);">
-                <span>⚡ Load More Results (Page {{add .Response.Page 1}} of {{.Response.TotalPages}})</span>
-              </button>
             </div>
           {{end}}
 

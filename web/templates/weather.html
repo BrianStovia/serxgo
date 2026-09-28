@@ -542,16 +542,6 @@
     let mapInstance = null;
     let radarLayer = null;
 
-    // Toggle dropdown
-    const toolsBtn = document.getElementById('toolsBtn');
-    const toolsPanel = document.getElementById('toolsPanel');
-    if (toolsBtn && toolsPanel) {
-      toolsBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toolsPanel.classList.toggle('show');
-      });
-      document.addEventListener('click', () => toolsPanel.classList.remove('show'));
-    }
 
     function handleWeatherSubmit(e) {
       e.preventDefault();
@@ -804,11 +794,16 @@
     }
 
     // Auto-load default city on page load
-    window.addEventListener('DOMContentLoaded', () => {
+    function initWeatherPage() {
       const urlParams = new URLSearchParams(window.location.search);
       const q = urlParams.get('q') || 'Jakarta';
       loadCity(q);
-    });
+    }
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', initWeatherPage);
+    } else {
+      initWeatherPage();
+    }
   </script>
   <script src="/static/js/app.js"></script>
 </body>

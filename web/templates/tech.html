@@ -219,7 +219,7 @@
 
   <script src="/static/js/app.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    function initTechPage() {
       const form = document.getElementById('tech-form');
       const input = document.getElementById('target-domain');
       const loading = document.getElementById('tech-loading');
@@ -321,7 +321,13 @@
 
       const initial = input.value.trim();
       if (initial) runTech(initial);
-    });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initTechPage);
+    } else {
+      initTechPage();
+    }
   </script>
 </body>
 </html>

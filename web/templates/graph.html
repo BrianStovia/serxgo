@@ -374,6 +374,7 @@
     let simStep = 0;
 
     const canvas = document.getElementById('graph-canvas');
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const wrap = document.getElementById('graph-canvas-wrap');
     const emptyDiv = document.getElementById('graph-empty');
@@ -891,18 +892,22 @@
     // Quick sample pills
     document.querySelectorAll('.sample-pill').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.getElementById('graph-query').value = btn.dataset.q;
+        const queryEl = document.getElementById('graph-query');
+        if (queryEl) queryEl.value = btn.dataset.q;
         loadGraph(btn.dataset.q);
       });
     });
 
     // Domain node click from sidebar
-    document.getElementById('domain-node-list').addEventListener('click', e => {
-      const item = e.target.closest('[data-id]');
-      if (!item) return;
-      const node = nodes.find(n => n.id === item.dataset.id);
-      if (node) showNodeInfo(node);
-    });
+    const domainNodeList = document.getElementById('domain-node-list');
+    if (domainNodeList) {
+      domainNodeList.addEventListener('click', e => {
+        const item = e.target.closest('[data-id]');
+        if (!item) return;
+        const node = nodes.find(n => n.id === item.dataset.id);
+        if (node) showNodeInfo(node);
+      });
+    }
 
     // Init goggles UI
     renderGogglesUI();
@@ -911,7 +916,8 @@
     const params = new URLSearchParams(window.location.search);
     const initQ = params.get('q') || '{{.Query}}';
     if (initQ && initQ !== '{{.Query}}' && initQ.trim()) {
-      document.getElementById('graph-query').value = initQ;
+      const queryEl = document.getElementById('graph-query');
+      if (queryEl) queryEl.value = initQ;
       loadGraph(initQ);
     }
   })();

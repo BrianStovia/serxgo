@@ -217,7 +217,7 @@
 
   <script src="/static/js/app.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    function initSubdomainsPage() {
       const form = document.getElementById('sub-form');
       const input = document.getElementById('target-domain');
       const loading = document.getElementById('sub-loading');
@@ -344,7 +344,13 @@
 
       const initial = input.value.trim();
       if (initial) runSubdomains(initial);
-    });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initSubdomainsPage);
+    } else {
+      initSubdomainsPage();
+    }
   </script>
 </body>
 </html>

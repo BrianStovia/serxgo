@@ -384,18 +384,24 @@
       });
     });
 
-    document.getElementById('cveKevCheck').addEventListener('change', (e) => {
-      isKEVOnly = e.target.checked;
-      loadCVEs();
-    });
-
-    document.getElementById('cveQuery').addEventListener('input', (e) => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        currentQuery = e.target.value.trim();
+    const kevCheck = document.getElementById('cveKevCheck');
+    if (kevCheck) {
+      kevCheck.addEventListener('change', (e) => {
+        isKEVOnly = e.target.checked;
         loadCVEs();
-      }, 300);
-    });
+      });
+    }
+
+    const queryInput = document.getElementById('cveQuery');
+    if (queryInput) {
+      queryInput.addEventListener('input', (e) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          currentQuery = e.target.value.trim();
+          loadCVEs();
+        }, 300);
+      });
+    }
 
     // Initial load
     loadCVEs();

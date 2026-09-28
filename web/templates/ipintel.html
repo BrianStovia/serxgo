@@ -395,24 +395,28 @@
       }
     }
 
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      queryIP(input.value.trim());
-    });
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (input) queryIP(input.value.trim());
+      });
+    }
 
-    btnMyIP.addEventListener('click', async () => {
-      try {
-        btnMyIP.textContent = 'Detecting...';
-        const res = await fetch('https://api.ipify.org?format=json');
-        const d = await res.json();
-        input.value = d.ip;
-        btnMyIP.textContent = 'Detect My IP';
-        queryIP(d.ip);
-      } catch (e) {
-        btnMyIP.textContent = 'Detect My IP';
-        queryIP('1.1.1.1');
-      }
-    });
+    if (btnMyIP) {
+      btnMyIP.addEventListener('click', async () => {
+        try {
+          btnMyIP.textContent = 'Detecting...';
+          const res = await fetch('https://api.ipify.org?format=json');
+          const d = await res.json();
+          if (input) input.value = d.ip;
+          btnMyIP.textContent = 'Detect My IP';
+          queryIP(d.ip);
+        } catch (e) {
+          btnMyIP.textContent = 'Detect My IP';
+          queryIP('1.1.1.1');
+        }
+      });
+    }
 
     function escapeHTML(str) {
       if (!str) return '';
@@ -422,7 +426,7 @@
     // Auto-query from URL param
     const urlParams = new URLSearchParams(window.location.search);
     const initialTarget = urlParams.get('ip') || urlParams.get('target');
-    if (initialTarget) {
+    if (initialTarget && input) {
       input.value = initialTarget;
       queryIP(initialTarget);
     }

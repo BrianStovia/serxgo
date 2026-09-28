@@ -372,28 +372,36 @@
     });
 
     // Add Header row
-    document.getElementById('btnAddHeader').addEventListener('click', () => {
-      const list = document.getElementById('headersList');
-      const row = document.createElement('div');
-      row.className = 'header-row';
-      row.innerHTML = `
-        <input type="text" class="header-input header-key" placeholder="Key">
-        <input type="text" class="header-input header-val" placeholder="Value">
-        <button type="button" onclick="this.parentElement.remove()" style="background: transparent; border: none; color: #f87171; cursor: pointer;">&times;</button>
-      `;
-      list.appendChild(row);
-    });
+    const btnAddHeader = document.getElementById('btnAddHeader');
+    if (btnAddHeader) {
+      btnAddHeader.addEventListener('click', () => {
+        const list = document.getElementById('headersList');
+        if (!list) return;
+        const row = document.createElement('div');
+        row.className = 'header-row';
+        row.innerHTML = `
+          <input type="text" class="header-input header-key" placeholder="Key">
+          <input type="text" class="header-input header-val" placeholder="Value">
+          <button type="button" onclick="this.parentElement.remove()" style="background: transparent; border: none; color: #f87171; cursor: pointer;">&times;</button>
+        `;
+        list.appendChild(row);
+      });
+    }
 
     // Format JSON
-    document.getElementById('btnFormatJSON').addEventListener('click', () => {
-      const body = document.getElementById('reqBody');
-      try {
-        const parsed = JSON.parse(body.value);
-        body.value = JSON.stringify(parsed, null, 2);
-      } catch (e) {
-        alert('Invalid JSON: ' + e.message);
-      }
-    });
+    const btnFormatJSON = document.getElementById('btnFormatJSON');
+    if (btnFormatJSON) {
+      btnFormatJSON.addEventListener('click', () => {
+        const body = document.getElementById('reqBody');
+        if (!body) return;
+        try {
+          const parsed = JSON.parse(body.value);
+          body.value = JSON.stringify(parsed, null, 2);
+        } catch (e) {
+          alert('Invalid JSON: ' + e.message);
+        }
+      });
+    }
 
     // Preset helper
     function setPreset(method, url, body, headers) {
@@ -522,13 +530,21 @@
       });
     });
 
-    document.getElementById('btnCopySnippet').addEventListener('click', () => {
-      const box = document.getElementById('snippetBox');
-      navigator.clipboard.writeText(box.value);
-      alert('Code snippet copied to clipboard!');
-    });
+    const btnCopySnippet = document.getElementById('btnCopySnippet');
+    if (btnCopySnippet) {
+      btnCopySnippet.addEventListener('click', () => {
+        const box = document.getElementById('snippetBox');
+        if (box) {
+          navigator.clipboard.writeText(box.value);
+          alert('Code snippet copied to clipboard!');
+        }
+      });
+    }
 
-    document.getElementById('btnSend').addEventListener('click', sendRequest);
+    const btnSend = document.getElementById('btnSend');
+    if (btnSend) {
+      btnSend.addEventListener('click', sendRequest);
+    }
     window.addEventListener('keydown', (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         sendRequest();

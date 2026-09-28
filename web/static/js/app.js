@@ -63,6 +63,7 @@
   }
 
   // --- Autocomplete & Search Box ---
+  let searchBoxDropdownClickInit = false;
   function initSearchBox() {
     const input = document.querySelector('.search-input');
     const clearBtn = document.querySelector('.btn-clear');
@@ -70,6 +71,8 @@
     const form = document.querySelector('.search-form');
 
     if (!input || !dropdown) return;
+    if (input.dataset.searchBoxInit === 'true') return;
+    input.dataset.searchBoxInit = 'true';
 
     let selectedIndex = -1;
     let debounceTimer = null;
@@ -205,11 +208,17 @@
       selectedIndex = -1;
     }
 
-    document.addEventListener('click', function (e) {
-      if (!input.contains(e.target) && !dropdown.contains(e.target)) {
-        hideDropdown();
-      }
-    });
+    if (!searchBoxDropdownClickInit) {
+      searchBoxDropdownClickInit = true;
+      document.addEventListener('click', function (e) {
+        const dd = document.querySelector('.suggestions-dropdown');
+        const inp = document.querySelector('.search-input');
+        if (dd && inp && !inp.contains(e.target) && !dd.contains(e.target)) {
+          dd.classList.remove('active');
+          dd.innerHTML = '';
+        }
+      });
+    }
 
     updateClearBtn();
   }
@@ -225,6 +234,12 @@
     const timeSel = document.getElementById('filter-time');
     const safeSel = document.getElementById('filter-safesearch');
     const langSel = document.getElementById('filter-language');
+
+    if (!timeSel && !safeSel && !langSel) return;
+    if (timeSel && timeSel.dataset.filterInit) return;
+    if (timeSel) timeSel.dataset.filterInit = 'true';
+    if (safeSel) safeSel.dataset.filterInit = 'true';
+    if (langSel) langSel.dataset.filterInit = 'true';
 
     function applyFilters() {
       const url = new URL(window.location.href);
@@ -251,7 +266,7 @@
   // --- Interactive Leaflet Map for Category Maps ---
   function initLeafletMap() {
     const mapEl = document.getElementById('interactive-map');
-    if (!mapEl || typeof L === 'undefined') return;
+    if (!mapEl || typeof L === 'undefined' || mapEl._leaflet_id) return;
 
     const items = document.querySelectorAll('.result-item[data-lat]');
     if (items.length === 0) return;
@@ -293,6 +308,8 @@
     if (!modal || !iframe) return;
 
     document.querySelectorAll('.video-thumb-wrap').forEach(wrap => {
+      if (wrap.dataset.videoThumbInit) return;
+      wrap.dataset.videoThumbInit = 'true';
       wrap.addEventListener('click', function () {
         const url = this.dataset.videoUrl;
         const vidTitle = this.dataset.videoTitle || 'Video Player';
@@ -303,6 +320,9 @@
         }
       });
     });
+
+    if (modal.dataset.videoModalInit) return;
+    modal.dataset.videoModalInit = 'true';
 
     function closeModal() {
       modal.style.display = 'none';
@@ -323,6 +343,8 @@
   // --- Magnet Link Handler ---
   function initMagnetButtons() {
     document.querySelectorAll('.btn-magnet').forEach(btn => {
+      if (btn.dataset.magnetInit) return;
+      btn.dataset.magnetInit = 'true';
       btn.addEventListener('click', function (e) {
         e.preventDefault();
         const magnet = this.dataset.magnet;
@@ -414,19 +436,23 @@
   }
 
   // --- Enhanced Vim Navigation Shortcuts ---
+  let vimKeybindingsInitialized = false;
   function initVimKeybindings() {
-    const savedHotkeys = getCookie('searxgo_hotkeys');
-    if (savedHotkeys === 'off') return;
+    if (vimKeybindingsInitialized) return;
+    vimKeybindingsInitialized = true;
 
     let currentIndex = -1;
-    const input = document.querySelector('.search-input');
 
     function getItems() {
       return document.querySelectorAll('.result-item, .video-card, .image-card');
     }
 
     document.addEventListener('keydown', function (e) {
-      if (document.activeElement === input || document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.isContentEditable) {
+      const savedHotkeys = getCookie('searxgo_hotkeys');
+      if (savedHotkeys === 'off') return;
+
+      const input = document.querySelector('.search-input');
+      if (document.activeElement === input || (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.isContentEditable))) {
         return;
       }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -500,11 +526,13 @@
   }
 
   // --- Universal Command Palette (Ctrl+K / Cmd+K) ---
+  let cmdPaletteInitialized = false;
   function initCommandPalette() {
     let backdrop = document.getElementById('searxgo-cmd-palette');
     if (!backdrop) {
       backdrop = document.createElement('div');
       backdrop.id = 'searxgo-cmd-palette';
+      backdrop.setAttribute('data-hx-preserve', 'true');
       backdrop.className = 'cmd-palette-backdrop';
       backdrop.innerHTML = `
         <div class="cmd-palette-modal" role="dialog" aria-modal="true">
@@ -699,6 +727,9 @@
       });
     }
 
+    if (cmdPaletteInitialized) return;
+    cmdPaletteInitialized = true;
+
     document.addEventListener('keydown', (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
@@ -725,6 +756,7 @@
   }
 
   // --- Custom Bangs & Custom Engines Builder ---
+  let customBangsSubmitInitialized = false;
   function initCustomBangs() {
     function getCustomBangs() {
       try {
@@ -777,7 +809,8 @@
     }
 
     const addBtn = document.getElementById('btn-add-custom-bang');
-    if (addBtn) {
+    if (addBtn && !addBtn.dataset.bangAddInit) {
+      addBtn.dataset.bangAddInit = 'true';
       addBtn.addEventListener('click', () => {
         const nameInp = document.getElementById('custom-bang-name');
         const prefixInp = document.getElementById('custom-bang-prefix');
@@ -809,8 +842,10 @@
       renderSettingsCustomBangs();
     }
 
-    // Intercept search submit
-    document.addEventListener('submit', function (e) {
+    if (!customBangsSubmitInitialized) {
+      customBangsSubmitInitialized = true;
+      // Intercept search submit
+      document.addEventListener('submit', function (e) {
       const form = e.target.closest('.search-form');
       if (!form) return;
       const input = form.querySelector('.search-input');
@@ -830,6 +865,7 @@
       }
     });
   }
+}
 
   // --- Encrypted Vault Backup & Restore (PBKDF2 + AES-GCM) ---
   async function exportEncryptedVault() {
@@ -889,11 +925,13 @@
     const exportBtn = document.getElementById('btn-export-vault');
     const importInput = document.getElementById('file-import-vault');
 
-    if (exportBtn) {
+    if (exportBtn && !exportBtn.dataset.vaultInit) {
+      exportBtn.dataset.vaultInit = 'true';
       exportBtn.addEventListener('click', exportEncryptedVault);
     }
 
-    if (importInput) {
+    if (importInput && !importInput.dataset.vaultInit) {
+      importInput.dataset.vaultInit = 'true';
       importInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -957,6 +995,8 @@
 
     const container = resultsList || imageGrid || videoGrid;
     if (!container) return;
+    if (container.dataset.infiniteScrollInit) return;
+    container.dataset.infiniteScrollInit = 'true';
 
     const urlParams = new URLSearchParams(window.location.search);
     const query = urlParams.get('q');
@@ -1039,13 +1079,13 @@
         });
     }
 
-    if (loadMoreBtn) {
+    if (loadMoreBtn && !loadMoreBtn.hasAttribute('hx-get')) {
       loadMoreBtn.addEventListener('click', function () {
         fetchNextPage();
       });
     }
 
-    if (isAutoInfinite) {
+    if (isAutoInfinite && (!loadMoreBtn || !loadMoreBtn.hasAttribute('hx-get'))) {
       window.addEventListener('scroll', checkScroll, { passive: true });
     }
 
@@ -1132,6 +1172,15 @@
   function initSettingsPage() {
     const form = document.querySelector('#settings-form');
     if (!form) return;
+
+    // Apply engine ping bar percentages automatically
+    document.querySelectorAll('.engine-ping-bar[data-pct]').forEach(function (el) {
+      const pct = el.getAttribute('data-pct');
+      if (pct) el.style.width = pct + '%';
+    });
+
+    if (form.dataset.settingsInit === 'true') return;
+    form.dataset.settingsInit = 'true';
 
     // Main Tabs switching
     const tabBtns = document.querySelectorAll('.settings-tab-btn');
@@ -1482,6 +1531,12 @@
 
     // Form Save Handler
     form.addEventListener('submit', function (e) {
+      if (form.hasAttribute('hx-post')) {
+        if (themeSelect) {
+          window.setTheme(themeSelect.value);
+        }
+        return; // HTMX handles submission and feedback swap
+      }
       e.preventDefault();
 
       // Collect enabled engines
@@ -1650,11 +1705,18 @@
   }
 
   // --- PWA Service Worker Registration ---
+  let swInitialized = false;
   function initServiceWorker() {
+    if (swInitialized) return;
+    swInitialized = true;
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
+      if (document.readyState === 'complete') {
         navigator.serviceWorker.register('/sw.js').catch(() => {});
-      });
+      } else {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
     }
   }
 
@@ -1736,6 +1798,8 @@
 
     // Toggle bookmark click on results
     document.querySelectorAll('.btn-bookmark').forEach(btn => {
+      if (btn.dataset.bmInit) return;
+      btn.dataset.bmInit = 'true';
       btn.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -1762,6 +1826,8 @@
 
     // Save Query button click
     document.querySelectorAll('.btn-save-search').forEach(btn => {
+      if (btn.dataset.saveSearchInit) return;
+      btn.dataset.saveSearchInit = 'true';
       btn.addEventListener('click', function (e) {
         e.preventDefault();
         const q = this.dataset.query;
@@ -1879,6 +1945,8 @@
 
     // Open Modal
     openBtns.forEach(btn => {
+      if (btn.dataset.bmOpenInit) return;
+      btn.dataset.bmOpenInit = 'true';
       btn.addEventListener('click', function (e) {
         e.preventDefault();
         renderModalLists();
@@ -1886,21 +1954,22 @@
       });
     });
 
-    // Close Modal
-    function closeModal() {
-      if (modal) modal.style.display = 'none';
-    }
-    if (closeBtn) closeBtn.addEventListener('click', closeModal);
-    if (modal) {
+    if (modal && !modal.dataset.bmModalInit) {
+      modal.dataset.bmModalInit = 'true';
+      // Close Modal
+      function closeModal() {
+        if (modal) modal.style.display = 'none';
+      }
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
       modal.addEventListener('click', function (e) {
         if (e.target === modal) closeModal();
       });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && modal && modal.style.display === 'flex') {
+          closeModal();
+        }
+      });
     }
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && modal && modal.style.display === 'flex') {
-        closeModal();
-      }
-    });
 
     // Export JSON
     if (exportBtn) {
@@ -1939,6 +2008,8 @@
   function initTopicClusters() {
     const clusterContainer = document.querySelector('.topic-clusters-bar');
     if (!clusterContainer) return;
+    if (clusterContainer.dataset.clusterInit) return;
+    clusterContainer.dataset.clusterInit = 'true';
 
     clusterContainer.addEventListener('click', function (e) {
       const pill = e.target.closest('.cluster-pill');
@@ -1978,6 +2049,8 @@
   function initReverseImageSearch() {
     const modal = document.getElementById('image-search-modal');
     if (!modal) return;
+    if (modal.dataset.imageSearchInit) return;
+    modal.dataset.imageSearchInit = 'true';
 
     const openBtns = document.querySelectorAll('.btn-image-search, #btn-image-search');
     const closeBtns = modal.querySelectorAll('.btn-close-modal, #btn-close-modal');
@@ -2232,6 +2305,7 @@
   }
 
   // --- Ad-Free Floating Video & Audio Mini-Player ---
+  let floatingPlayerClickInit = false;
   function initFloatingPlayer() {
     const player = document.getElementById('floating-media-player');
     if (!player) return;
@@ -2241,17 +2315,20 @@
     const closeBtn = document.getElementById('btn-player-close');
     const minBtn = document.getElementById('btn-player-minimize');
 
-    if (closeBtn) {
-      closeBtn.addEventListener('click', function() {
-        if (iframe) iframe.src = '';
-        player.style.display = 'none';
-      });
-    }
+    if (!player.dataset.playerInit) {
+      player.dataset.playerInit = 'true';
+      if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+          if (iframe) iframe.src = '';
+          player.style.display = 'none';
+        });
+      }
 
-    if (minBtn) {
-      minBtn.addEventListener('click', function() {
-        player.classList.toggle('minimized');
-      });
+      if (minBtn) {
+        minBtn.addEventListener('click', function() {
+          player.classList.toggle('minimized');
+        });
+      }
     }
 
     function getEmbedURL(rawUrl) {
@@ -2270,30 +2347,34 @@
       return rawUrl;
     }
 
-    document.addEventListener('click', function(e) {
-      const btn = e.target.closest('.btn-play-trigger, .video-thumb-wrap');
-      if (btn) {
-        const url = btn.dataset.url || btn.dataset.videoUrl;
-        const title = btn.dataset.title || btn.dataset.videoTitle || 'Ad-Free Stream';
-        if (url && (url.includes('youtube') || url.includes('youtu.be') || url.includes('vimeo') || url.includes('dailymotion') || url.match(/\.(mp4|webm|mp3|ogg)(\?|$)/i))) {
-          e.preventDefault();
-          const embedUrl = getEmbedURL(url);
-          if (titleEl) titleEl.textContent = title;
-          if (iframe) iframe.src = embedUrl;
-          player.classList.remove('minimized');
-          player.style.display = 'block';
+    if (!floatingPlayerClickInit) {
+      floatingPlayerClickInit = true;
+      document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-play-trigger, .video-thumb-wrap');
+        if (btn) {
+          const url = btn.dataset.url || btn.dataset.videoUrl;
+          const title = btn.dataset.title || btn.dataset.videoTitle || 'Ad-Free Stream';
+          if (url && (url.includes('youtube') || url.includes('youtu.be') || url.includes('vimeo') || url.includes('dailymotion') || url.match(/\.(mp4|webm|mp3|ogg)(\?|$)/i))) {
+            e.preventDefault();
+            const embedUrl = getEmbedURL(url);
+            const activePlayer = document.getElementById('floating-media-player');
+            const activeTitle = document.getElementById('player-title');
+            const activeIframe = document.getElementById('player-iframe');
+            if (activeTitle) activeTitle.textContent = title;
+            if (activeIframe) activeIframe.src = embedUrl;
+            if (activePlayer) {
+              activePlayer.classList.remove('minimized');
+              activePlayer.style.display = 'block';
+            }
+          }
         }
-      }
-    });
+      });
+    }
   }
 
   // --- Mobile Bottom Navigation ---
   function initMobileBottomNav() {
-    if (document.querySelector('.mobile-bottom-nav')) return;
-
-    const nav = document.createElement('nav');
-    nav.className = 'mobile-bottom-nav';
-
+    let nav = document.querySelector('.mobile-bottom-nav');
     const currentPath = window.location.pathname;
 
     const items = [
@@ -2303,6 +2384,12 @@
       { path: '/scrub', label: 'Scrub', icon: '🛡️' },
       { path: '/settings', label: 'Settings', icon: '⚙️' }
     ];
+
+    if (!nav) {
+      nav = document.createElement('nav');
+      nav.className = 'mobile-bottom-nav';
+      document.body.appendChild(nav);
+    }
 
     nav.innerHTML = items.map(item => {
       let isActive = false;
@@ -2318,11 +2405,10 @@
         </a>
       `;
     }).join('');
-
-    document.body.appendChild(nav);
   }
 
   // --- Mobile Touch Gestures & Category Swiping ---
+  let touchGesturesInitialized = false;
   function initMobileTouchGestures() {
     // 1. Smoothly scroll active category tab to center on mobile load
     const activeTab = document.querySelector('.results-tabs .tab-link.active');
@@ -2333,6 +2419,9 @@
         tabsContainer.scrollTo({ left: Math.max(0, offset), behavior: 'smooth' });
       }, 100);
     }
+
+    if (touchGesturesInitialized) return;
+    touchGesturesInitialized = true;
 
     // 2. Touch swipe listener across search results
     const resultsContainer = document.querySelector('.results-container, .main-results, .results-wrapper, body');
@@ -2411,91 +2500,67 @@
     }, { passive: true });
   }
 
-  // Safe DOM ready initialization
-  function initAll() {
-    initTheme();
-    initServiceWorker();
-    initUserPreferencesOnLoad();
-    initSearchBox();
-    initFilterToolbar();
-    initLeafletMap();
-    initVideoModal();
-    initMagnetButtons();
-    initVimKeybindings();
-    initCommandPalette();
-    initCustomBangs();
-    initEncryptedVault();
-    initInfiniteScroll();
-    initSettingsPage();
-    initBookmarks();
-    initTopicClusters();
-    initReverseImageSearch();
-    initFloatingPlayer();
-    initMobileBottomNav();
-    initMobileTouchGestures();
-    initNavDropdown();
-  }
-
-  // --- Tools Nav Dropdown ---
-  function initNavDropdown() {
-    const dropdowns = document.querySelectorAll('.nav-dropdown');
-    dropdowns.forEach(dropdown => {
-      const btn = dropdown.querySelector('.nav-dropdown-trigger');
-      const panel = dropdown.querySelector('.nav-dropdown-panel');
-      if (!btn || !panel) return;
-
-      function openDropdown() {
-        dropdown.classList.add('open');
-        btn.setAttribute('aria-expanded', 'true');
-      }
-      function closeDropdown() {
-        dropdown.classList.remove('open');
-        btn.setAttribute('aria-expanded', 'false');
-      }
-      function toggleDropdown() {
-        dropdown.classList.contains('open') ? closeDropdown() : openDropdown();
-      }
-
-      btn.addEventListener('click', e => {
-        e.stopPropagation();
-        dropdowns.forEach(other => { if (other !== dropdown) other.classList.remove('open'); });
-        toggleDropdown();
-      });
-
-      document.addEventListener('click', e => {
-        if (!dropdown.contains(e.target)) closeDropdown();
-      });
-
-      document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') closeDropdown();
-      });
-
-      panel.addEventListener('keydown', e => {
-        const items = [...panel.querySelectorAll('.dropdown-item')];
-        const idx = items.indexOf(document.activeElement);
-        if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          items[(idx + 1) % items.length]?.focus();
-        } else if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          items[(idx - 1 + items.length) % items.length]?.focus();
-        }
+  // --- Category Tabs Switcher (Search Homepage) ---
+  function initCategoryTabs() {
+    document.querySelectorAll('.category-tab').forEach(tab => {
+      if (tab.dataset.tabInit) return;
+      tab.dataset.tabInit = 'true';
+      tab.addEventListener('click', function () {
+        document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        const inp = this.querySelector('input');
+        if (inp) inp.checked = true;
       });
     });
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAll);
-  } else {
-    initAll();
-  }
-})();
+  // --- Tools Nav Dropdown (Consolidated, Accessible & Delegated) ---
+  let navDropdownInitialized = false;
+  function initNavDropdown() {
+    if (navDropdownInitialized) return;
+    navDropdownInitialized = true;
 
-// ================================================================
-// 🎯 Search Goggles — Client-Side Domain Block/Boost Filter
-// Reads from localStorage and filters search result cards live
-// ================================================================
-(function initGogglesFilter() {
+    document.addEventListener('click', function (e) {
+      const trigger = e.target.closest('.nav-dropdown-trigger');
+      if (trigger) {
+        e.preventDefault();
+        e.stopPropagation();
+        const dropdown = trigger.closest('.nav-dropdown');
+        if (!dropdown) return;
+        const isOpen = dropdown.classList.contains('open');
+        document.querySelectorAll('.nav-dropdown.open').forEach(d => {
+          if (d !== dropdown) {
+            d.classList.remove('open');
+            d.querySelector('.nav-dropdown-trigger')?.setAttribute('aria-expanded', 'false');
+          }
+        });
+        dropdown.classList.toggle('open', !isOpen);
+        trigger.setAttribute('aria-expanded', !isOpen ? 'true' : 'false');
+        return;
+      }
+
+      if (!e.target.closest('.nav-dropdown-panel')) {
+        document.querySelectorAll('.nav-dropdown.open').forEach(d => {
+          d.classList.remove('open');
+          d.querySelector('.nav-dropdown-trigger')?.setAttribute('aria-expanded', 'false');
+        });
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.nav-dropdown.open').forEach(d => {
+          d.classList.remove('open');
+          d.querySelector('.nav-dropdown-trigger')?.setAttribute('aria-expanded', 'false');
+        });
+      }
+    });
+  }
+
+  // ================================================================
+  // 🎯 Search Goggles — Client-Side Domain Block/Boost Filter
+  // Reads from localStorage and filters search result cards live
+  // ================================================================
   function getGoggles() {
     try { return JSON.parse(localStorage.getItem('searxgo_goggles') || '{"blocklist":[],"boostlist":[]}'); }
     catch { return { blocklist: [], boostlist: [] }; }
@@ -2510,7 +2575,6 @@
     let boostedCount = 0;
 
     resultCards.forEach(card => {
-      // Try to get the URL from the card
       let resultURL = card.dataset.resultUrl || '';
       if (!resultURL) {
         const link = card.querySelector('a[href^="http"]');
@@ -2580,46 +2644,63 @@
     }
   }
 
-  // Global Tools Nav Dropdown toggle handler
-  function initNavDropdowns() {
-    document.addEventListener('click', function (e) {
-      const trigger = e.target.closest('.nav-dropdown-trigger');
-      if (trigger) {
-        e.preventDefault();
-        e.stopPropagation();
-        const dropdown = trigger.closest('.nav-dropdown');
-        if (!dropdown) return;
-        const isOpen = dropdown.classList.contains('open');
-        document.querySelectorAll('.nav-dropdown.open').forEach(d => {
-          if (d !== dropdown) d.classList.remove('open');
-        });
-        dropdown.classList.toggle('open', !isOpen);
-        trigger.setAttribute('aria-expanded', !isOpen ? 'true' : 'false');
-        return;
-      }
-      if (!e.target.closest('.nav-dropdown-panel')) {
-        document.querySelectorAll('.nav-dropdown.open').forEach(d => {
-          d.classList.remove('open');
-          const t = d.querySelector('.nav-dropdown-trigger');
-          if (t) t.setAttribute('aria-expanded', 'false');
-        });
-      }
-    });
+  // Safe DOM ready initialization
+  function initAll() {
+    initTheme();
+    initServiceWorker();
+    initUserPreferencesOnLoad();
+    initCategoryTabs();
+    initSearchBox();
+    initFilterToolbar();
+    initLeafletMap();
+    initVideoModal();
+    initMagnetButtons();
+    initVimKeybindings();
+    initCommandPalette();
+    initCustomBangs();
+    initEncryptedVault();
+    initInfiniteScroll();
+    initSettingsPage();
+    initBookmarks();
+    initTopicClusters();
+    initReverseImageSearch();
+    initFloatingPlayer();
+    initMobileBottomNav();
+    initMobileTouchGestures();
+    initNavDropdown();
   }
 
+  // Expose global namespace for debugging and extensions
+  window.SearXGo = {
+    initAll,
+    applyGoggles,
+    getGoggles,
+    initTheme,
+    setTheme: window.setTheme,
+    toggleTheme: window.toggleTheme,
+    showToast,
+    showShortcutsModal
+  };
+
+  // Safe initial execution
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
+      initAll();
       applyGoggles();
-      initNavDropdowns();
     });
   } else {
+    initAll();
     applyGoggles();
-    initNavDropdowns();
   }
 
-  // HTMX Lifecycle Hook: Ensure client utilities reinitialize seamlessly on boosted swaps
+  // HTMX Lifecycle Hooks: Ensure full interactivity and goggles filtering on boosted transitions
   document.addEventListener('htmx:load', function () {
-    initTheme();
+    initAll();
+    applyGoggles();
+  });
+
+  document.addEventListener('htmx:historyRestore', function () {
+    initAll();
     applyGoggles();
   });
 })();

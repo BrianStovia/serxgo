@@ -337,11 +337,11 @@
         });
       }
 
-      applyBtn.addEventListener('click', updateQueries);
-      scopeInput.addEventListener('keydown', e => { if (e.key === 'Enter') updateQueries(); });
+      if (applyBtn) applyBtn.addEventListener('click', updateQueries);
+      if (scopeInput) scopeInput.addEventListener('keydown', e => { if (e.key === 'Enter') updateQueries(); });
 
-      clearBtn.addEventListener('click', function() {
-        scopeInput.value = '';
+      if (clearBtn) clearBtn.addEventListener('click', function() {
+        if (scopeInput) scopeInput.value = '';
         updateQueries();
       });
 
@@ -350,13 +350,12 @@
         pill.addEventListener('click', function() {
           pills.forEach(p => p.classList.remove('active'));
           this.classList.add('active');
-          const selectedCat = this.dataset.cat;
           filterCards();
         });
       });
 
       // Keyword filter
-      filterInput.addEventListener('input', filterCards);
+      if (filterInput) filterInput.addEventListener('input', filterCards);
 
       function filterCards() {
         const activeCat = document.querySelector('.cat-pill.active')?.dataset.cat || 'all';

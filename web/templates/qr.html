@@ -258,18 +258,11 @@
     });
 
     // Initial render
-    window.addEventListener('load', renderQR);
-
-    document.querySelectorAll('.nav-dropdown-trigger').forEach(trigger => {
-      trigger.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const parent = trigger.closest('.nav-dropdown');
-        parent.classList.toggle('open');
-      });
-    });
-    document.addEventListener('click', () => {
-      document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
-    });
+    if (document.readyState === 'complete') {
+      renderQR();
+    } else {
+      window.addEventListener('load', renderQR);
+    }
   </script>
   <script src="/static/js/app.js"></script>
 </body>

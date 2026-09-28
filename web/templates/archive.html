@@ -208,7 +208,7 @@
 
   <script src="/static/js/app.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    function initArchivePage() {
       const form = document.getElementById('archive-form');
       const input = document.getElementById('target-url');
       const loading = document.getElementById('archive-loading');
@@ -292,7 +292,13 @@
 
       const initial = input.value.trim();
       if (initial) runArchive(initial);
-    });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initArchivePage);
+    } else {
+      initArchivePage();
+    }
   </script>
 </body>
 </html>
