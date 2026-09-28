@@ -85,9 +85,15 @@
   </header>
 
   <main class="settings-container" style="max-width: 1050px; margin: 1.5rem auto; padding: 0 1rem;">
-    <div id="save-feedback" style="{{if not .Saved}}display:none;{{end}} background: var(--accent-emerald); color:#000; font-weight:600; padding: 0.75rem 1rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; text-align:center;">
+    {{if .Saved}}
+    <div id="save-feedback" style="background: var(--accent-emerald); color:#000; font-weight:600; padding: 0.75rem 1rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; text-align:center;">
       ✓ Preferences successfully saved to local browser cookies!
     </div>
+    {{else}}
+    <div id="save-feedback" style="display:none; background: var(--accent-emerald); color:#000; font-weight:600; padding: 0.75rem 1rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; text-align:center;">
+      ✓ Preferences successfully saved to local browser cookies!
+    </div>
+    {{end}}
 
     <!-- Official SearXNG Preferences Tabs -->
     <div class="settings-tabs-nav">
@@ -301,7 +307,7 @@
 
           <!-- Engine Sub-Category Panels -->
           {{range $idx, $catGroup := .Categories}}
-            <div id="cat-{{$catGroup.Category}}" class="engine-cat-panel {{if eq $idx 0}}active{{end}}" style="{{if ne $idx 0}}display:none;{{end}}">
+            <div id="cat-{{$catGroup.Category}}" class="engine-cat-panel {{if eq $idx 0}}active{{end}}" {{if ne $idx 0}}style="display:none;"{{end}}>
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
                 <div style="font-size:0.875rem; color:var(--text-muted); text-transform:capitalize;">
                   Category: <strong>{{$catGroup.Category}}</strong>
