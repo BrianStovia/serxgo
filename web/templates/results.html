@@ -279,18 +279,11 @@
         </div>
       </div>
 
-      <!-- Categories Tab Navigation (All 9 SearXNG Categories) -->
+      <!-- Categories Tab Navigation (All SearXNG Categories) -->
       <nav class="results-tabs">
-        <a href="/search?q={{.Response.Query}}&category=general" class="tab-link {{if eq .Response.Category "general"}}active{{end}}">🌐 General</a>
-        <a href="/search?q={{.Response.Query}}&category=images" class="tab-link {{if eq .Response.Category "images"}}active{{end}}">🖼️ Images</a>
-        <a href="/search?q={{.Response.Query}}&category=videos" class="tab-link {{if eq .Response.Category "videos"}}active{{end}}">🎬 Videos</a>
-        <a href="/search?q={{.Response.Query}}&category=news" class="tab-link {{if eq .Response.Category "news"}}active{{end}}">📰 News</a>
-        <a href="/search?q={{.Response.Query}}&category=it" class="tab-link {{if eq .Response.Category "it"}}active{{end}}">💻 IT &amp; Code</a>
-        <a href="/search?q={{.Response.Query}}&category=science" class="tab-link {{if eq .Response.Category "science"}}active{{end}}">🔬 Science</a>
-        <a href="/search?q={{.Response.Query}}&category=social" class="tab-link {{if eq .Response.Category "social"}}active{{end}}">💬 Social</a>
-        <a href="/search?q={{.Response.Query}}&category=files" class="tab-link {{if eq .Response.Category "files"}}active{{end}}">📁 Files / Torrents</a>
-        <a href="/search?q={{.Response.Query}}&category=music" class="tab-link {{if eq .Response.Category "music"}}active{{end}}">🎵 Music</a>
-        <a href="/search?q={{.Response.Query}}&category=maps" class="tab-link {{if eq .Response.Category "maps"}}active{{end}}">🗺️ Maps</a>
+        {{range .CategoryList}}
+        <a href="/search?q={{$.Response.Query}}&category={{.ID}}" class="tab-link {{if eq $.Response.Category .ID}}active{{end}}">{{.Icon}} {{.Name}}</a>
+        {{end}}
       </nav>
     </div>
   </header>

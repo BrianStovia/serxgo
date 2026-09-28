@@ -14,6 +14,7 @@ import (
 	"searxgo/internal/config"
 	"searxgo/internal/engine"
 	"searxgo/internal/models"
+	"searxgo/internal/stats"
 )
 
 func TestHTTPHandlers(t *testing.T) {
@@ -375,6 +376,79 @@ func TestReverseImageSearch(t *testing.T) {
 	}
 	if !strings.Contains(fullSettingsBody, `value="POST" selected`) {
 		t.Errorf("expected method=POST selected in settings HTML")
+	}
+}
+
+func TestDynamicSettingsAndIndexRendering(t *testing.T) {
+	cfg := &config.Config{
+		Timeout: 5 * time.Second,
+	}
+	reg := engine.NewRegistry()
+	agg := aggregator.NewAggregator(reg, cfg.Timeout)
+
+	h, err := NewHandler(cfg, agg)
+	if err != nil {
+		t.Fatalf("failed to create handler: %v", err)
+	}
+
+	mux := http.NewServeMux()
+	h.RegisterRoutes(mux)
+
+	// Ensure DefaultRegistry has engines
+	engine.DefaultRegistry.Register(engine.NewDuckDuckGoEngine())
+	engine.DefaultRegistry.Register(engine.NewGoogleEngine())
+
+	// Record a real telemetry measurement for duckduckgo
+	stats.GlobalTracker.RecordEngineResult("duckduckgo", "DuckDuckGo", 420, true)
+
+	// 1. Verify GET /settings renders real latency and category list
+	recSettings := httptest.NewRecorder()
+	reqSettings := httptest.NewRequest("GET", "/settings", nil)
+	mux.ServeHTTP(recSettings, reqSettings)
+
+	if recSettings.Code != http.StatusOK {
+		t.Fatalf("GET /settings returned status %d; want %d", recSettings.Code, http.StatusOK)
+	}
+
+	settingsBody := recSettings.Body.String()
+	// Check that duckduckgo real latency is rendered
+	if !strings.Contains(settingsBody, "420ms") {
+		t.Errorf("expected recorded latency '420ms' in settings HTML, got:\n%s", settingsBody)
+	}
+	// Check that default categories iterate dynamically with icons
+	if !strings.Contains(settingsBody, "🌐 General") || !strings.Contains(settingsBody, "🔬 Science") {
+		t.Errorf("expected dynamic categories with icons in settings HTML")
+	}
+
+	// 2. Verify GET / renders dynamic engine pills and category tabs
+	recIndex := httptest.NewRecorder()
+	reqIndex := httptest.NewRequest("GET", "/", nil)
+	mux.ServeHTTP(recIndex, reqIndex)
+
+	if recIndex.Code != http.StatusOK {
+		t.Fatalf("GET / returned status %d; want %d", recIndex.Code, http.StatusOK)
+	}
+
+	indexBody := recIndex.Body.String()
+	if !strings.Contains(indexBody, "class=\"engine-pill\"") {
+		t.Errorf("expected dynamic engine pills in index HTML")
+	}
+	if !strings.Contains(indexBody, "🌐 General") {
+		t.Errorf("expected dynamic category tabs in index HTML")
+	}
+
+	// 3. Verify GET /search renders dynamic category tabs
+	recSearch := httptest.NewRecorder()
+	reqSearch := httptest.NewRequest("GET", "/search?q=test&category=general", nil)
+	mux.ServeHTTP(recSearch, reqSearch)
+
+	if recSearch.Code != http.StatusOK {
+		t.Fatalf("GET /search returned status %d; want %d", recSearch.Code, http.StatusOK)
+	}
+
+	searchBody := recSearch.Body.String()
+	if !strings.Contains(searchBody, "class=\"results-tabs\"") || !strings.Contains(searchBody, "🌐 General") {
+		t.Errorf("expected dynamic category tabs in search results HTML")
 	}
 }
 

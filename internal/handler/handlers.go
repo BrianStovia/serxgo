@@ -55,6 +55,27 @@ import (
 	"searxgo/web"
 )
 
+// CategoryInfo defines metadata for UI search categories
+type CategoryInfo struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Icon string `json:"icon"`
+}
+
+// DefaultCategoryList provides standard categories across SearXGo
+var DefaultCategoryList = []CategoryInfo{
+	{ID: "general", Name: "General", Icon: "🌐"},
+	{ID: "images", Name: "Images", Icon: "🖼️"},
+	{ID: "videos", Name: "Videos", Icon: "🎬"},
+	{ID: "news", Name: "News", Icon: "📰"},
+	{ID: "it", Name: "IT & Code", Icon: "💻"},
+	{ID: "science", Name: "Science", Icon: "🔬"},
+	{ID: "social", Name: "Social", Icon: "💬"},
+	{ID: "files", Name: "Files", Icon: "📁"},
+	{ID: "music", Name: "Music", Icon: "🎵"},
+	{ID: "maps", Name: "Maps", Icon: "🗺️"},
+}
+
 type TempUploadedImage struct {
 	ID          string    `json:"id"`
 	Filename    string    `json:"filename"`
@@ -138,6 +159,56 @@ func NewHandler(cfg *config.Config, agg *aggregator.Aggregator) (*Handler, error
 			default:
 				return fmt.Sprintf("https://assets.kagi.com/proxy/favicons?domain=%s", domain)
 			}
+		},
+		"formatLatency": func(ms int64) string {
+			if ms <= 0 {
+				return "-"
+			}
+			if ms < 1000 {
+				return fmt.Sprintf("%dms", ms)
+			}
+			return fmt.Sprintf("%.2fs", float64(ms)/1000.0)
+		},
+		"statPingPercent": func(ms int64, maxTime float64) int {
+			if ms <= 0 {
+				return 15
+			}
+			maxMs := maxTime * 1000.0
+			if maxMs <= 0 {
+				maxMs = 3000.0
+			}
+			pct := int((float64(ms) / maxMs) * 100.0)
+			if pct < 10 {
+				pct = 10
+			}
+			if pct > 100 {
+				pct = 100
+			}
+			return pct
+		},
+		"rateColor": func(rate float64) string {
+			if rate >= 80.0 {
+				return "#10b981"
+			} else if rate >= 50.0 {
+				return "#f59e0b"
+			}
+			return "#ef4444"
+		},
+		"rateBg": func(rate float64) string {
+			if rate >= 80.0 {
+				return "rgba(16, 185, 129, 0.12)"
+			} else if rate >= 50.0 {
+				return "rgba(245, 158, 11, 0.12)"
+			}
+			return "rgba(239, 68, 68, 0.12)"
+		},
+		"latencyColor": func(ms int64) string {
+			if ms < 800 {
+				return "var(--accent-emerald)"
+			} else if ms < 1500 {
+				return "var(--accent-amber)"
+			}
+			return "var(--accent-rose)"
 		},
 	}
 
@@ -356,6 +427,7 @@ func (h *Handler) ServeIndex(w http.ResponseWriter, r *http.Request) {
 		"Engines":           engine.DefaultRegistry.GetEngineInfos(),
 		"DefaultCategory":   defaultCat,
 		"DefaultCategories": enabledCatsMap,
+		"CategoryList":      DefaultCategoryList,
 	}
 	var buf bytes.Buffer
 	if err := h.templates.ExecuteTemplate(&buf, "index.html", data); err != nil {
@@ -710,6 +782,7 @@ func (h *Handler) ServeSearch(w http.ResponseWriter, r *http.Request) {
 		"OpenInNewTab":    req.OpenInNewTab,
 		"FaviconResolver": faviconResolver,
 		"QueryInTitle":    queryInTitle,
+		"CategoryList":    DefaultCategoryList,
 	}
 
 	var buf bytes.Buffer
@@ -1054,8 +1127,17 @@ func (h *Handler) ServeSettings(w http.ResponseWriter, r *http.Request) {
 
 	categorized := engine.GetCategorizedCatalog()
 
+	sysStats := stats.GlobalTracker.GetSystemStats()
+	engineStatsMap := make(map[string]models.EngineStatItem)
+	for _, item := range sysStats.EngineStats {
+		engineStatsMap[item.Name] = item
+		engineStatsMap[strings.ToLower(item.Name)] = item
+	}
+
 	data := map[string]interface{}{
 		"Categories":        categorized,
+		"CategoryList":      DefaultCategoryList,
+		"EngineStats":       engineStatsMap,
 		"AllEngines":        engine.FullEngineCatalog,
 		"TotalEngines":      len(engine.FullEngineCatalog),
 		"Theme":             theme,

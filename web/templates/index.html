@@ -245,48 +245,14 @@
       <p class="brand-tagline">Privacy-respecting, concurrent metasearch aggregator</p>
 
       <form class="search-form" action="/search" method="GET" autocomplete="off">
-        <!-- Category Selector (All 9 Categories) -->
+        <!-- Category Selector (All SearXNG Categories) -->
         <div class="category-tabs">
-          <label class="category-tab {{if eq .DefaultCategory "general"}}active{{else if not .DefaultCategory}}active{{end}}">
-            <input type="radio" name="category" value="general" {{if eq .DefaultCategory "general"}}checked{{else if not .DefaultCategory}}checked{{end}} style="display:none;">
-            <span>🌐 General</span>
+          {{range .CategoryList}}
+          <label class="category-tab {{if eq $.DefaultCategory .ID}}active{{else if and (not $.DefaultCategory) (eq .ID "general")}}active{{end}}">
+            <input type="radio" name="category" value="{{.ID}}" {{if eq $.DefaultCategory .ID}}checked{{else if and (not $.DefaultCategory) (eq .ID "general")}}checked{{end}} style="display:none;">
+            <span>{{.Icon}} {{.Name}}</span>
           </label>
-          <label class="category-tab {{if eq .DefaultCategory "images"}}active{{end}}">
-            <input type="radio" name="category" value="images" {{if eq .DefaultCategory "images"}}checked{{end}} style="display:none;">
-            <span>🖼️ Images</span>
-          </label>
-          <label class="category-tab {{if eq .DefaultCategory "videos"}}active{{end}}">
-            <input type="radio" name="category" value="videos" {{if eq .DefaultCategory "videos"}}checked{{end}} style="display:none;">
-            <span>🎬 Videos</span>
-          </label>
-          <label class="category-tab {{if eq .DefaultCategory "news"}}active{{end}}">
-            <input type="radio" name="category" value="news" {{if eq .DefaultCategory "news"}}checked{{end}} style="display:none;">
-            <span>📰 News</span>
-          </label>
-          <label class="category-tab {{if eq .DefaultCategory "it"}}active{{end}}">
-            <input type="radio" name="category" value="it" {{if eq .DefaultCategory "it"}}checked{{end}} style="display:none;">
-            <span>💻 IT &amp; Code</span>
-          </label>
-          <label class="category-tab {{if eq .DefaultCategory "science"}}active{{end}}">
-            <input type="radio" name="category" value="science" {{if eq .DefaultCategory "science"}}checked{{end}} style="display:none;">
-            <span>🔬 Science</span>
-          </label>
-          <label class="category-tab {{if eq .DefaultCategory "social"}}active{{end}}">
-            <input type="radio" name="category" value="social" {{if eq .DefaultCategory "social"}}checked{{end}} style="display:none;">
-            <span>💬 Social</span>
-          </label>
-          <label class="category-tab {{if eq .DefaultCategory "files"}}active{{end}}">
-            <input type="radio" name="category" value="files" {{if eq .DefaultCategory "files"}}checked{{end}} style="display:none;">
-            <span>📁 Files</span>
-          </label>
-          <label class="category-tab {{if eq .DefaultCategory "music"}}active{{end}}">
-            <input type="radio" name="category" value="music" {{if eq .DefaultCategory "music"}}checked{{end}} style="display:none;">
-            <span>🎵 Music</span>
-          </label>
-          <label class="category-tab {{if eq .DefaultCategory "maps"}}active{{end}}">
-            <input type="radio" name="category" value="maps" {{if eq .DefaultCategory "maps"}}checked{{end}} style="display:none;">
-            <span>🗺️ Maps</span>
-          </label>
+          {{end}}
         </div>
 
         <!-- Search Box -->
@@ -330,18 +296,9 @@
 
       <!-- Active Engines Pill Indicators -->
       <div class="home-engines">
-        <span class="engine-pill"><span class="engine-dot"></span>DuckDuckGo</span>
-        <span class="engine-pill"><span class="engine-dot"></span>Google</span>
-        <span class="engine-pill"><span class="engine-dot"></span>Bing</span>
-        <span class="engine-pill"><span class="engine-dot"></span>Brave</span>
-        <span class="engine-pill"><span class="engine-dot"></span>Wikipedia</span>
-        <span class="engine-pill"><span class="engine-dot"></span>YouTube</span>
-        <span class="engine-pill"><span class="engine-dot"></span>GitHub</span>
-        <span class="engine-pill"><span class="engine-dot"></span>StackOverflow</span>
-        <span class="engine-pill"><span class="engine-dot"></span>PubMed</span>
-        <span class="engine-pill"><span class="engine-dot"></span>PirateBay</span>
-        <span class="engine-pill"><span class="engine-dot"></span>SoundCloud</span>
-        <span class="engine-pill"><span class="engine-dot"></span>OpenStreetMap</span>
+        {{range .Engines}}
+        <span class="engine-pill"><span class="engine-dot"></span>{{.DisplayName}}</span>
+        {{end}}
       </div>
     </main>
 
