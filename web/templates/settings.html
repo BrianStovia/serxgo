@@ -7,6 +7,16 @@
   <link rel="stylesheet" href="/static/css/main.css?v=4.0">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+  <style>
+    .rate-badge { font-weight: 600; font-size: 0.8rem; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; }
+    .rate-ok { color: #10b981; background: rgba(16, 185, 129, 0.12); }
+    .rate-warn { color: #f59e0b; background: rgba(245, 158, 11, 0.12); }
+    .rate-err { color: #ef4444; background: rgba(239, 68, 68, 0.12); }
+    .engine-ping-bar { height: 100%; border-radius: 3px; }
+    .engine-ping-bar.ping-fast { background: var(--accent-emerald); }
+    .engine-ping-bar.ping-med { background: var(--accent-amber); }
+    .engine-ping-bar.ping-slow { background: var(--accent-rose); }
+  </style>
 </head>
 <body>
   <div class="ambient-glow"></div>
@@ -337,14 +347,14 @@
                             <td>
                               <div style="display:flex; align-items:center; gap:0.4rem;">
                                 <div style="height:6px; width:40px; background:rgba(255, 255, 255, 0.1); border-radius:3px; overflow:hidden;">
-                                  <div style="height:100%; width:{{statPingPercent $stat.AvgPingMs .MaxTime}}%; background:{{latencyColor $stat.AvgPingMs}};"></div>
+                                  <div class="engine-ping-bar {{if lt $stat.AvgPingMs 800}}ping-fast{{else if lt $stat.AvgPingMs 1500}}ping-med{{else}}ping-slow{{end}}" data-pct="{{statPingPercent $stat.AvgPingMs .MaxTime}}"></div>
                                 </div>
                                 <span style="font-size:0.75rem; color:var(--text-muted);">{{formatLatency $stat.AvgPingMs}}</span>
                               </div>
                             </td>
                             <td style="font-family:var(--font-mono); color:var(--text-muted);">{{.MaxTime}}s</td>
                             <td>
-                              <span style="font-weight:600; font-size:0.8rem; padding:0.2rem 0.5rem; border-radius:4px; color:{{rateColor $stat.SuccessRate}}; background:{{rateBg $stat.SuccessRate}};">
+                              <span class="rate-badge {{if ge $stat.SuccessRate 80.0}}rate-ok{{else if ge $stat.SuccessRate 50.0}}rate-warn{{else}}rate-err{{end}}">
                                 {{printf "%.0f" $stat.SuccessRate}}%
                               </span>
                             </td>
@@ -845,5 +855,10 @@
   </footer>
 
   <script src="/static/js/app.js"></script>
+  <script>
+    document.querySelectorAll('.engine-ping-bar[data-pct]').forEach(function(el) {
+      el.style.width = el.getAttribute('data-pct') + '%';
+    });
+  </script>
 </body>
 </html>
