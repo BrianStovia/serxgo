@@ -17,6 +17,7 @@
     .engine-ping-bar.ping-med { background: var(--accent-amber); }
     .engine-ping-bar.ping-slow { background: var(--accent-rose); }
   </style>
+  <script src="/static/js/htmx.min.js"></script>
 </head>
 <body>
   <div class="ambient-glow"></div>
@@ -116,7 +117,7 @@
       <button type="button" class="settings-tab-btn" data-tab="tab-export">Cookies &amp; Export</button>
     </div>
 
-    <form id="settings-form" method="POST" action="/preferences">
+    <form id="settings-form" method="POST" action="/preferences" hx-post="/preferences" hx-target="#save-feedback" hx-swap="outerHTML">
       <!-- TAB 1: GENERAL (SearXNG Parity) -->
       <div id="tab-general" class="settings-tab-panel active">
         <div class="settings-card">

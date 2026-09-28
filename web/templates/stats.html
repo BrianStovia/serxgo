@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/static/css/main.css?v=4.0">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+  <script src="/static/js/htmx.min.js"></script>
 </head>
 <body>
   <div class="ambient-glow"></div>
@@ -95,7 +96,7 @@
           </svg>
           Engine Health &amp; Telemetry
         </h2>
-        <div style="font-size:0.85rem; color:var(--text-muted);">
+        <div id="stats-summary" style="font-size:0.85rem; color:var(--text-muted);" hx-get="/stats" hx-select="#stats-summary" hx-trigger="every 5s" hx-swap="outerHTML">
           Uptime: <strong style="color:var(--accent-cyan);">{{.Uptime}}</strong> &bull; Total Queries: <strong style="color:var(--accent-cyan);">{{.TotalQueries}}</strong>
         </div>
       </div>
@@ -113,7 +114,7 @@
               <th>Status</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="telemetry-table-body" hx-get="/stats" hx-select="#telemetry-table-body tr" hx-trigger="every 5s" hx-swap="innerHTML">
             {{range .EngineStats}}
               <tr>
                 <td style="font-weight:600; color:var(--text-primary);">{{.DisplayName}}</td>

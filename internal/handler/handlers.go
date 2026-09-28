@@ -596,6 +596,15 @@ func (h *Handler) parseSearchRequest(r *http.Request) models.SearchRequest {
 		openInNewTab = true
 	}
 
+	// Infinite scroll preference
+	infiniteScroll := false
+	if cookie, err := r.Cookie("searxgo_infinite_scroll"); err == nil && cookie.Value == "true" {
+		infiniteScroll = true
+	}
+	if getParam("infinite_scroll") == "1" || getParam("infinite_scroll") == "true" {
+		infiniteScroll = true
+	}
+
 	// Tracker URL remover preference (SearXNG tracker_url_remover plugin - default true)
 	removeTrackers := true
 	if cookie, err := r.Cookie("searxgo_tracker_remover"); err == nil && cookie.Value == "false" {
@@ -678,6 +687,7 @@ func (h *Handler) parseSearchRequest(r *http.Request) models.SearchRequest {
 		EnableRedirects: enableRedirects,
 		DOIResolver:     doiResolver,
 		OpenInNewTab:    openInNewTab,
+		InfiniteScroll:  infiniteScroll,
 		RemoveTrackers:  removeTrackers,
 		Autocomplete:    autocomplete,
 	}
@@ -780,6 +790,7 @@ func (h *Handler) ServeSearch(w http.ResponseWriter, r *http.Request) {
 		"SafeSearch":      req.SafeSearch,
 		"AllEngines":      engine.DefaultRegistry.GetByCategory(resp.Category),
 		"OpenInNewTab":    req.OpenInNewTab,
+		"InfiniteScroll":  req.InfiniteScroll,
 		"FaviconResolver": faviconResolver,
 		"QueryInTitle":    queryInTitle,
 		"CategoryList":    DefaultCategoryList,
@@ -1060,6 +1071,14 @@ func (h *Handler) ServeSettings(w http.ResponseWriter, r *http.Request) {
 		}
 		if len(enabledList) > 0 {
 			setPrefCookie("searxgo_engines", strings.Join(enabledList, ","))
+		}
+
+		if r.Header.Get("HX-Request") == "true" {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Write([]byte(`<div id="save-feedback" style="background: var(--accent-emerald); color:#000; font-weight:600; padding: 0.75rem 1rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; text-align:center; animation: fadeIn 0.3s ease;">
+      ✓ Preferences successfully saved to local browser cookies (HTMX)!
+    </div>`))
+			return
 		}
 
 		if r.Header.Get("X-Requested-With") == "XMLHttpRequest" || strings.Contains(r.Header.Get("Accept"), "application/json") {

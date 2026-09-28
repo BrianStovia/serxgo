@@ -452,3 +452,51 @@ func TestDynamicSettingsAndIndexRendering(t *testing.T) {
 	}
 }
 
+func TestHTMXPreferencesSubmission(t *testing.T) {
+	cfg := &config.Config{
+		Timeout: 5 * time.Second,
+	}
+	reg := engine.NewRegistry()
+	agg := aggregator.NewAggregator(reg, cfg.Timeout)
+
+	h, err := NewHandler(cfg, agg)
+	if err != nil {
+		t.Fatalf("failed to create handler: %v", err)
+	}
+
+	mux := http.NewServeMux()
+	h.RegisterRoutes(mux)
+
+	// Send POST /preferences with HX-Request: true
+	form := strings.NewReader("theme=cyberpunk&method=POST&unit_converter=true")
+	req := httptest.NewRequest("POST", "/preferences", form)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("HX-Request", "true")
+
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected HTMX POST to return status 200, got %d", rec.Code)
+	}
+
+	body := rec.Body.String()
+	if !strings.Contains(body, `id="save-feedback"`) {
+		t.Errorf("expected response to contain #save-feedback fragment, got %s", body)
+	}
+
+	// Verify cookies are still set
+	cookies := rec.Result().Cookies()
+	cookieMap := make(map[string]string)
+	for _, c := range cookies {
+		cookieMap[c.Name] = c.Value
+	}
+	if cookieMap["searxgo_theme"] != "cyberpunk" {
+		t.Errorf("expected searxgo_theme=cyberpunk, got %s", cookieMap["searxgo_theme"])
+	}
+	if cookieMap["searxgo_method"] != "POST" {
+		t.Errorf("expected searxgo_method=POST, got %s", cookieMap["searxgo_method"])
+	}
+}
+
+

@@ -10,6 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="alternate" type="application/rss+xml" title="SearXGo RSS Feed" href="/search?q={{.Response.Query}}&category={{.Response.Category}}&format=rss">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪐</text></svg>">
+  <script src="/static/js/htmx.min.js"></script>
 </head>
 <body>
   <!-- Sticky Header -->
@@ -655,12 +656,20 @@
             </div>
           {{end}}
 
-          <!-- Infinite Scroll / Load More Trigger -->
-          <div class="load-more-container" style="display:flex; justify-content:center; margin: 2rem 0;">
-            <button type="button" id="btn-load-more" class="btn-search" style="padding: 0.75rem 2.5rem; font-size: 0.95rem; border-radius: var(--radius-full); cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: var(--shadow-sm);">
-              <span>⚡ Load More Results</span>
-            </button>
-          </div>
+          <!-- Infinite Scroll / Load More Trigger (HTMX Powered) -->
+          {{if and (gt .Response.TotalPages 1) (lt .Response.Page .Response.TotalPages)}}
+            <div id="load-more-wrap" class="load-more-container" style="display:flex; justify-content:center; margin: 2rem 0;">
+              <button type="button" id="btn-load-more" class="btn-search"
+                      hx-get="/search?q={{urlquery .Response.Query}}&category={{.Response.Category}}&time_range={{.TimeRange}}&page={{add .Response.Page 1}}"
+                      hx-select=".results-list .result-item, #load-more-wrap"
+                      hx-target="#load-more-wrap"
+                      hx-swap="outerHTML"
+                      {{if .InfiniteScroll}}hx-trigger="revealed"{{end}}
+                      style="padding: 0.75rem 2.5rem; font-size: 0.95rem; border-radius: var(--radius-full); cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: var(--shadow-sm);">
+                <span>⚡ Load More Results (Page {{add .Response.Page 1}} of {{.Response.TotalPages}})</span>
+              </button>
+            </div>
+          {{end}}
 
           <!-- Pagination -->
           {{if gt .Response.TotalPages 1}}
