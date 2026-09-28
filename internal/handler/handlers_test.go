@@ -229,5 +229,55 @@ func TestReverseImageSearch(t *testing.T) {
 	if recAPISherlockBad.Code != http.StatusBadRequest {
 		t.Errorf("GET /api/sherlock with invalid user returned %d, want 400", recAPISherlockBad.Code)
 	}
+
+	// 7. Test POST /settings and GET /settings with cookies
+	form := strings.NewReader("theme=cyberpunk&safesearch=1&language=id&engine_google__general=google&new_tab=1")
+	reqPostSettings := httptest.NewRequest("POST", "/settings", form)
+	reqPostSettings.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	recPostSettings := httptest.NewRecorder()
+	mux.ServeHTTP(recPostSettings, reqPostSettings)
+
+	if recPostSettings.Code != http.StatusFound {
+		t.Errorf("POST /settings returned status %d; want %d", recPostSettings.Code, http.StatusFound)
+	}
+
+	// Check cookies in response
+	cookies := recPostSettings.Result().Cookies()
+	cookieMap := make(map[string]string)
+	for _, c := range cookies {
+		cookieMap[c.Name] = c.Value
+	}
+
+	if cookieMap["searxgo_theme"] != "cyberpunk" {
+		t.Errorf("expected searxgo_theme=cyberpunk, got %s", cookieMap["searxgo_theme"])
+	}
+	if cookieMap["searxgo_safesearch"] != "1" {
+		t.Errorf("expected searxgo_safesearch=1, got %s", cookieMap["searxgo_safesearch"])
+	}
+	if cookieMap["searxgo_language"] != "id" {
+		t.Errorf("expected searxgo_language=id, got %s", cookieMap["searxgo_language"])
+	}
+	if cookieMap["searxgo_newtab"] != "true" {
+		t.Errorf("expected searxgo_newtab=true, got %s", cookieMap["searxgo_newtab"])
+	}
+
+	// Verify GET /settings renders template with saved preferences
+	reqGetSettings := httptest.NewRequest("GET", "/settings", nil)
+	for _, c := range cookies {
+		reqGetSettings.AddCookie(c)
+	}
+	recGetSettings := httptest.NewRecorder()
+	mux.ServeHTTP(recGetSettings, reqGetSettings)
+
+	if recGetSettings.Code != http.StatusOK {
+		t.Errorf("GET /settings returned %d, want 200", recGetSettings.Code)
+	}
+	bodyStr := recGetSettings.Body.String()
+	if !strings.Contains(bodyStr, `value="cyberpunk" selected`) {
+		t.Errorf("expected template to render cyberpunk selected")
+	}
+	if !strings.Contains(bodyStr, `value="id" selected`) {
+		t.Errorf("expected template to render language id selected")
+	}
 }
 

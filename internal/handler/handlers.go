@@ -762,60 +762,151 @@ func (h *Handler) ServeSettings(w http.ResponseWriter, r *http.Request) {
 		if lang := r.PostFormValue("language"); lang != "" {
 			setPrefCookie("searxgo_language", lang)
 		}
-		if doi := r.PostFormValue("doi_resolver"); doi != "" {
-			setPrefCookie("searxgo_doi_resolver", doi)
-		}
-		if inf := r.PostFormValue("infinite_scroll"); inf != "" {
-			setPrefCookie("searxgo_infinite_scroll", inf)
-		}
-		if nt := r.PostFormValue("new_tab"); nt != "" {
-			setPrefCookie("searxgo_newtab", nt)
-			setPrefCookie("searxgo_new_tab", nt)
-		}
-		if red := r.PostFormValue("redirects"); red != "" {
-			setPrefCookie("searxgo_redirects", red)
-		}
 		if ac := r.PostFormValue("autocomplete"); ac != "" {
 			setPrefCookie("searxgo_autocomplete", ac)
 		}
-		if tr := r.PostFormValue("tracker_remover"); tr != "" {
-			setPrefCookie("searxgo_tracker_remover", tr)
-		}
 		if fav := r.PostFormValue("favicon_resolver"); fav != "" {
 			setPrefCookie("searxgo_favicon_resolver", fav)
+		}
+		if doi := r.PostFormValue("doi_resolver"); doi != "" {
+			setPrefCookie("searxgo_doi_resolver", doi)
+		}
+
+		// Checkboxes: unchecked checkboxes in HTML are omitted from form body
+		if r.PostFormValue("new_tab") == "true" || r.PostFormValue("new_tab") == "on" || r.PostFormValue("new_tab") == "1" {
+			setPrefCookie("searxgo_newtab", "true")
+			setPrefCookie("searxgo_new_tab", "true")
+		} else {
+			setPrefCookie("searxgo_newtab", "false")
+			setPrefCookie("searxgo_new_tab", "false")
+		}
+
+		if r.PostFormValue("infinite_scroll") == "true" || r.PostFormValue("infinite_scroll") == "on" || r.PostFormValue("infinite_scroll") == "1" {
+			setPrefCookie("searxgo_infinite_scroll", "true")
+		} else {
+			setPrefCookie("searxgo_infinite_scroll", "false")
+		}
+
+		if r.PostFormValue("redirects") == "true" || r.PostFormValue("redirects") == "on" || r.PostFormValue("redirects") == "1" {
+			setPrefCookie("searxgo_redirects", "true")
+		} else {
+			setPrefCookie("searxgo_redirects", "false")
+		}
+
+		if r.PostFormValue("proxy") == "true" || r.PostFormValue("proxy") == "on" || r.PostFormValue("proxy") == "1" {
+			setPrefCookie("searxgo_proxy", "true")
+		} else {
+			setPrefCookie("searxgo_proxy", "false")
+		}
+
+		if r.PostFormValue("tracker_remover") == "true" || r.PostFormValue("tracker_remover") == "on" || r.PostFormValue("tracker_remover") == "1" {
+			setPrefCookie("searxgo_tracker_remover", "true")
+		} else {
+			setPrefCookie("searxgo_tracker_remover", "false")
+		}
+
+		if r.PostFormValue("center_alignment") == "true" || r.PostFormValue("center_alignment") == "on" || r.PostFormValue("center_alignment") == "1" {
+			setPrefCookie("searxgo_center_alignment", "true")
+		} else {
+			setPrefCookie("searxgo_center_alignment", "false")
+		}
+
+		// Categories
+		defaultCats := r.PostForm["default_categories"]
+		if len(defaultCats) > 0 {
+			setPrefCookie("searxgo_categories", strings.Join(defaultCats, ","))
 		}
 
 		// Enabled engines
 		var enabledList []string
 		for key, vals := range r.PostForm {
-			if strings.HasPrefix(key, "engine_") && len(vals) > 0 && (vals[0] == "1" || vals[0] == "on" || vals[0] == "true") {
-				enabledList = append(enabledList, strings.TrimPrefix(key, "engine_"))
+			if strings.HasPrefix(key, "engine_") && len(vals) > 0 {
+				engineID := vals[0]
+				if engineID != "" && engineID != "0" && engineID != "false" {
+					enabledList = append(enabledList, engineID)
+				}
 			}
 		}
 		if len(enabledList) > 0 {
 			setPrefCookie("searxgo_engines", strings.Join(enabledList, ","))
 		}
 
-		http.Redirect(w, r, "/preferences?saved=1", http.StatusFound)
+		if r.Header.Get("X-Requested-With") == "XMLHttpRequest" || strings.Contains(r.Header.Get("Accept"), "application/json") {
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(`{"success": true, "message": "Preferences saved successfully"}`))
+			return
+		}
+
+		http.Redirect(w, r, "/settings?saved=1", http.StatusFound)
 		return
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
+	getCookieVal := func(name, fallback string) string {
+		if cookie, err := r.Cookie(name); err == nil && cookie.Value != "" {
+			return cookie.Value
+		}
+		return fallback
+	}
+
+	theme := getCookieVal("searxgo_theme", "dark")
+	lang := getCookieVal("searxgo_language", "en")
+	safeSearch := getCookieVal("searxgo_safesearch", "0")
+	autocomplete := getCookieVal("searxgo_autocomplete", "all")
+	faviconResolver := getCookieVal("searxgo_favicon_resolver", "kagi")
+	doiResolver := getCookieVal("searxgo_doi_resolver", "oadoi.org")
+	newTab := getCookieVal("searxgo_newtab", "true") == "true"
+	infiniteScroll := getCookieVal("searxgo_infinite_scroll", "false") == "true"
+	redirects := getCookieVal("searxgo_redirects", "true") != "false"
+	proxy := getCookieVal("searxgo_proxy", "true") != "false"
+	trackerRemover := getCookieVal("searxgo_tracker_remover", "true") != "false"
+	centerAlignment := getCookieVal("searxgo_center_alignment", "false") == "true"
+
+	enginesCookie := getCookieVal("searxgo_engines", "")
+	enabledEnginesMap := make(map[string]bool)
+	hasCustomEngines := false
+	if enginesCookie != "" {
+		hasCustomEngines = true
+		for _, eng := range strings.Split(enginesCookie, ",") {
+			if t := strings.TrimSpace(eng); t != "" {
+				enabledEnginesMap[t] = true
+			}
+		}
+	}
+
+	catsCookie := getCookieVal("searxgo_categories", "general")
+	enabledCatsMap := make(map[string]bool)
+	for _, c := range strings.Split(catsCookie, ",") {
+		if t := strings.TrimSpace(c); t != "" {
+			enabledCatsMap[t] = true
+		}
+	}
+
 	categorized := engine.GetCategorizedCatalog()
 
-	safeSearch := "0"
-	if cookie, err := r.Cookie("searxgo_safesearch"); err == nil {
-		safeSearch = cookie.Value
+	data := map[string]interface{}{
+		"Categories":        categorized,
+		"AllEngines":        engine.FullEngineCatalog,
+		"TotalEngines":      len(engine.FullEngineCatalog),
+		"Theme":             theme,
+		"Language":          lang,
+		"SafeSearch":        safeSearch,
+		"Autocomplete":      autocomplete,
+		"FaviconResolver":   faviconResolver,
+		"DoiResolver":       doiResolver,
+		"NewTab":            newTab,
+		"InfiniteScroll":    infiniteScroll,
+		"Redirects":         redirects,
+		"Proxy":             proxy,
+		"TrackerRemover":    trackerRemover,
+		"CenterAlignment":   centerAlignment,
+		"EnabledEngines":    enabledEnginesMap,
+		"HasCustomEngines":  hasCustomEngines,
+		"EnabledCategories": enabledCatsMap,
+		"Saved":             r.URL.Query().Get("saved") == "1",
 	}
 
-	data := map[string]interface{}{
-		"Categories":   categorized,
-		"AllEngines":   engine.FullEngineCatalog,
-		"TotalEngines": len(engine.FullEngineCatalog),
-		"SafeSearch":   safeSearch,
-		"Saved":        r.URL.Query().Get("saved") == "1",
-	}
 	var buf bytes.Buffer
 	if err := h.templates.ExecuteTemplate(&buf, "settings.html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

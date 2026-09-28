@@ -109,43 +109,43 @@
               <div class="settings-sublabel" style="margin-bottom:0.75rem;">Categories enabled by default on new searches</div>
               <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.75rem;">
                 <label class="category-toggle-box">
-                  <input type="checkbox" name="default_categories" value="general" checked>
+                  <input type="checkbox" name="default_categories" value="general" {{if index .EnabledCategories "general"}}checked{{end}}>
                   <span>🌐 General</span>
                 </label>
                 <label class="category-toggle-box">
-                  <input type="checkbox" name="default_categories" value="images">
+                  <input type="checkbox" name="default_categories" value="images" {{if index .EnabledCategories "images"}}checked{{end}}>
                   <span>🖼️ Images</span>
                 </label>
                 <label class="category-toggle-box">
-                  <input type="checkbox" name="default_categories" value="videos">
+                  <input type="checkbox" name="default_categories" value="videos" {{if index .EnabledCategories "videos"}}checked{{end}}>
                   <span>🎬 Videos</span>
                 </label>
                 <label class="category-toggle-box">
-                  <input type="checkbox" name="default_categories" value="news">
+                  <input type="checkbox" name="default_categories" value="news" {{if index .EnabledCategories "news"}}checked{{end}}>
                   <span>📰 News</span>
                 </label>
                 <label class="category-toggle-box">
-                  <input type="checkbox" name="default_categories" value="music">
+                  <input type="checkbox" name="default_categories" value="music" {{if index .EnabledCategories "music"}}checked{{end}}>
                   <span>🎵 Music</span>
                 </label>
                 <label class="category-toggle-box">
-                  <input type="checkbox" name="default_categories" value="it">
+                  <input type="checkbox" name="default_categories" value="it" {{if index .EnabledCategories "it"}}checked{{end}}>
                   <span>💻 IT &amp; Code</span>
                 </label>
                 <label class="category-toggle-box">
-                  <input type="checkbox" name="default_categories" value="science">
+                  <input type="checkbox" name="default_categories" value="science" {{if index .EnabledCategories "science"}}checked{{end}}>
                   <span>🔬 Science</span>
                 </label>
                 <label class="category-toggle-box">
-                  <input type="checkbox" name="default_categories" value="files">
+                  <input type="checkbox" name="default_categories" value="files" {{if index .EnabledCategories "files"}}checked{{end}}>
                   <span>📁 Files</span>
                 </label>
                 <label class="category-toggle-box">
-                  <input type="checkbox" name="default_categories" value="social">
+                  <input type="checkbox" name="default_categories" value="social" {{if index .EnabledCategories "social"}}checked{{end}}>
                   <span>💬 Social</span>
                 </label>
                 <label class="category-toggle-box">
-                  <input type="checkbox" name="default_categories" value="maps">
+                  <input type="checkbox" name="default_categories" value="maps" {{if index .EnabledCategories "maps"}}checked{{end}}>
                   <span>🗺️ Maps</span>
                 </label>
               </div>
@@ -158,20 +158,20 @@
                 <div class="settings-sublabel">What language do you prefer for search? Choose Auto-detect to let SearXGo detect the query language.</div>
               </div>
               <select id="language-select" name="language" class="form-select" style="min-width: 200px;">
-                <option value="all">Default language [all]</option>
-                <option value="auto">Auto-detect [auto]</option>
-                <option value="en" selected>English [en] 🌐</option>
-                <option value="id">Indonesia [id] 🇮🇩</option>
-                <option value="de">Deutsch [de] 🇩🇪</option>
-                <option value="fr">Français [fr] 🇫🇷</option>
-                <option value="es">Español [es] 🇪🇸</option>
-                <option value="it">Italiano [it] 🇮🇹</option>
-                <option value="ja">日本語 [ja] 🇯🇵</option>
-                <option value="zh">中文 [zh] 🇨🇳</option>
-                <option value="ko">한국어 [ko] 🇰🇷</option>
-                <option value="ru">Русский [ru] 🇷🇺</option>
-                <option value="pt">Português [pt] 🇧🇷</option>
-                <option value="ar">العربية [ar] 🇸🇦</option>
+                <option value="all" {{if eq .Language "all"}}selected{{end}}>Default language [all]</option>
+                <option value="auto" {{if eq .Language "auto"}}selected{{end}}>Auto-detect [auto]</option>
+                <option value="en" {{if eq .Language "en"}}selected{{end}}>English [en] 🌐</option>
+                <option value="id" {{if eq .Language "id"}}selected{{end}}>Indonesia [id] 🇮🇩</option>
+                <option value="de" {{if eq .Language "de"}}selected{{end}}>Deutsch [de] 🇩🇪</option>
+                <option value="fr" {{if eq .Language "fr"}}selected{{end}}>Français [fr] 🇫🇷</option>
+                <option value="es" {{if eq .Language "es"}}selected{{end}}>Español [es] 🇪🇸</option>
+                <option value="it" {{if eq .Language "it"}}selected{{end}}>Italiano [it] 🇮🇹</option>
+                <option value="ja" {{if eq .Language "ja"}}selected{{end}}>日本語 [ja] 🇯🇵</option>
+                <option value="zh" {{if eq .Language "zh"}}selected{{end}}>中文 [zh] 🇨🇳</option>
+                <option value="ko" {{if eq .Language "ko"}}selected{{end}}>한국어 [ko] 🇰🇷</option>
+                <option value="ru" {{if eq .Language "ru"}}selected{{end}}>Русский [ru] 🇷🇺</option>
+                <option value="pt" {{if eq .Language "pt"}}selected{{end}}>Português [pt] 🇧🇷</option>
+                <option value="ar" {{if eq .Language "ar"}}selected{{end}}>العربية [ar] 🇸🇦</option>
               </select>
             </div>
 
@@ -182,15 +182,15 @@
                 <div class="settings-sublabel">Show possible queries as you type</div>
               </div>
               <select id="autocomplete-provider" name="autocomplete" class="form-select" style="min-width: 200px;">
-                <option value="all" selected>All (Fast Aggregated)</option>
-                <option value="duckduckgo">DuckDuckGo</option>
-                <option value="google">Google</option>
-                <option value="brave">Brave</option>
-                <option value="bing">Bing</option>
-                <option value="wikipedia">Wikipedia</option>
-                <option value="startpage">Startpage</option>
-                <option value="qwant">Qwant</option>
-                <option value="off"> - None / Off - </option>
+                <option value="all" {{if eq .Autocomplete "all"}}selected{{end}}>All (Fast Aggregated)</option>
+                <option value="duckduckgo" {{if eq .Autocomplete "duckduckgo"}}selected{{end}}>DuckDuckGo</option>
+                <option value="google" {{if eq .Autocomplete "google"}}selected{{end}}>Google</option>
+                <option value="brave" {{if eq .Autocomplete "brave"}}selected{{end}}>Brave</option>
+                <option value="bing" {{if eq .Autocomplete "bing"}}selected{{end}}>Bing</option>
+                <option value="wikipedia" {{if eq .Autocomplete "wikipedia"}}selected{{end}}>Wikipedia</option>
+                <option value="startpage" {{if eq .Autocomplete "startpage"}}selected{{end}}>Startpage</option>
+                <option value="qwant" {{if eq .Autocomplete "qwant"}}selected{{end}}>Qwant</option>
+                <option value="off" {{if eq .Autocomplete "off"}}selected{{end}}> - None / Off - </option>
               </select>
             </div>
 
@@ -201,12 +201,12 @@
                 <div class="settings-sublabel">Display website favicons near search results</div>
               </div>
               <select id="favicon-resolver" name="favicon_resolver" class="form-select" style="min-width: 200px;">
-                <option value=""> - None - </option>
-                <option value="kagi" selected>Kagi</option>
-                <option value="duckduckgo">DuckDuckGo</option>
-                <option value="google">Google S2 Favicons</option>
-                <option value="allesedv">AllesEDV</option>
-                <option value="yandex">Yandex</option>
+                <option value="" {{if eq .FaviconResolver ""}}selected{{end}}> - None - </option>
+                <option value="kagi" {{if eq .FaviconResolver "kagi"}}selected{{end}}>Kagi</option>
+                <option value="duckduckgo" {{if eq .FaviconResolver "duckduckgo"}}selected{{end}}>DuckDuckGo</option>
+                <option value="google" {{if eq .FaviconResolver "google"}}selected{{end}}>Google S2 Favicons</option>
+                <option value="allesedv" {{if eq .FaviconResolver "allesedv"}}selected{{end}}>AllesEDV</option>
+                <option value="yandex" {{if eq .FaviconResolver "yandex"}}selected{{end}}>Yandex</option>
               </select>
             </div>
 
@@ -263,11 +263,11 @@
                 <div class="settings-sublabel">Select service used by DOI rewrite</div>
               </div>
               <select id="doi-resolver-select" name="doi_resolver" class="form-select" style="min-width: 200px;">
-                <option value="oadoi.org" selected>oadoi.org - https://oadoi.org/</option>
-                <option value="doi.org">doi.org - https://doi.org/</option>
-                <option value="sci-hub.se">sci-hub.se - https://sci-hub.se/</option>
-                <option value="sci-hub.st">sci-hub.st - https://sci-hub.st/</option>
-                <option value="sci-hub.ru">sci-hub.ru - https://sci-hub.ru/</option>
+                <option value="oadoi.org" {{if eq .DoiResolver "oadoi.org"}}selected{{end}}>oadoi.org - https://oadoi.org/</option>
+                <option value="doi.org" {{if eq .DoiResolver "doi.org"}}selected{{end}}>doi.org - https://doi.org/</option>
+                <option value="sci-hub.se" {{if eq .DoiResolver "sci-hub.se"}}selected{{end}}>sci-hub.se - https://sci-hub.se/</option>
+                <option value="sci-hub.st" {{if eq .DoiResolver "sci-hub.st"}}selected{{end}}>sci-hub.st - https://sci-hub.st/</option>
+                <option value="sci-hub.ru" {{if eq .DoiResolver "sci-hub.ru"}}selected{{end}}>sci-hub.ru - https://sci-hub.ru/</option>
               </select>
             </div>
           </div>
@@ -337,7 +337,7 @@
                         <tr>
                           <td>
                             <label class="toggle-switch">
-                              <input type="checkbox" name="engine_{{.ID}}__{{.Category}}" value="{{.ID}}" {{if .DefaultEnabled}}checked{{end}}>
+                              <input type="checkbox" name="engine_{{.ID}}__{{.Category}}" value="{{.ID}}" {{if $.HasCustomEngines}}{{if index $.EnabledEngines .ID}}checked{{end}}{{else}}{{if .DefaultEnabled}}checked{{end}}{{end}}>
                               <span class="slider"></span>
                             </label>
                           </td>
@@ -391,7 +391,7 @@
                 <div class="settings-sublabel">Redirect YouTube &rarr; Invidious, Reddit &rarr; Libreddit, Twitter &rarr; Nitter, Medium &rarr; Scribe, Imgur &rarr; Rimgo</div>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" id="redirects-toggle" name="redirects" value="true" checked>
+                <input type="checkbox" id="redirects-toggle" name="redirects" value="true" {{if .Redirects}}checked{{end}}>
                 <span class="slider"></span>
               </label>
             </div>
@@ -402,7 +402,7 @@
                 <div class="settings-sublabel">Route thumbnail images through local backend proxy to prevent IP address tracking</div>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" id="proxy-toggle" name="proxy" value="true" checked>
+                <input type="checkbox" id="proxy-toggle" name="proxy" value="true" {{if .Proxy}}checked{{end}}>
                 <span class="slider"></span>
               </label>
             </div>
@@ -413,7 +413,7 @@
                 <div class="settings-sublabel">Strip UTM tracking tokens, fbclid, gclid, and analytics arguments from returned URLs</div>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" id="tracker-stripper-toggle" name="tracker_remover" value="true" checked>
+                <input type="checkbox" id="tracker-stripper-toggle" name="tracker_remover" value="true" {{if .TrackerRemover}}checked{{end}}>
                 <span class="slider"></span>
               </label>
             </div>
@@ -455,13 +455,13 @@
                 <div class="settings-sublabel">Change the language of the layout</div>
               </div>
               <select id="ui-locale" class="form-select" style="min-width:200px;">
-                <option value="en" selected>English</option>
-                <option value="id">Bahasa Indonesia</option>
-                <option value="de">Deutsch</option>
-                <option value="fr">Français</option>
-                <option value="es">Español</option>
-                <option value="ja">日本語</option>
-                <option value="zh">中文</option>
+                <option value="en" {{if eq .Language "en"}}selected{{end}}>English</option>
+                <option value="id" {{if eq .Language "id"}}selected{{end}}>Bahasa Indonesia</option>
+                <option value="de" {{if eq .Language "de"}}selected{{end}}>Deutsch</option>
+                <option value="fr" {{if eq .Language "fr"}}selected{{end}}>Français</option>
+                <option value="es" {{if eq .Language "es"}}selected{{end}}>Español</option>
+                <option value="ja" {{if eq .Language "ja"}}selected{{end}}>日本語</option>
+                <option value="zh" {{if eq .Language "zh"}}selected{{end}}>中文</option>
               </select>
             </div>
 
@@ -481,14 +481,14 @@
                 <div class="settings-sublabel">Choose color scheme style</div>
               </div>
               <select id="theme-select" name="theme" class="form-select" style="min-width:200px;">
-                <option value="dark" selected>Dark Glass (Default)</option>
-                <option value="light">Light Minimal</option>
-                <option value="black">OLED Pitch Black</option>
-                <option value="macchiato">Macchiato</option>
-                <option value="mocha">Mocha</option>
-                <option value="dracula">Dracula</option>
-                <option value="nord">Nord</option>
-                <option value="cyberpunk">Cyberpunk Neon</option>
+                <option value="dark" {{if eq .Theme "dark"}}selected{{end}}>Dark Glass (Default)</option>
+                <option value="light" {{if eq .Theme "light"}}selected{{end}}>Light Minimal</option>
+                <option value="black" {{if eq .Theme "black"}}selected{{end}}>OLED Pitch Black</option>
+                <option value="macchiato" {{if eq .Theme "macchiato"}}selected{{end}}>Macchiato</option>
+                <option value="mocha" {{if eq .Theme "mocha"}}selected{{end}}>Mocha</option>
+                <option value="dracula" {{if eq .Theme "dracula"}}selected{{end}}>Dracula</option>
+                <option value="nord" {{if eq .Theme "nord"}}selected{{end}}>Nord</option>
+                <option value="cyberpunk" {{if eq .Theme "cyberpunk"}}selected{{end}}>Cyberpunk Neon</option>
               </select>
             </div>
 
@@ -498,7 +498,7 @@
                 <div class="settings-sublabel">Display search results in the center of the page (Oscar layout)</div>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" id="center-align-toggle">
+                <input type="checkbox" id="center-align-toggle" name="center_alignment" value="true" {{if .CenterAlignment}}checked{{end}}>
                 <span class="slider"></span>
               </label>
             </div>
@@ -509,7 +509,7 @@
                 <div class="settings-sublabel">Open search result links in new browser tabs</div>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" id="newtab-toggle" name="new_tab" value="true" checked>
+                <input type="checkbox" id="newtab-toggle" name="new_tab" value="true" {{if .NewTab}}checked{{end}}>
                 <span class="slider"></span>
               </label>
             </div>
