@@ -330,8 +330,32 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 
 func (h *Handler) ServeIndex(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	catsCookie := "general"
+	if cookie, err := r.Cookie("searxgo_categories"); err == nil && cookie.Value != "" {
+		catsCookie = cookie.Value
+	}
+	catsList := strings.Split(catsCookie, ",")
+	defaultCat := "general"
+	enabledCatsMap := make(map[string]bool)
+	for i, c := range catsList {
+		t := strings.TrimSpace(c)
+		if t != "" {
+			if i == 0 {
+				defaultCat = t
+			}
+			enabledCatsMap[t] = true
+		}
+	}
+	if defaultCat == "" {
+		defaultCat = "general"
+	}
+	enabledCatsMap[defaultCat] = true
+
 	data := map[string]interface{}{
-		"Engines": engine.DefaultRegistry.GetEngineInfos(),
+		"Engines":           engine.DefaultRegistry.GetEngineInfos(),
+		"DefaultCategory":   defaultCat,
+		"DefaultCategories": enabledCatsMap,
 	}
 	var buf bytes.Buffer
 	if err := h.templates.ExecuteTemplate(&buf, "index.html", data); err != nil {
@@ -392,7 +416,7 @@ func (h *Handler) parseSearchRequest(r *http.Request) models.SearchRequest {
 		cat = models.CategorySocial
 	} else if getParam("category_maps") == "1" || getParam("category_maps") == "on" {
 		cat = models.CategoryMaps
-	} else {
+	} else if catStr != "" {
 		switch catStr {
 		case "images", "image":
 			cat = models.CategoryImages
@@ -412,6 +436,35 @@ func (h *Handler) parseSearchRequest(r *http.Request) models.SearchRequest {
 			cat = models.CategoryMusic
 		case "maps", "map":
 			cat = models.CategoryMaps
+		default:
+			cat = models.CategoryGeneral
+		}
+	} else {
+		// Category not explicitly provided in URL or POST form, fallback to default_categories cookie
+		if cookie, err := r.Cookie("searxgo_categories"); err == nil && cookie.Value != "" {
+			firstCat := strings.TrimSpace(strings.Split(cookie.Value, ",")[0])
+			switch strings.ToLower(firstCat) {
+			case "images", "image":
+				cat = models.CategoryImages
+			case "videos", "video":
+				cat = models.CategoryVideos
+			case "news":
+				cat = models.CategoryNews
+			case "it", "code":
+				cat = models.CategoryIT
+			case "science", "sci":
+				cat = models.CategoryScience
+			case "social":
+				cat = models.CategorySocial
+			case "files", "torrents":
+				cat = models.CategoryFiles
+			case "music", "audio":
+				cat = models.CategoryMusic
+			case "maps", "map":
+				cat = models.CategoryMaps
+			default:
+				cat = models.CategoryGeneral
+			}
 		}
 	}
 
@@ -741,7 +794,32 @@ func (h *Handler) ServeCSV(w http.ResponseWriter, r *http.Request, req models.Se
 
 func (h *Handler) ServeSettings(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		_ = r.ParseForm()
+		if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
+			_ = r.ParseMultipartForm(10 << 20)
+		} else {
+			_ = r.ParseForm()
+		}
+
+		getFormVals := func(key string) []string {
+			if r.MultipartForm != nil && r.MultipartForm.Value != nil {
+				if vals, ok := r.MultipartForm.Value[key]; ok {
+					return vals
+				}
+			}
+			if r.PostForm != nil {
+				if vals, ok := r.PostForm[key]; ok {
+					return vals
+				}
+			}
+			return r.Form[key]
+		}
+		getFormVal := func(key string) string {
+			vals := getFormVals(key)
+			if len(vals) > 0 {
+				return vals[0]
+			}
+			return ""
+		}
 
 		setPrefCookie := func(name, val string) {
 			http.SetCookie(w, &http.Cookie{
@@ -753,27 +831,27 @@ func (h *Handler) ServeSettings(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 
-		if theme := r.PostFormValue("theme"); theme != "" {
+		if theme := getFormVal("theme"); theme != "" {
 			setPrefCookie("searxgo_theme", theme)
 		}
-		if safe := r.PostFormValue("safesearch"); safe != "" {
+		if safe := getFormVal("safesearch"); safe != "" {
 			setPrefCookie("searxgo_safesearch", safe)
 		}
-		if lang := r.PostFormValue("language"); lang != "" {
+		if lang := getFormVal("language"); lang != "" {
 			setPrefCookie("searxgo_language", lang)
 		}
-		if ac := r.PostFormValue("autocomplete"); ac != "" {
+		if ac := getFormVal("autocomplete"); ac != "" {
 			setPrefCookie("searxgo_autocomplete", ac)
 		}
-		if fav := r.PostFormValue("favicon_resolver"); fav != "" {
+		if fav := getFormVal("favicon_resolver"); fav != "" {
 			setPrefCookie("searxgo_favicon_resolver", fav)
 		}
-		if doi := r.PostFormValue("doi_resolver"); doi != "" {
+		if doi := getFormVal("doi_resolver"); doi != "" {
 			setPrefCookie("searxgo_doi_resolver", doi)
 		}
 
 		// Checkboxes: unchecked checkboxes in HTML are omitted from form body
-		if r.PostFormValue("new_tab") == "true" || r.PostFormValue("new_tab") == "on" || r.PostFormValue("new_tab") == "1" {
+		if v := getFormVal("new_tab"); v == "true" || v == "on" || v == "1" {
 			setPrefCookie("searxgo_newtab", "true")
 			setPrefCookie("searxgo_new_tab", "true")
 		} else {
@@ -781,45 +859,67 @@ func (h *Handler) ServeSettings(w http.ResponseWriter, r *http.Request) {
 			setPrefCookie("searxgo_new_tab", "false")
 		}
 
-		if r.PostFormValue("infinite_scroll") == "true" || r.PostFormValue("infinite_scroll") == "on" || r.PostFormValue("infinite_scroll") == "1" {
+		if v := getFormVal("infinite_scroll"); v == "true" || v == "on" || v == "1" {
 			setPrefCookie("searxgo_infinite_scroll", "true")
 		} else {
 			setPrefCookie("searxgo_infinite_scroll", "false")
 		}
 
-		if r.PostFormValue("redirects") == "true" || r.PostFormValue("redirects") == "on" || r.PostFormValue("redirects") == "1" {
+		if v := getFormVal("redirects"); v == "true" || v == "on" || v == "1" {
 			setPrefCookie("searxgo_redirects", "true")
 		} else {
 			setPrefCookie("searxgo_redirects", "false")
 		}
 
-		if r.PostFormValue("proxy") == "true" || r.PostFormValue("proxy") == "on" || r.PostFormValue("proxy") == "1" {
+		if v := getFormVal("proxy"); v == "true" || v == "on" || v == "1" {
 			setPrefCookie("searxgo_proxy", "true")
 		} else {
 			setPrefCookie("searxgo_proxy", "false")
 		}
 
-		if r.PostFormValue("tracker_remover") == "true" || r.PostFormValue("tracker_remover") == "on" || r.PostFormValue("tracker_remover") == "1" {
+		if v := getFormVal("tracker_remover"); v == "true" || v == "on" || v == "1" {
 			setPrefCookie("searxgo_tracker_remover", "true")
 		} else {
 			setPrefCookie("searxgo_tracker_remover", "false")
 		}
 
-		if r.PostFormValue("center_alignment") == "true" || r.PostFormValue("center_alignment") == "on" || r.PostFormValue("center_alignment") == "1" {
+		if v := getFormVal("center_alignment"); v == "true" || v == "on" || v == "1" {
 			setPrefCookie("searxgo_center_alignment", "true")
 		} else {
 			setPrefCookie("searxgo_center_alignment", "false")
 		}
 
 		// Categories
-		defaultCats := r.PostForm["default_categories"]
+		defaultCats := getFormVals("default_categories")
 		if len(defaultCats) > 0 {
 			setPrefCookie("searxgo_categories", strings.Join(defaultCats, ","))
+		} else {
+			setPrefCookie("searxgo_categories", "general")
 		}
 
 		// Enabled engines
 		var enabledList []string
-		for key, vals := range r.PostForm {
+		getAllKeysAndVals := func() map[string][]string {
+			res := make(map[string][]string)
+			if r.MultipartForm != nil && r.MultipartForm.Value != nil {
+				for k, v := range r.MultipartForm.Value {
+					res[k] = v
+				}
+			}
+			if r.PostForm != nil {
+				for k, v := range r.PostForm {
+					res[k] = v
+				}
+			}
+			for k, v := range r.Form {
+				if _, ok := res[k]; !ok {
+					res[k] = v
+				}
+			}
+			return res
+		}
+		allFormFields := getAllKeysAndVals()
+		for key, vals := range allFormFields {
 			if strings.HasPrefix(key, "engine_") && len(vals) > 0 {
 				engineID := vals[0]
 				if engineID != "" && engineID != "0" && engineID != "false" {

@@ -1267,9 +1267,9 @@
 
     const savedCats = getCookie('searxgo_categories');
     if (savedCats) {
-      const activeCats = savedCats.split(',');
+      const activeCats = savedCats.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
       form.querySelectorAll('input[name="default_categories"]').forEach(cb => {
-        cb.checked = activeCats.includes(cb.value);
+        cb.checked = activeCats.includes(cb.value.toLowerCase());
       });
     }
 
@@ -1279,6 +1279,8 @@
       btnExport.addEventListener('click', function () {
         const engines = [];
         form.querySelectorAll('input[name^="engine_"]:checked').forEach(cb => engines.push(cb.value));
+        const categories = [];
+        form.querySelectorAll('input[name="default_categories"]:checked').forEach(cb => categories.push(cb.value));
         const data = {
           theme: themeSelect ? themeSelect.value : 'dark',
           safesearch: safeSearchSelect ? safeSearchSelect.value : '0',
@@ -1286,6 +1288,7 @@
           infinite_scroll: infiniteToggle ? infiniteToggle.checked : false,
           new_tab: newtabToggle ? newtabToggle.checked : true,
           method: methodSelect ? methodSelect.value : 'GET',
+          categories: categories,
           engines: engines,
           redirects: document.getElementById('redirects-toggle')?.checked ?? true,
           proxy: document.getElementById('proxy-toggle')?.checked ?? true,
@@ -1318,6 +1321,11 @@
             if (conf.infinite_scroll !== undefined && infiniteToggle) infiniteToggle.checked = conf.infinite_scroll;
             if (conf.new_tab !== undefined && newtabToggle) newtabToggle.checked = conf.new_tab;
             if (conf.method && methodSelect) methodSelect.value = conf.method;
+            if (Array.isArray(conf.categories)) {
+              form.querySelectorAll('input[name="default_categories"]').forEach(cb => {
+                cb.checked = conf.categories.includes(cb.value);
+              });
+            }
             if (Array.isArray(conf.engines)) {
               form.querySelectorAll('input[name^="engine_"]').forEach(cb => {
                 cb.checked = conf.engines.includes(cb.value);
@@ -1423,14 +1431,24 @@
       });
       if (checkedCats.length > 0) {
         setCookie('searxgo_categories', checkedCats.join(','), 365);
+      } else {
+        setCookie('searxgo_categories', 'general', 365);
       }
 
-      // Also dispatch POST to backend for server-side cookie persistence
+      // Also dispatch POST to backend for server-side cookie persistence (URL-encoded)
       try {
+        const formData = new FormData(form);
+        const searchParams = new URLSearchParams();
+        for (const [key, value] of formData.entries()) {
+          searchParams.append(key, value);
+        }
         fetch(form.action || '/settings', {
           method: 'POST',
-          body: new FormData(form),
-          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: searchParams.toString()
         }).catch(() => {});
       } catch (err) {}
 
@@ -1472,6 +1490,30 @@
       document.querySelectorAll('.result-title a, .image-thumb-wrap, .video-title a').forEach(a => {
         a.removeAttribute('target');
       });
+    }
+
+    // Reflect default category on search home page category tabs
+    const savedCats = getCookie('searxgo_categories');
+    if (savedCats) {
+      const activeList = savedCats.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+      if (activeList.length > 0) {
+        const primaryCat = activeList[0];
+        const categoryInputs = document.querySelectorAll('.category-tabs input[name="category"]');
+        if (categoryInputs.length > 0) {
+          categoryInputs.forEach(input => {
+            const isMatch = input.value.toLowerCase() === primaryCat;
+            input.checked = isMatch;
+            const parentLabel = input.closest('.category-tab');
+            if (parentLabel) {
+              if (isMatch) {
+                parentLabel.classList.add('active');
+              } else {
+                parentLabel.classList.remove('active');
+              }
+            }
+          });
+        }
+      }
     }
   }
 

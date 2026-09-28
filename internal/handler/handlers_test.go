@@ -13,6 +13,7 @@ import (
 	"searxgo/internal/aggregator"
 	"searxgo/internal/config"
 	"searxgo/internal/engine"
+	"searxgo/internal/models"
 )
 
 func TestHTTPHandlers(t *testing.T) {
@@ -278,6 +279,61 @@ func TestReverseImageSearch(t *testing.T) {
 	}
 	if !strings.Contains(bodyStr, `value="id" selected`) {
 		t.Errorf("expected template to render language id selected")
+	}
+
+	// 8. Test POST /settings with default_categories, GET /settings, GET / (ServeIndex), and search fallback
+	catForm := strings.NewReader("theme=dark&default_categories=it&default_categories=news")
+	reqPostCats := httptest.NewRequest("POST", "/settings", catForm)
+	reqPostCats.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	recPostCats := httptest.NewRecorder()
+	mux.ServeHTTP(recPostCats, reqPostCats)
+
+	catCookies := recPostCats.Result().Cookies()
+	catCookieMap := make(map[string]string)
+	for _, c := range catCookies {
+		catCookieMap[c.Name] = c.Value
+	}
+	if catCookieMap["searxgo_categories"] != "it,news" {
+		t.Errorf("expected searxgo_categories=it,news, got %s", catCookieMap["searxgo_categories"])
+	}
+
+	// Verify GET /settings renders checked boxes for it and news
+	reqGetCatSettings := httptest.NewRequest("GET", "/settings", nil)
+	reqGetCatSettings.AddCookie(&http.Cookie{Name: "searxgo_categories", Value: "it,news"})
+	recGetCatSettings := httptest.NewRecorder()
+	mux.ServeHTTP(recGetCatSettings, reqGetCatSettings)
+
+	if recGetCatSettings.Code != http.StatusOK {
+		t.Errorf("GET /settings returned %d, want 200", recGetCatSettings.Code)
+	}
+	catBodyStr := recGetCatSettings.Body.String()
+	if !strings.Contains(catBodyStr, `value="it" checked`) {
+		t.Errorf("expected settings template to render it category checked")
+	}
+	if !strings.Contains(catBodyStr, `value="news" checked`) {
+		t.Errorf("expected settings template to render news category checked")
+	}
+
+	// Verify GET / (ServeIndex) renders IT category tab as active and checked
+	reqGetIndex := httptest.NewRequest("GET", "/", nil)
+	reqGetIndex.AddCookie(&http.Cookie{Name: "searxgo_categories", Value: "it,news"})
+	recGetIndex := httptest.NewRecorder()
+	mux.ServeHTTP(recGetIndex, reqGetIndex)
+
+	if recGetIndex.Code != http.StatusOK {
+		t.Errorf("GET / returned %d, want 200", recGetIndex.Code)
+	}
+	indexBodyStr := recGetIndex.Body.String()
+	if !strings.Contains(indexBodyStr, `value="it" checked`) {
+		t.Errorf("expected index template to render IT category tab checked")
+	}
+
+	// Verify parseSearchRequest falls back to searxgo_categories when category parameter is omitted
+	reqSearchFallback := httptest.NewRequest("GET", "/search?q=golang+syntax", nil)
+	reqSearchFallback.AddCookie(&http.Cookie{Name: "searxgo_categories", Value: "it,news"})
+	parsedReq := h.parseSearchRequest(reqSearchFallback)
+	if parsedReq.Category != models.CategoryIT {
+		t.Errorf("expected parsed category to be CategoryIT from cookie, got %s", parsedReq.Category)
 	}
 }
 
