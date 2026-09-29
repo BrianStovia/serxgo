@@ -462,11 +462,61 @@
       if (saved !== null) queryInTitleToggle.checked = (saved === 'true');
     }
 
-    const savedCats = getCookie('searxgo_categories');
+    const savedCats = getCookie('searxgo_categories') || (function(){
+      try { return localStorage.getItem('searxgo_categories'); } catch(e){ return null; }
+    })();
     if (savedCats) {
       const activeCats = savedCats.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
       form.querySelectorAll('input[name="default_categories"]').forEach(cb => {
-        cb.checked = activeCats.includes(cb.value.toLowerCase());
+        const isChecked = activeCats.includes(cb.value.toLowerCase());
+        cb.checked = isChecked;
+        const box = cb.closest('.category-toggle-box');
+        if (box) {
+          if (isChecked) box.classList.add('active');
+          else box.classList.remove('active');
+        }
+      });
+    } else {
+      // Sync active class with server-rendered checked state
+      form.querySelectorAll('input[name="default_categories"]').forEach(cb => {
+        const box = cb.closest('.category-toggle-box');
+        if (box) {
+          if (cb.checked) box.classList.add('active');
+          else box.classList.remove('active');
+        }
+      });
+    }
+
+    // Toggle box change listener to sync .active class immediately
+    form.querySelectorAll('input[name="default_categories"]').forEach(cb => {
+      cb.addEventListener('change', function() {
+        const box = cb.closest('.category-toggle-box');
+        if (box) {
+          if (cb.checked) box.classList.add('active');
+          else box.classList.remove('active');
+        }
+      });
+    });
+
+    // Select All / Clear All category buttons
+    const btnSelectAll = document.getElementById('btn-select-all-cats');
+    if (btnSelectAll) {
+      btnSelectAll.addEventListener('click', function() {
+        form.querySelectorAll('input[name="default_categories"]').forEach(cb => {
+          cb.checked = true;
+          const box = cb.closest('.category-toggle-box');
+          if (box) box.classList.add('active');
+        });
+      });
+    }
+    const btnClearAll = document.getElementById('btn-clear-all-cats');
+    if (btnClearAll) {
+      btnClearAll.addEventListener('click', function() {
+        form.querySelectorAll('input[name="default_categories"]').forEach(cb => {
+          cb.checked = false;
+          const box = cb.closest('.category-toggle-box');
+          if (box) box.classList.remove('active');
+        });
       });
     }
 
@@ -595,23 +645,22 @@
 
     // Form Save Handler
     form.addEventListener('submit', function (e) {
-      if (form.hasAttribute('hx-post')) {
-        if (themeSelect) {
-          window.setTheme(themeSelect.value);
-        }
-        return; // HTMX handles submission and feedback swap
-      }
-      e.preventDefault();
-
-      // Collect enabled engines
+      // 1. Immediately collect and persist all preferences to document.cookie & localStorage
       const checkedEngines = [];
       form.querySelectorAll('input[name^="engine_"]:checked').forEach(cb => {
         checkedEngines.push(cb.value);
       });
       setCookie('searxgo_engines', checkedEngines.join(','), 365);
+      try { localStorage.setItem('searxgo_engines', checkedEngines.join(',')); } catch(e){}
 
-      if (safeSearchSelect) setCookie('searxgo_safesearch', safeSearchSelect.value, 365);
-      if (langSelect) setCookie('searxgo_language', langSelect.value, 365);
+      if (safeSearchSelect) {
+        setCookie('searxgo_safesearch', safeSearchSelect.value, 365);
+        try { localStorage.setItem('searxgo_safesearch', safeSearchSelect.value); } catch(e){}
+      }
+      if (langSelect) {
+        setCookie('searxgo_language', langSelect.value, 365);
+        try { localStorage.setItem('searxgo_language', langSelect.value); } catch(e){}
+      }
       if (themeSelect) {
         window.setTheme(themeSelect.value);
         setCookie('searxgo_theme', themeSelect.value, 365);
@@ -636,58 +685,79 @@
       if (queryInTitleToggle) setCookie('searxgo_query_in_title', queryInTitleToggle.checked ? 'true' : 'false', 365);
 
       const redirectsToggle = document.getElementById('redirects-toggle');
-      if (redirectsToggle) {
-        setCookie('searxgo_redirects', redirectsToggle.checked ? 'true' : 'false', 365);
-      }
+      if (redirectsToggle) setCookie('searxgo_redirects', redirectsToggle.checked ? 'true' : 'false', 365);
 
       const proxyToggleEl = document.getElementById('proxy-toggle');
-      if (proxyToggleEl) {
-        setCookie('searxgo_proxy', proxyToggleEl.checked ? 'true' : 'false', 365);
-      }
+      if (proxyToggleEl) setCookie('searxgo_proxy', proxyToggleEl.checked ? 'true' : 'false', 365);
 
       const acSelectEl = document.getElementById('autocomplete-provider');
-      if (acSelectEl) {
-        setCookie('searxgo_autocomplete', acSelectEl.value, 365);
-      }
+      if (acSelectEl) setCookie('searxgo_autocomplete', acSelectEl.value, 365);
 
       const favSelectEl = document.getElementById('favicon-resolver');
-      if (favSelectEl) {
-        setCookie('searxgo_favicon_resolver', favSelectEl.value, 365);
-      }
+      if (favSelectEl) setCookie('searxgo_favicon_resolver', favSelectEl.value, 365);
 
       const trackerToggleEl = document.getElementById('tracker-stripper-toggle');
-      if (trackerToggleEl) {
-        setCookie('searxgo_tracker_remover', trackerToggleEl.checked ? 'true' : 'false', 365);
-      }
+      if (trackerToggleEl) setCookie('searxgo_tracker_remover', trackerToggleEl.checked ? 'true' : 'false', 365);
 
       const centerToggleEl = document.getElementById('center-align-toggle');
-      if (centerToggleEl) {
-        setCookie('searxgo_center_alignment', centerToggleEl.checked ? 'true' : 'false', 365);
-      }
+      if (centerToggleEl) setCookie('searxgo_center_alignment', centerToggleEl.checked ? 'true' : 'false', 365);
 
       const doiSelectEl = document.getElementById('doi-resolver-select');
-      if (doiSelectEl) {
-        setCookie('searxgo_doi_resolver', doiSelectEl.value, 365);
-      }
+      if (doiSelectEl) setCookie('searxgo_doi_resolver', doiSelectEl.value, 365);
 
+      // Collect and save default categories
       const checkedCats = [];
       form.querySelectorAll('input[name="default_categories"]:checked').forEach(cb => {
-        checkedCats.push(cb.value);
+        const val = cb.value.toLowerCase().trim();
+        if (val) checkedCats.push(val);
       });
-      if (checkedCats.length > 0) {
-        setCookie('searxgo_categories', checkedCats.join(','), 365);
-      } else {
-        setCookie('searxgo_categories', 'general', 365);
+      const catVal = checkedCats.length > 0 ? checkedCats.join(',') : 'general';
+      setCookie('searxgo_categories', catVal, 365);
+      try { localStorage.setItem('searxgo_categories', catVal); } catch(e){}
+
+      // Instant tactile visual feedback on submit button
+      const saveBtn = document.getElementById('btn-save-preferences') || form.querySelector('button[type="submit"]');
+      if (saveBtn) {
+        const origText = saveBtn.innerHTML;
+        saveBtn.innerHTML = '✓ Saved Successfully!';
+        saveBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+        saveBtn.style.color = '#fff';
+        saveBtn.style.boxShadow = '0 0 16px rgba(16, 185, 129, 0.4)';
+        setTimeout(() => {
+          saveBtn.innerHTML = origText;
+          saveBtn.style.background = '';
+          saveBtn.style.color = '';
+          saveBtn.style.boxShadow = '';
+        }, 2500);
       }
 
-      // Also dispatch POST to backend for server-side cookie persistence (URL-encoded)
+      const saveStatus = document.getElementById('save-status-text');
+      if (saveStatus) {
+        saveStatus.style.display = 'inline';
+        setTimeout(() => { saveStatus.style.display = 'none'; }, 2500);
+      }
+
+      const msg = document.getElementById('save-feedback');
+      if (msg) {
+        msg.textContent = '✓ Preferences successfully saved to local browser cookies!';
+        msg.style.display = 'block';
+        setTimeout(() => { msg.style.display = 'none'; }, 3500);
+      }
+
+      // If HTMX is active on this form, let HTMX handle the network submission
+      if (form.hasAttribute('hx-post')) {
+        return;
+      }
+
+      // Fallback for non-HTMX form submission
+      e.preventDefault();
       try {
         const formData = new FormData(form);
         const searchParams = new URLSearchParams();
         for (const [key, value] of formData.entries()) {
           searchParams.append(key, value);
         }
-        fetch(form.action || '/settings', {
+        fetch(form.action || '/preferences', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -696,14 +766,6 @@
           body: searchParams.toString()
         }).catch(() => {});
       } catch (err) {}
-
-      const msg = document.getElementById('save-feedback');
-      if (msg) {
-        msg.textContent = '✓ Preferences successfully saved to local browser cookies!';
-        msg.style.display = 'block';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        setTimeout(() => { msg.style.display = 'none'; }, 3000);
-      }
     });
 
     // Real-time Bangs & Syntax Table Filter

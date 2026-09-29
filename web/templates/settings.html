@@ -126,11 +126,17 @@
           <div class="settings-group">
             <!-- Default Categories Grid -->
             <div style="margin-bottom: 1.5rem;">
-              <div class="settings-label" style="margin-bottom:0.35rem;">Default Categories</div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem; flex-wrap:wrap; gap:0.5rem;">
+                <div class="settings-label">Default Categories</div>
+                <div style="display:flex; gap:0.5rem;">
+                  <button type="button" id="btn-select-all-cats" class="btn-filter" style="padding:0.25rem 0.65rem; font-size:0.75rem; cursor:pointer; border-radius:var(--radius-md);">✓ Select All</button>
+                  <button type="button" id="btn-clear-all-cats" class="btn-filter" style="padding:0.25rem 0.65rem; font-size:0.75rem; cursor:pointer; border-radius:var(--radius-md);">✕ Clear All</button>
+                </div>
+              </div>
               <div class="settings-sublabel" style="margin-bottom:0.75rem;">Categories enabled by default on new searches</div>
-              <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.75rem;">
+              <div class="category-toggle-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.75rem;">
                 {{range .CategoryList}}
-                <label class="category-toggle-box">
+                <label class="category-toggle-box {{if index $.EnabledCategories .ID}}active{{end}}">
                   <input type="checkbox" name="default_categories" value="{{.ID}}" {{if index $.EnabledCategories .ID}}checked{{end}}>
                   <span>{{.Icon}} {{.Name}}</span>
                 </label>
@@ -843,8 +849,9 @@
       </div>
 
       <!-- Action Bar -->
-      <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 1rem;">
-        <button type="submit" class="btn-search" style="padding: 0.8rem 2.5rem; font-size:1rem;">
+      <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end; align-items: center; gap: 1rem; flex-wrap: wrap;">
+        <span id="save-status-text" style="display:none; color: var(--accent-emerald, #10b981); font-weight: 600; font-size: 0.95rem;">✓ Saved!</span>
+        <button type="submit" id="btn-save-preferences" class="btn-search" style="padding: 0.8rem 2.5rem; font-size:1rem; cursor: pointer; min-width: 220px; transition: all 0.2s ease;">
           Save All Preferences
         </button>
       </div>

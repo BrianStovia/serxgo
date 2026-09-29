@@ -161,7 +161,14 @@ func (h *Handler) ServeSettings(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Categories
-		defaultCats := getFormVals("default_categories")
+		defaultCatsRaw := getFormVals("default_categories")
+		var defaultCats []string
+		for _, cat := range defaultCatsRaw {
+			trimmed := strings.ToLower(strings.TrimSpace(cat))
+			if trimmed != "" {
+				defaultCats = append(defaultCats, trimmed)
+			}
+		}
 		if len(defaultCats) > 0 {
 			setPrefCookie("searxgo_categories", strings.Join(defaultCats, ","))
 		} else {
@@ -268,7 +275,7 @@ func (h *Handler) ServeSettings(w http.ResponseWriter, r *http.Request) {
 	catsCookie := getCookieVal("searxgo_categories", "general")
 	enabledCatsMap := make(map[string]bool)
 	for _, c := range strings.Split(catsCookie, ",") {
-		if t := strings.TrimSpace(c); t != "" {
+		if t := strings.ToLower(strings.TrimSpace(c)); t != "" {
 			enabledCatsMap[t] = true
 		}
 	}

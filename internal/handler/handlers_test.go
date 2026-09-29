@@ -499,4 +499,67 @@ func TestHTMXPreferencesSubmission(t *testing.T) {
 	}
 }
 
+func TestSaveAllCategoriesPreferences(t *testing.T) {
+	cfg := &config.Config{
+		Timeout: 3 * time.Second,
+	}
+	reg := engine.NewRegistry()
+	reg.Register(engine.NewWikipediaEngine())
+	agg := aggregator.NewAggregator(reg, cfg.Timeout)
+	h, err := NewHandler(cfg, agg)
+	if err != nil {
+		t.Fatalf("failed to create handler: %v", err)
+	}
+	mux := http.NewServeMux()
+	h.RegisterRoutes(mux)
+
+	cats := []string{"general", "images", "videos", "news", "it", "science", "social", "files", "music", "maps"}
+	var params []string
+	for _, c := range cats {
+		params = append(params, "default_categories="+c)
+	}
+	formBody := strings.Join(params, "&")
+
+	req := httptest.NewRequest("POST", "/preferences", strings.NewReader(formBody))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("HX-Request", "true")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d", rec.Code)
+	}
+
+	cookies := rec.Result().Cookies()
+	var catCookie string
+	for _, c := range cookies {
+		if c.Name == "searxgo_categories" {
+			catCookie = c.Value
+			break
+		}
+	}
+
+	if catCookie != strings.Join(cats, ",") {
+		t.Errorf("expected searxgo_categories=%s, got %s", strings.Join(cats, ","), catCookie)
+	}
+
+	// Verify GET /settings renders all 10 as checked
+	reqSettings := httptest.NewRequest("GET", "/settings", nil)
+	reqSettings.AddCookie(&http.Cookie{Name: "searxgo_categories", Value: catCookie})
+	recSettings := httptest.NewRecorder()
+	mux.ServeHTTP(recSettings, reqSettings)
+
+	if recSettings.Code != http.StatusOK {
+		t.Fatalf("GET /settings returned %d, want 200", recSettings.Code)
+	}
+
+	html := recSettings.Body.String()
+	for _, c := range cats {
+		expected := `value="` + c + `" checked`
+		if !strings.Contains(html, expected) {
+			t.Errorf("expected category %s to be rendered checked in settings, html snippet not found", c)
+		}
+	}
+}
+
 
