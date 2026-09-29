@@ -151,92 +151,100 @@ func (s *Service) Extract(ctx context.Context, input string) (*LiveRoomInfo, err
 
 	// If numeric input, it might be a direct room_id
 	isNumeric := regexp.MustCompile(`^\d{15,25}$`).MatchString(username)
-	var targetURL string
 	if isNumeric {
-		targetURL = fmt.Sprintf("https://www.tiktok.com/api/live/detail/?roomID=%s", username)
-	} else {
-		targetURL = fmt.Sprintf("https://www.tiktok.com/@%s/live", username)
+		return s.FetchRoomDetail(ctx, username, username)
 	}
 
+	var lastOfflineInfo *LiveRoomInfo
+
+	// 1. Try primary official web API endpoint (Fast, structured JSON, bypasses SlardarWAF)
+	if apiInfo, err := s.fetchLiveFromAPI(ctx, username); err == nil && apiInfo != nil {
+		if apiInfo.IsLive {
+			return apiInfo, nil
+		}
+		lastOfflineInfo = apiInfo
+	}
+
+	// 2. Try HTML scraping with WAF solver as secondary fallback
+	targetURL := fmt.Sprintf("https://www.tiktok.com/@%s/live", username)
 	req, err := http.NewRequestWithContext(ctx, "GET", targetURL, nil)
-	if err != nil {
-		return nil, err
-	}
+	if err == nil {
+		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
+		req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
+		req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+		req.Header.Set("Sec-Ch-Ua", `"Chromium";v="126", "Google Chrome";v="126", "Not-A.Brand";v="99"`)
+		req.Header.Set("Sec-Ch-Ua-Mobile", "?0")
+		req.Header.Set("Sec-Ch-Ua-Platform", `"Windows"`)
+		req.Header.Set("Sec-Fetch-Dest", "document")
+		req.Header.Set("Sec-Fetch-Mode", "navigate")
+		req.Header.Set("Sec-Fetch-Site", "none")
 
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
-	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
-	req.Header.Set("Sec-Ch-Ua", `"Chromium";v="126", "Google Chrome";v="126", "Not-A.Brand";v="99"`)
-	req.Header.Set("Sec-Ch-Ua-Mobile", "?0")
-	req.Header.Set("Sec-Ch-Ua-Platform", `"Windows"`)
-	req.Header.Set("Sec-Fetch-Dest", "document")
-	req.Header.Set("Sec-Fetch-Mode", "navigate")
-	req.Header.Set("Sec-Fetch-Site", "none")
+		resp, err := s.httpClient.Do(req)
+		if err == nil {
+			defer resp.Body.Close()
+			bodyBytes, _ := io.ReadAll(resp.Body)
+			bodyStr := string(bodyBytes)
 
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch live page: %w", err)
-	}
-	defer resp.Body.Close()
+			// Check if challenged by SlardarWAF
+			if csMatch := csRegex.FindStringSubmatch(bodyStr); len(csMatch) > 1 {
+				if sol, solveErr := SolveSlardarWAF(csMatch[1]); solveErr == nil && sol != "" {
+					retryReq, _ := http.NewRequestWithContext(ctx, "GET", targetURL, nil)
+					retryReq.Header = req.Header.Clone()
+					retryReq.Header.Set("Cookie", fmt.Sprintf("_wafchallengeid=%s", sol))
+					if retryResp, err := s.httpClient.Do(retryReq); err == nil {
+						defer retryResp.Body.Close()
+						if retryBytes, err := io.ReadAll(retryResp.Body); err == nil && len(retryBytes) > len(bodyBytes) {
+							bodyStr = string(retryBytes)
+						}
+					}
+				}
+			}
 
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	bodyStr := string(bodyBytes)
+			// Try SIGI_STATE
+			if m := sigiRegex.FindStringSubmatch(bodyStr); len(m) > 1 {
+				var root map[string]interface{}
+				if err := json.Unmarshal([]byte(m[1]), &root); err == nil {
+					if info := s.parseSigiState(root, username); info != nil {
+						if info.IsLive {
+							return info, nil
+						}
+						if lastOfflineInfo == nil || (lastOfflineInfo.Avatar == "" && info.Avatar != "") {
+							lastOfflineInfo = info
+						}
+					}
+				}
+			}
 
-	// Check if challenged by SlardarWAF
-	if csMatch := csRegex.FindStringSubmatch(bodyStr); len(csMatch) > 1 {
-		sol, solveErr := SolveSlardarWAF(csMatch[1])
-		if solveErr == nil && sol != "" {
-			// Retry request with _wafchallengeid cookie
-			retryReq, _ := http.NewRequestWithContext(ctx, "GET", targetURL, nil)
-			retryReq.Header = req.Header.Clone()
-			retryReq.Header.Set("Cookie", fmt.Sprintf("_wafchallengeid=%s", sol))
-			if retryResp, err := s.httpClient.Do(retryReq); err == nil {
-				defer retryResp.Body.Close()
-				if retryBytes, err := io.ReadAll(retryResp.Body); err == nil && len(retryBytes) > len(bodyBytes) {
-					bodyStr = string(retryBytes)
+			// Try __UNIVERSAL_DATA_FOR_REHYDRATION__
+			if m := rehydrationReg.FindStringSubmatch(bodyStr); len(m) > 1 {
+				var root map[string]interface{}
+				if err := json.Unmarshal([]byte(m[1]), &root); err == nil {
+					if info := s.parseRehydrationData(root, username); info != nil {
+						if info.IsLive {
+							return info, nil
+						}
+						if lastOfflineInfo == nil || (lastOfflineInfo.Avatar == "" && info.Avatar != "") {
+							lastOfflineInfo = info
+						}
+					}
+				}
+			}
+
+			// Try Room ID fallback check
+			if rMatch := roomIDRegex.FindStringSubmatch(bodyStr); len(rMatch) > 1 {
+				if detailInfo, err := s.FetchRoomDetail(ctx, rMatch[1], username); err == nil && detailInfo != nil && detailInfo.IsLive {
+					return detailInfo, nil
 				}
 			}
 		}
 	}
 
-	// Try extracting from __UNIVERSAL_DATA_FOR_REHYDRATION__
-	if m := rehydrationReg.FindStringSubmatch(bodyStr); len(m) > 1 {
-		var root map[string]interface{}
-		if err := json.Unmarshal([]byte(m[1]), &root); err == nil {
-			if info := s.parseRehydrationData(root, username); info != nil {
-				return info, nil
-			}
-		}
+	// 3. Return offline info if profile found
+	if lastOfflineInfo != nil {
+		return lastOfflineInfo, nil
 	}
 
-	// Try extracting from SIGI_STATE
-	if m := sigiRegex.FindStringSubmatch(bodyStr); len(m) > 1 {
-		var root map[string]interface{}
-		if err := json.Unmarshal([]byte(m[1]), &root); err == nil {
-			if info := s.parseSigiState(root, username); info != nil {
-				return info, nil
-			}
-		}
-	}
-
-	// Try Room ID fallback check via Webcast detail API
-	var extractedRoomID string
-	if isNumeric {
-		extractedRoomID = username
-	} else if rMatch := roomIDRegex.FindStringSubmatch(bodyStr); len(rMatch) > 1 {
-		extractedRoomID = rMatch[1]
-	}
-
-	if extractedRoomID != "" {
-		if detailInfo, err := s.FetchRoomDetail(ctx, extractedRoomID, username); err == nil && detailInfo != nil {
-			return detailInfo, nil
-		}
-	}
-
-	// If no live streams found, return offline status with standard metadata
+	// 4. Default fallback
 	return &LiveRoomInfo{
 		IsLive:    false,
 		Username:  username,
@@ -244,6 +252,151 @@ func (s *Service) Extract(ctx context.Context, input string) (*LiveRoomInfo, err
 		ShareURL:  fmt.Sprintf("https://www.tiktok.com/@%s/live", username),
 		Qualities: []StreamQuality{},
 	}, nil
+}
+
+func (s *Service) fetchLiveFromAPI(ctx context.Context, username string) (*LiveRoomInfo, error) {
+	apiURL := fmt.Sprintf("https://www.tiktok.com/api-live/user/room/?aid=1988&app_name=tiktok_web&device_platform=web_pc&sourceType=54&uniqueId=%s", url.QueryEscape(username))
+	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
+	req.Header.Set("Referer", "https://www.tiktok.com/")
+	req.Header.Set("Cookie", "tt-target-idc=useast1a")
+	req.Header.Set("Accept", "application/json, text/plain, */*")
+	req.Header.Set("Sec-Ch-Ua", `"Chromium";v="126", "Google Chrome";v="126", "Not-A.Brand";v="99"`)
+	req.Header.Set("Sec-Ch-Ua-Mobile", "?0")
+	req.Header.Set("Sec-Ch-Ua-Platform", `"Windows"`)
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("api status %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Data struct {
+			User     map[string]interface{} `json:"user"`
+			LiveRoom map[string]interface{} `json:"liveRoom"`
+		} `json:"data"`
+	}
+
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, err
+	}
+
+	if result.Data.User == nil {
+		return nil, fmt.Errorf("user not found in api response")
+	}
+
+	return s.parseUserInfo(result.Data.User, result.Data.LiveRoom, username), nil
+}
+
+func (s *Service) parseUserInfo(user, liveRoom map[string]interface{}, username string) *LiveRoomInfo {
+	if user == nil {
+		return nil
+	}
+
+	nickname := username
+	if n, ok := user["nickname"].(string); ok && n != "" {
+		nickname = n
+	}
+
+	avatar := ""
+	if av, ok := user["avatarLarger"].(string); ok && av != "" {
+		avatar = av
+	} else if av, ok := user["avatarMedium"].(string); ok && av != "" {
+		avatar = av
+	} else if av, ok := user["avatarThumb"].(string); ok && av != "" {
+		avatar = av
+	}
+
+	roomID := ""
+	if r, ok := user["roomId"].(string); ok {
+		roomID = r
+	} else if r, ok := user["roomId"].(float64); ok {
+		roomID = fmt.Sprintf("%.0f", r)
+	}
+
+	statusNum := 0
+	if st, ok := user["status"].(float64); ok {
+		statusNum = int(st)
+	}
+
+	title := ""
+	var viewerCount int64
+	var startedAt int64
+
+	if liveRoom != nil {
+		if t, ok := liveRoom["title"].(string); ok {
+			title = t
+		}
+		if st, ok := liveRoom["startTime"].(float64); ok {
+			startedAt = int64(st)
+		}
+		if lrs, ok := liveRoom["liveRoomStats"].(map[string]interface{}); ok {
+			if uc, ok := lrs["userCount"].(float64); ok {
+				viewerCount = int64(uc)
+			}
+		}
+		if statusNum == 0 {
+			if lrs, ok := liveRoom["status"].(float64); ok {
+				statusNum = int(lrs)
+			}
+		}
+	}
+
+	isLive := (statusNum == 2)
+
+	info := &LiveRoomInfo{
+		IsLive:      isLive,
+		RoomID:      roomID,
+		Username:    username,
+		Nickname:    nickname,
+		Avatar:      avatar,
+		Title:       title,
+		ViewerCount: viewerCount,
+		StartedAt:   startedAt,
+		ShareURL:    fmt.Sprintf("https://www.tiktok.com/@%s/live", username),
+		Qualities:   []StreamQuality{},
+	}
+
+	if liveRoom != nil {
+		if sd, ok := liveRoom["streamData"].(map[string]interface{}); ok {
+			s.populateFromStreamData(info, sd)
+		} else if su, ok := liveRoom["streamUrl"].(map[string]interface{}); ok {
+			s.populateStreams(info, su)
+		}
+	}
+
+	return info
+}
+
+func (s *Service) parseSigiState(root map[string]interface{}, username string) *LiveRoomInfo {
+	liveRoomMap, ok := root["LiveRoom"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+
+	liveRoomUserInfo, _ := liveRoomMap["liveRoomUserInfo"].(map[string]interface{})
+	if liveRoomUserInfo == nil {
+		return nil
+	}
+
+	user, _ := liveRoomUserInfo["user"].(map[string]interface{})
+	liveRoom, _ := liveRoomUserInfo["liveRoom"].(map[string]interface{})
+
+	return s.parseUserInfo(user, liveRoom, username)
 }
 
 func (s *Service) parseRehydrationData(root map[string]interface{}, username string) *LiveRoomInfo {
@@ -257,39 +410,43 @@ func (s *Service) parseRehydrationData(root map[string]interface{}, username str
 		return nil
 	}
 
+	liveRoomUserInfo, _ := liveDetail["liveRoomUserInfo"].(map[string]interface{})
+	if liveRoomUserInfo != nil {
+		user, _ := liveRoomUserInfo["user"].(map[string]interface{})
+		lr, _ := liveRoomUserInfo["liveRoom"].(map[string]interface{})
+		if info := s.parseUserInfo(user, lr, username); info != nil {
+			return info
+		}
+	}
+
 	liveRoom, ok := liveDetail["liveRoom"].(map[string]interface{})
 	if !ok {
 		return nil
 	}
 
 	status, _ := liveRoom["status"].(float64)
-	isLive := int(status) == 2 // 2 = LIVE, 4 = FINISHED/OFFLINE
+	isLive := int(status) == 2
 
 	roomID := fmt.Sprintf("%v", liveRoom["roomId"])
 	title, _ := liveRoom["title"].(string)
-	startTime, _ := liveRoom["startTime"].(float64)
 
-	// Streamer info
-	owner, _ := liveRoom["owner"].(map[string]interface{})
 	nickname := username
 	avatar := ""
-	if owner != nil {
-		if nick, ok := owner["nickname"].(string); ok && nick != "" {
-			nickname = nick
+	if owner, ok := liveRoom["owner"].(map[string]interface{}); ok {
+		if n, ok := owner["nickname"].(string); ok && n != "" {
+			nickname = n
 		}
-		if av, ok := owner["avatarLarger"].(map[string]interface{}); ok {
-			if urlList, ok := av["urlList"].([]interface{}); ok && len(urlList) > 0 {
+		if av, ok := owner["avatar_large"].(map[string]interface{}); ok {
+			if urlList, ok := av["url_list"].([]interface{}); ok && len(urlList) > 0 {
 				avatar, _ = urlList[0].(string)
 			}
 		}
 	}
 
-	// Viewer count
-	liveRoomStats, _ := liveRoom["liveRoomStats"].(map[string]interface{})
 	var viewerCount int64
-	if liveRoomStats != nil {
-		if vc, ok := liveRoomStats["userCount"].(float64); ok {
-			viewerCount = int64(vc)
+	if stats, ok := liveRoom["liveRoomStats"].(map[string]interface{}); ok {
+		if uc, ok := stats["userCount"].(float64); ok {
+			viewerCount = int64(uc)
 		}
 	}
 
@@ -301,65 +458,89 @@ func (s *Service) parseRehydrationData(root map[string]interface{}, username str
 		Avatar:      avatar,
 		Title:       title,
 		ViewerCount: viewerCount,
-		StartedAt:   int64(startTime),
 		ShareURL:    fmt.Sprintf("https://www.tiktok.com/@%s/live", username),
+		Qualities:   []StreamQuality{},
 	}
 
-	// Extract stream URLs
-	streamURLData, _ := liveRoom["streamUrl"].(map[string]interface{})
-	if streamURLData != nil {
+	if sd, ok := liveRoom["streamData"].(map[string]interface{}); ok {
+		s.populateFromStreamData(info, sd)
+	} else if streamURLData, ok := liveRoom["streamUrl"].(map[string]interface{}); ok {
 		s.populateStreams(info, streamURLData)
 	}
 
 	return info
 }
 
-func (s *Service) parseSigiState(root map[string]interface{}, username string) *LiveRoomInfo {
-	liveRoom, ok := root["LiveRoom"].(map[string]interface{})
-	if !ok {
-		return nil
+func (s *Service) populateFromStreamData(info *LiveRoomInfo, sd map[string]interface{}) {
+	pullData, _ := sd["pull_data"].(map[string]interface{})
+	if pullData == nil {
+		return
 	}
 
-	liveRoomUserInfo, _ := liveRoom["liveRoomUserInfo"].(map[string]interface{})
-	if liveRoomUserInfo == nil {
-		return nil
+	streamDataStr, _ := pullData["stream_data"].(string)
+	if streamDataStr == "" {
+		return
 	}
 
-	user, _ := liveRoomUserInfo["user"].(map[string]interface{})
-	nickname := username
-	avatar := ""
-	if user != nil {
-		if n, ok := user["nickname"].(string); ok && n != "" {
-			nickname = n
+	var root map[string]interface{}
+	if err := json.Unmarshal([]byte(streamDataStr), &root); err != nil {
+		return
+	}
+
+	dataMap, _ := root["data"].(map[string]interface{})
+	if dataMap == nil {
+		return
+	}
+
+	order := []string{"origin", "uhd", "hd", "sd", "ld"}
+	for _, key := range order {
+		qObj, ok := dataMap[key].(map[string]interface{})
+		if !ok {
+			continue
 		}
-		if av, ok := user["avatarLarger"].(string); ok {
-			avatar = av
+		mainMap, _ := qObj["main"].(map[string]interface{})
+		if mainMap == nil {
+			continue
+		}
+
+		hlsURL, _ := mainMap["hls"].(string)
+		flvURL, _ := mainMap["flv"].(string)
+
+		qLabel := strings.ToUpper(key)
+		switch key {
+		case "origin":
+			qLabel = "Origin (1080p)"
+		case "uhd":
+			qLabel = "UHD (720p 60fps)"
+		case "hd":
+			qLabel = "HD (720p)"
+		case "sd":
+			qLabel = "SD (540p)"
+		case "ld":
+			qLabel = "Low (360p)"
+		}
+
+		if hlsURL != "" {
+			info.Qualities = append(info.Qualities, StreamQuality{
+				Name: qLabel + " [HLS]",
+				URL:  hlsURL,
+				Type: "m3u8",
+			})
+			if info.StreamURL == "" {
+				info.StreamURL = hlsURL
+			}
+		}
+		if flvURL != "" {
+			info.Qualities = append(info.Qualities, StreamQuality{
+				Name: qLabel + " [FLV]",
+				URL:  flvURL,
+				Type: "flv",
+			})
+			if info.FLVURL == "" {
+				info.FLVURL = flvURL
+			}
 		}
 	}
-
-	liveRoomStats, _ := liveRoomUserInfo["liveRoomStats"].(map[string]interface{})
-	status, _ := liveRoomStats["status"].(float64)
-	isLive := int(status) == 2
-
-	roomID := fmt.Sprintf("%v", liveRoom["roomId"])
-	title, _ := liveRoom["title"].(string)
-
-	info := &LiveRoomInfo{
-		IsLive:    isLive,
-		RoomID:    roomID,
-		Username:  username,
-		Nickname:  nickname,
-		Avatar:    avatar,
-		Title:     title,
-		ShareURL:  fmt.Sprintf("https://www.tiktok.com/@%s/live", username),
-		Qualities: []StreamQuality{},
-	}
-
-	if streamURL, ok := liveRoom["streamUrl"].(map[string]interface{}); ok {
-		s.populateStreams(info, streamURL)
-	}
-
-	return info
 }
 
 // FetchRoomDetail queries TikTok's live room detail API using room_id
@@ -415,7 +596,9 @@ func (s *Service) FetchRoomDetail(ctx context.Context, roomID, username string) 
 		Qualities: []StreamQuality{},
 	}
 
-	if streamURL, ok := liveRoomInfo["streamUrl"].(map[string]interface{}); ok {
+	if sd, ok := liveRoomInfo["streamData"].(map[string]interface{}); ok {
+		s.populateFromStreamData(info, sd)
+	} else if streamURL, ok := liveRoomInfo["streamUrl"].(map[string]interface{}); ok {
 		s.populateStreams(info, streamURL)
 	}
 

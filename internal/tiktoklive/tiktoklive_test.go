@@ -1,6 +1,7 @@
 package tiktoklive
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
@@ -69,5 +70,26 @@ func TestSolveSlardarWAF(t *testing.T) {
 	dVal := int(vMap["d"].(float64))
 	if dVal != targetI {
 		t.Errorf("Expected solution %d, got %d", targetI, dVal)
+	}
+}
+
+func TestExtractLiveRoom(t *testing.T) {
+	svc := NewService()
+	info, err := svc.Extract(context.Background(), "mrbeast")
+	if err != nil {
+		t.Fatalf("Extract failed: %v", err)
+	}
+	if info == nil {
+		t.Fatalf("Extract returned nil info")
+	}
+	t.Logf("mrbeast: IsLive=%v, Nickname=%q, Avatar=%q", info.IsLive, info.Nickname, info.Avatar)
+	if info.Username != "mrbeast" {
+		t.Errorf("Expected username mrbeast, got %q", info.Username)
+	}
+
+	liveInfo, err := svc.Extract(context.Background(), "skynews")
+	if err == nil && liveInfo != nil {
+		t.Logf("skynews: IsLive=%v, Title=%q, Viewers=%d, Qualities=%d, StreamURL=%q", 
+			liveInfo.IsLive, liveInfo.Title, liveInfo.ViewerCount, len(liveInfo.Qualities), liveInfo.StreamURL)
 	}
 }

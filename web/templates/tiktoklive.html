@@ -419,12 +419,12 @@
 
       <!-- Preset Popular Accounts -->
       <div class="preset-chips">
-        <span class="preset-label">🔥 Populer:</span>
+        <span class="preset-label">🔥 Siaran Aktif & Populer:</span>
+        <button type="button" class="preset-pill" onclick="setAccount('skynews')">🔴 @skynews (News 24/7)</button>
+        <button type="button" class="preset-pill" onclick="setAccount('aljazeera')">🔴 @aljazeera (Live)</button>
+        <button type="button" class="preset-pill" onclick="setAccount('tiktok')">🔴 @tiktok (Official)</button>
+        <button type="button" class="preset-pill" onclick="setAccount('redbull')">@redbull</button>
         <button type="button" class="preset-pill" onclick="setAccount('jkt48.official')">@jkt48.official</button>
-        <button type="button" class="preset-pill" onclick="setAccount('raffinagita1717')">@raffinagita1717</button>
-        <button type="button" class="preset-pill" onclick="setAccount('fujiiian')">@fujiiian</button>
-        <button type="button" class="preset-pill" onclick="setAccount('attahalilintar')">@attahalilintar</button>
-        <button type="button" class="preset-pill" onclick="setAccount('scout2015')">@scout2015</button>
         <button type="button" class="preset-pill" onclick="setAccount('mrbeast')">@mrbeast</button>
       </div>
     </div>
@@ -485,9 +485,13 @@
             <span>⛶</span>
             <span>Layar Penuh</span>
           </button>
-          <a id="btnOpenTikTok" href="#" target="_blank" rel="noopener noreferrer" class="btn-action btn-tiktok" title="Buka profil asli di TikTok">
+          <button type="button" class="btn-action" onclick="openPopout()" title="Buka di Jendela Popout Terpisah">
             <span>↗️</span>
-            <span>TikTok Asli</span>
+            <span>Popout Player</span>
+          </button>
+          <a id="btnOpenTikTok" href="#" target="_blank" rel="noopener noreferrer" class="btn-action btn-tiktok" title="Buka siaran langsung di TikTok">
+            <span>🔗</span>
+            <span>TikTok Web</span>
           </a>
         </div>
       </div>
@@ -495,16 +499,22 @@
 
     <!-- Status Box (Offline / Not Found) -->
     <div id="statusBox" class="live-status-box">
+      <div id="statusAvatarWrap" style="display:none; margin-bottom: 1rem;">
+        <img id="statusAvatar" src="" alt="Avatar" style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(239,68,68,0.5); box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+      </div>
       <div id="statusIcon" class="status-icon">😴</div>
       <h3 id="statusTitle" class="status-title">Akun Sedang Tidak Live</h3>
       <p id="statusDesc" class="status-desc">Kreator ini sedang offline atau belum memulai siaran langsung saat ini.</p>
-      <div style="display:flex; justify-content:center; gap:0.75rem;">
+      <div style="display:flex; justify-content:center; gap:0.75rem; flex-wrap: wrap;">
+        <button type="button" class="btn-action" style="background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.5); color: #fff;" onclick="setAccount('skynews')">
+          <span>🔴 Tonton Akun Live: @skynews</span>
+        </button>
         <a id="statusTikTokBtn" href="#" target="_blank" rel="noopener noreferrer" class="btn-action btn-tiktok">
           <span>↗️ Buka Profil di TikTok</span>
         </a>
-        <button type="button" class="btn-action" onclick="document.getElementById('userInput').focus()">
-          <span>🔍 Cari Akun Lain</span>
-        </button>
+        <a id="statusLiveWebBtn" href="#" target="_blank" rel="noopener noreferrer" class="btn-action" style="background: rgba(255,255,255,0.08);">
+          <span>🪟 Buka Web Live TikTok</span>
+        </a>
       </div>
     </div>
   </main>
@@ -514,6 +524,12 @@
     let currentHls = null;
     let currentStreamURL = '';
     let currentQualities = [];
+    let currentUsername = '';
+
+    function openPopout() {
+      if (!currentUsername) return;
+      window.open(`https://www.tiktok.com/@${encodeURIComponent(currentUsername)}/live`, 'TikTokLivePopout', 'width=960,height=720,menubar=no,toolbar=no,location=no,status=no');
+    }
 
     function setAccount(account) {
       document.getElementById('userInput').value = account;
@@ -558,16 +574,19 @@
         loadingBox.style.display = 'none';
 
         if (data.error) {
-          showStatus('⚠️', 'Gagal Memuat Siaran', data.error, `https://www.tiktok.com/@${encodeURIComponent(userInput)}`);
+          showStatus('⚠️', 'Gagal Memuat Siaran', data.error, `https://www.tiktok.com/@${encodeURIComponent(userInput)}`, null, userInput);
           return;
         }
 
         if (!data.is_live || !data.stream_url) {
+          const displayUser = data.nickname ? `${data.nickname} (@${data.username})` : `@${data.username}`;
           showStatus(
             '😴', 
-            `@${data.username} Sedang Offline`, 
-            'Kreator ini sedang tidak melakukan siaran langsung (Live) di TikTok saat ini.', 
-            data.share_url || `https://www.tiktok.com/@${data.username}/live`
+            `${displayUser} Sedang Offline`, 
+            'Kreator ini sedang tidak melakukan siaran langsung (Live) di TikTok saat ini. Silakan coba akun lain yang sedang aktif atau klik tombol di bawah untuk membuka jadwal di TikTok.', 
+            data.share_url || `https://www.tiktok.com/@${data.username}/live`,
+            data.avatar,
+            data.username
           );
           return;
         }
@@ -577,7 +596,7 @@
 
       } catch (err) {
         loadingBox.style.display = 'none';
-        showStatus('⚠️', 'Terjadi Kendala Koneksi', 'Tidak dapat menghubungi server TikTok atau koneksi terputus. Silakan coba lagi.', '#');
+        showStatus('⚠️', 'Terjadi Kendala Koneksi', 'Tidak dapat menghubungi server TikTok atau koneksi terputus. Silakan coba lagi.', '#', null, userInput);
       }
     }
 
@@ -585,6 +604,7 @@
       const playerContainer = document.getElementById('playerContainer');
       const videoEl = document.getElementById('liveVideo');
 
+      currentUsername = data.username;
       document.getElementById('streamerNickname').textContent = data.nickname || data.username;
       document.getElementById('streamerUsername').textContent = '@' + data.username;
       document.getElementById('streamTitle').textContent = data.title || 'Siaran Langsung TikTok Live';
@@ -682,11 +702,23 @@
       playHlsStream(newURL);
     }
 
-    function showStatus(icon, title, desc, link) {
+    function showStatus(icon, title, desc, link, avatar, username) {
       const statusBox = document.getElementById('statusBox');
       document.getElementById('statusIcon').textContent = icon;
       document.getElementById('statusTitle').textContent = title;
       document.getElementById('statusDesc').textContent = desc;
+
+      const avatarWrap = document.getElementById('statusAvatarWrap');
+      const avatarImg = document.getElementById('statusAvatar');
+      if (avatar) {
+        avatarImg.src = avatar;
+        avatarWrap.style.display = 'block';
+        document.getElementById('statusIcon').style.display = 'none';
+      } else {
+        avatarWrap.style.display = 'none';
+        document.getElementById('statusIcon').style.display = 'block';
+      }
+
       const linkBtn = document.getElementById('statusTikTokBtn');
       if (link && link !== '#') {
         linkBtn.href = link;
@@ -694,6 +726,15 @@
       } else {
         linkBtn.style.display = 'none';
       }
+
+      const liveWebBtn = document.getElementById('statusLiveWebBtn');
+      if (username) {
+        liveWebBtn.href = `https://www.tiktok.com/@${encodeURIComponent(username)}/live`;
+        liveWebBtn.style.display = 'inline-flex';
+      } else {
+        liveWebBtn.style.display = 'none';
+      }
+
       statusBox.style.display = 'block';
     }
 
