@@ -25,6 +25,7 @@ import (
 	"searxgo/internal/qr"
 	"searxgo/internal/reader"
 	"searxgo/internal/stats"
+	"searxgo/internal/tiktoklive"
 )
 
 // ==============================================================================
@@ -826,6 +827,58 @@ func (h *Handler) ServeAPIMedia(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(result)
+}
+
+// ==============================================================================
+// 🔴 TikTok Live Direct Stream Viewer & Proxy Handlers
+// ==============================================================================
+
+func (h *Handler) ServeTikTokLive(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	user := strings.TrimSpace(r.URL.Query().Get("user"))
+	if user == "" {
+		user = strings.TrimSpace(r.URL.Query().Get("u"))
+	}
+	data := map[string]interface{}{
+		"User": user,
+	}
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "tiktoklive.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(buf.Bytes())
+}
+
+func (h *Handler) ServeAPITikTokLiveInfo(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	user := strings.TrimSpace(r.URL.Query().Get("user"))
+	if user == "" {
+		user = strings.TrimSpace(r.URL.Query().Get("u"))
+	}
+	if user == "" {
+		user = strings.TrimSpace(r.URL.Query().Get("url"))
+	}
+	if user == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "user or url parameter is required"})
+		return
+	}
+
+	info, err := h.tiktokLiveService.Extract(r.Context(), user)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	json.NewEncoder(w).Encode(info)
+}
+
+func (h *Handler) ServeAPITikTokLiveProxy(w http.ResponseWriter, r *http.Request) {
+	tiktoklive.ServeProxy(w, r)
 }
 
 // ==============================================================================

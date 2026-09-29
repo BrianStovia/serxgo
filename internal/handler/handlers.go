@@ -25,6 +25,7 @@ import (
 	"searxgo/internal/stats"
 	"searxgo/internal/subdomains"
 	"searxgo/internal/tech"
+	"searxgo/internal/tiktoklive"
 	"searxgo/internal/weather"
 	"searxgo/web"
 )
@@ -76,11 +77,12 @@ type Handler struct {
 	subFinder      *subdomains.Finder
 	dnsService     *dns.Service
 	pingService    *ping.Service
-	bypassService  *bypass.Service
-	mediaService   *media.Service
-	newsHubService *newshub.Service
-	weatherService *weather.Service
-	currencyService *currency.Service
+	bypassService     *bypass.Service
+	mediaService      *media.Service
+	newsHubService    *newshub.Service
+	weatherService    *weather.Service
+	currencyService   *currency.Service
+	tiktokLiveService *tiktoklive.Service
 }
 
 func NewHandler(cfg *config.Config, agg *aggregator.Aggregator) (*Handler, error) {
@@ -207,9 +209,10 @@ func NewHandler(cfg *config.Config, agg *aggregator.Aggregator) (*Handler, error
 		pingService:     ping.NewService(),
 		bypassService:   bypass.NewService(),
 		mediaService:    media.NewService(),
-		newsHubService:  newshub.NewService(),
-		weatherService:  weather.NewService(),
-		currencyService: currency.NewService(),
+		newsHubService:    newshub.NewService(),
+		weatherService:    weather.NewService(),
+		currencyService:   currency.NewService(),
+		tiktokLiveService: tiktoklive.NewService(),
 	}, nil
 }
 
@@ -306,6 +309,12 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 
 	mux.HandleFunc("GET /media", h.ServeMedia)
 	mux.HandleFunc("GET /api/media", h.ServeAPIMedia)
+
+	// TikTok Live Direct Stream Viewer & Proxy
+	mux.HandleFunc("GET /tiktoklive", h.ServeTikTokLive)
+	mux.HandleFunc("GET /live/tiktok", h.ServeTikTokLive)
+	mux.HandleFunc("GET /api/tiktoklive/info", h.ServeAPITikTokLiveInfo)
+	mux.HandleFunc("GET /api/tiktoklive/proxy", h.ServeAPITikTokLiveProxy)
 
 	mux.HandleFunc("GET /qr", h.ServeQR)
 	mux.HandleFunc("GET /api/qr/wifi", h.ServeAPIQRWiFi)
@@ -455,7 +464,7 @@ func SecurityHeadersMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "DENY")
 		w.Header().Set("Referrer-Policy", "no-referrer")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: https: http:; font-src 'self' data:; connect-src 'self'; frame-src 'self' https://www.youtube.com https://www.dailymotion.com https://player.vimeo.com https://www.bilibili.com;")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: https: http:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; frame-src 'self' https://www.youtube.com https://www.dailymotion.com https://player.vimeo.com https://www.bilibili.com https://www.tiktok.com;")
 		next.ServeHTTP(w, r)
 	})
 }
