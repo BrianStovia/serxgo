@@ -562,4 +562,47 @@ func TestSaveAllCategoriesPreferences(t *testing.T) {
 	}
 }
 
+func TestNewsHubEndpoints(t *testing.T) {
+	cfg := &config.Config{
+		Timeout: 3 * time.Second,
+	}
+	reg := engine.NewRegistry()
+	agg := aggregator.NewAggregator(reg, cfg.Timeout)
+
+	h, err := NewHandler(cfg, agg)
+	if err != nil {
+		t.Fatalf("failed to create handler: %v", err)
+	}
+
+	mux := http.NewServeMux()
+	h.RegisterRoutes(mux)
+
+	// Test GET /news-hub and /newshub (HTML page)
+	for _, path := range []string{"/news-hub", "/newshub"} {
+		req := httptest.NewRequest("GET", path, nil)
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("GET %s returned %d, want 200", path, rec.Code)
+		}
+	}
+
+	// Test GET /api/news-hub and /api/newshub (JSON API)
+	for _, path := range []string{"/api/news-hub?topic=all&region=all", "/api/newshub?topic=tech&region=world&refresh=1"} {
+		req := httptest.NewRequest("GET", path, nil)
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("GET %s returned %d, want 200", path, rec.Code)
+		}
+
+		contentType := rec.Header().Get("Content-Type")
+		if !strings.Contains(contentType, "application/json") {
+			t.Errorf("GET %s returned Content-Type %s, want application/json", path, contentType)
+		}
+	}
+}
+
 

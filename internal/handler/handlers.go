@@ -329,7 +329,11 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/qr/wifi", h.ServeAPIQRWiFi)
 
 	mux.HandleFunc("GET /news-hub", h.ServeNewsHub)
+	mux.HandleFunc("GET /news-hub/", h.ServeNewsHub)
+	mux.HandleFunc("GET /newshub", h.ServeNewsHub)
+	mux.HandleFunc("GET /newshub/", h.ServeNewsHub)
 	mux.HandleFunc("GET /api/newshub", h.ServeAPINewsHub)
+	mux.HandleFunc("GET /api/news-hub", h.ServeAPINewsHub)
 
 	mux.HandleFunc("GET /weather", h.ServeWeather)
 	mux.HandleFunc("GET /api/weather", h.ServeAPIWeather)

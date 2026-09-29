@@ -218,6 +218,9 @@
       try {
         const url = `/api/news-hub?topic=${encodeURIComponent(currentCategory)}&region=${encodeURIComponent(currentRegion)}${force ? '&refresh=1' : ''}`;
         const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
         const data = await res.json();
         loading.style.display = 'none';
 
@@ -228,7 +231,15 @@
         renderArticles();
       } catch (err) {
         loading.style.display = 'none';
-        alert('Failed to load news feeds');
+        console.error('Failed to load news feeds:', err);
+        newsGrid.style.display = 'none';
+        noArticles.style.display = 'block';
+        noArticles.innerHTML = `
+          <div style="font-size: 2.5rem; margin-bottom: 12px;">⚠️</div>
+          <h3 style="color: var(--text-primary); margin-bottom: 8px;">Gagal Memuat Berita Terkini</h3>
+          <p style="color: var(--text-muted); margin-bottom: 16px;">Koneksi ke feed berita sedang mengalami gangguan atau respon tertunda.</p>
+          <button type="button" class="channel-btn active" style="margin: 0 auto; display: inline-flex;" onclick="loadNews(true)">🔄 Coba Muat Ulang</button>
+        `;
       }
     }
 

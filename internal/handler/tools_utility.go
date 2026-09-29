@@ -935,6 +935,9 @@ func (h *Handler) ServeAPINewsHub(w http.ResponseWriter, r *http.Request) {
 	topic := r.URL.Query().Get("topic")
 	region := r.URL.Query().Get("region")
 	query := r.URL.Query().Get("q")
+	if r.URL.Query().Get("refresh") == "1" {
+		h.newsHubService.ClearCache(topic, region)
+	}
 
 	articles, err := h.newsHubService.GetNews(r.Context(), topic, region, query)
 	if err != nil {

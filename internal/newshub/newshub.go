@@ -36,7 +36,7 @@ type FeedSource struct {
 
 var FeedSources = []FeedSource{
 	// 🌍 World / International
-	{Name: "BBC News", URL: "http://feeds.bbci.co.uk/news/world/rss.xml", Icon: "🇬🇧", Category: "world", Region: "world"},
+	{Name: "BBC News", URL: "https://feeds.bbci.co.uk/news/world/rss.xml", Icon: "🇬🇧", Category: "world", Region: "world"},
 	{Name: "Al Jazeera", URL: "https://www.aljazeera.com/xml/rss/all.xml", Icon: "🌍", Category: "world", Region: "asia"},
 	{Name: "The Guardian", URL: "https://www.theguardian.com/world/rss", Icon: "🌐", Category: "world", Region: "europe"},
 	{Name: "DW World", URL: "https://rss.dw.com/rdf/rss-en-all", Icon: "🇩🇪", Category: "world", Region: "europe"},
@@ -45,6 +45,9 @@ var FeedSources = []FeedSource{
 	// 🇮🇩 Indonesia Terkini
 	{Name: "Antara News", URL: "https://www.antaranews.com/rss/terkini.xml", Icon: "🇮🇩", Category: "indonesia", Region: "indonesia"},
 	{Name: "CNN Indonesia", URL: "https://www.cnnindonesia.com/nasional/rss", Icon: "🇮🇩", Category: "indonesia", Region: "indonesia"},
+	{Name: "Detik News", URL: "https://news.detik.com/rss", Icon: "🇮🇩", Category: "indonesia", Region: "indonesia"},
+	{Name: "CNBC Indonesia", URL: "https://www.cnbcindonesia.com/news/rss", Icon: "🇮🇩", Category: "indonesia", Region: "indonesia"},
+	{Name: "Republika", URL: "https://www.republika.co.id/rss", Icon: "🇮🇩", Category: "indonesia", Region: "indonesia"},
 	{Name: "Tempo", URL: "https://rss.tempo.co/nasional", Icon: "🇮🇩", Category: "indonesia", Region: "indonesia"},
 
 	// 🇺🇸 US / Americas
@@ -81,7 +84,7 @@ var FeedSources = []FeedSource{
 	{Name: "Nature", URL: "https://www.nature.com/nature.rss", Icon: "🔬", Category: "science", Region: "world"},
 
 	// ⚽ Sports
-	{Name: "BBC Sport", URL: "http://feeds.bbci.co.uk/sport/rss.xml", Icon: "⚽", Category: "sports", Region: "world"},
+	{Name: "BBC Sport", URL: "https://feeds.bbci.co.uk/sport/rss.xml", Icon: "⚽", Category: "sports", Region: "world"},
 	{Name: "ESPN", URL: "https://www.espn.com/espn/rss/news", Icon: "🏆", Category: "sports", Region: "world"},
 }
 
@@ -103,6 +106,25 @@ func NewService() *Service {
 		},
 		cache: make(map[string]*cachedFeed),
 	}
+}
+
+// ClearCache clears the in-memory cache for a category/region, or all if empty
+func (s *Service) ClearCache(category, region string) {
+	s.cacheMu.Lock()
+	defer s.cacheMu.Unlock()
+	if category == "" && region == "" {
+		s.cache = make(map[string]*cachedFeed)
+		return
+	}
+	cat := strings.ToLower(strings.TrimSpace(category))
+	if cat == "" {
+		cat = "all"
+	}
+	reg := strings.ToLower(strings.TrimSpace(region))
+	if reg == "" {
+		reg = "all"
+	}
+	delete(s.cache, cat+":"+reg)
 }
 
 // GetNews returns aggregated articles, optionally filtered by category, region, and search keyword
