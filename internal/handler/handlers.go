@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -310,9 +311,17 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /media", h.ServeMedia)
 	mux.HandleFunc("GET /api/media", h.ServeAPIMedia)
 
-	// TikTok Live Direct Stream Viewer & Proxy
+	// TikTok Live Direct Stream Viewer & Proxy (with aliases & trailing slash support)
 	mux.HandleFunc("GET /tiktoklive", h.ServeTikTokLive)
+	mux.HandleFunc("GET /tiktoklive/", h.ServeTikTokLive)
+	mux.HandleFunc("GET /tiktok-live", h.ServeTikTokLive)
+	mux.HandleFunc("GET /tiktok-live/", h.ServeTikTokLive)
+	mux.HandleFunc("GET /tiktok", h.ServeTikTokLive)
+	mux.HandleFunc("GET /tiktok/", h.ServeTikTokLive)
+	mux.HandleFunc("GET /live", h.ServeTikTokLive)
+	mux.HandleFunc("GET /live/", h.ServeTikTokLive)
 	mux.HandleFunc("GET /live/tiktok", h.ServeTikTokLive)
+	mux.HandleFunc("GET /live/tiktok/", h.ServeTikTokLive)
 	mux.HandleFunc("GET /api/tiktoklive/info", h.ServeAPITikTokLiveInfo)
 	mux.HandleFunc("GET /api/tiktoklive/proxy", h.ServeAPITikTokLiveProxy)
 
@@ -368,6 +377,20 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 		w.Header().Set("Pragma", "no-cache")
 		fileServer.ServeHTTP(w, r)
 	}))
+
+	// Fallback custom 404 handler for any unmapped route
+	mux.HandleFunc("/", h.ServeNotFound)
+}
+
+func (h *Handler) ServeNotFound(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotFound)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	var buf bytes.Buffer
+	if err := h.templates.ExecuteTemplate(&buf, "404.html", map[string]interface{}{"Path": r.URL.Path}); err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	w.Write(buf.Bytes())
 }
 
 func (h *Handler) ServeManifest(w http.ResponseWriter, r *http.Request) {

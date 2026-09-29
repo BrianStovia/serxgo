@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 - Halaman Tidak Ditemukan - SearXGo</title>
+  <link rel="stylesheet" href="/static/css/main.css?v=4.0">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
+  <script src="/static/js/htmx.min.js"></script>
+  <style>
+    .error-wrapper {
+      max-width: 800px;
+      margin: 4rem auto 6rem;
+      padding: 0 1.5rem;
+      text-align: center;
+    }
+    .error-code {
+      font-size: 7rem;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      background: linear-gradient(135deg, #ef4444, #a855f7, #6366f1);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1rem;
+      user-select: none;
+    }
+    .error-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 0.75rem;
+    }
+    .error-desc {
+      color: var(--text-secondary);
+      font-size: 1rem;
+      max-width: 520px;
+      margin: 0 auto 2rem;
+      line-height: 1.6;
+    }
+    .error-search-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: 16px;
+      padding: 0.5rem;
+      display: flex;
+      gap: 0.5rem;
+      max-width: 550px;
+      margin: 0 auto 2.5rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+    .error-search-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 0.75rem 1rem;
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      outline: none;
+    }
+    .error-search-btn {
+      background: var(--accent-primary, #6366f1);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 0.75rem 1.25rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: opacity 0.2s;
+    }
+    .error-search-btn:hover {
+      opacity: 0.9;
+    }
+    .quick-links-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.85rem;
+      margin-top: 1rem;
+    }
+    .quick-link-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: 14px;
+      padding: 1rem;
+      text-align: left;
+      text-decoration: none;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transition: all 0.2s ease;
+    }
+    .quick-link-card:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+      background: rgba(99, 102, 241, 0.08);
+      transform: translateY(-2px);
+    }
+    .quick-icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+    .quick-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .quick-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body hx-boost="true">
+  <!-- Standard Global Header Navbar -->
+  <header class="app-header">
+    <div class="header-left">
+      <a href="/" class="brand-logo" title="Back to SearXGo Home">
+        <span style="font-size:1.35rem;">🪐</span>
+        <span class="brand-name">Sear<span class="brand-accent">X</span>Go</span>
+      </a>
+      <div class="nav-links">
+        <a href="/" class="nav-link">Search</a>
+        <a href="/tiktoklive" class="nav-link">🔴 TikTok Live</a>
+        <a href="/news-hub" class="nav-link">News Pulse</a>
+        <a href="/weather" class="nav-link">Weather</a>
+        <a href="/currency" class="nav-link">Currency</a>
+        <a href="/media" class="nav-link">Media</a>
+      </div>
+    </div>
+    <div class="header-right">
+      <a href="/" class="nav-btn" title="Return to Search Home">
+        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        <span>Home</span>
+      </a>
+      <button class="nav-btn btn-toggle-theme" onclick="toggleTheme()" title="Toggle Dark/Light Mode">🌙</button>
+    </div>
+  </header>
+
+  <main class="error-wrapper">
+    <div class="error-code">404</div>
+    <h1 class="error-title">Halaman Tidak Ditemukan</h1>
+    <p class="error-desc">Alamat halaman yang Anda tuju mungkin salah ketik, telah dipindahkan, atau fitur sedang diperbarui. Coba cari langsung di SearXGo:</p>
+
+    <form action="/search" method="GET" class="error-search-box">
+      <input type="text" name="q" class="error-search-input" placeholder="Ketik kata kunci pencarian..." autofocus required>
+      <button type="submit" class="error-search-btn">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>Cari</span>
+      </button>
+    </form>
+
+    <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; text-align: left;">
+      Jelajahi Fitur Populer:
+    </div>
+    <div class="quick-links-grid">
+      <a href="/tiktoklive" class="quick-link-card">
+        <span class="quick-icon">🔴</span>
+        <div>
+          <div class="quick-title">TikTok Live</div>
+          <div class="quick-subtitle">Nonton siaran langsung</div>
+        </div>
+      </a>
+      <a href="/media" class="quick-link-card">
+        <span class="quick-icon">📥</span>
+        <div>
+          <div class="quick-title">Media Downloader</div>
+          <div class="quick-subtitle">Ekstrak video & audio</div>
+        </div>
+      </a>
+      <a href="/weather" class="quick-link-card">
+        <span class="quick-icon">⛅</span>
+        <div>
+          <div class="quick-title">Weather Radar</div>
+          <div class="quick-subtitle">Prakiraan cuaca 7 hari</div>
+        </div>
+      </a>
+      <a href="/currency" class="quick-link-card">
+        <span class="quick-icon">💱</span>
+        <div>
+          <div class="quick-title">Currency Convert</div>
+          <div class="quick-subtitle">Kurs valuta & kripto live</div>
+        </div>
+      </a>
+      <a href="/settings" class="quick-link-card">
+        <span class="quick-icon">⚙️</span>
+        <div>
+          <div class="quick-title">Pengaturan</div>
+          <div class="quick-subtitle">Kelola mesin & privasi</div>
+        </div>
+      </a>
+      <a href="/" class="quick-link-card">
+        <span class="quick-icon">🪐</span>
+        <div>
+          <div class="quick-title">Beranda Utama</div>
+          <div class="quick-subtitle">Pencarian SearXGo</div>
+        </div>
+      </a>
+    </div>
+  </main>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
