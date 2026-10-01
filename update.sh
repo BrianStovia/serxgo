@@ -94,6 +94,8 @@ echo -e "${CYAN}➜ Fetching latest SearXGo release...${RESET}"
 if [ -d "./.git" ] && [ -f "./cmd/server/main.go" ] && command -v go >/dev/null 2>&1; then
     echo -e "${GREEN}✓ Updating local git repository and compiling latest source...${RESET}"
     git pull --ff-only origin main || git pull origin main || true
+    echo -e "${CYAN}➜ Downloading Go module dependencies...${RESET}"
+    go mod download
     CGO_ENABLED=0 go build -ldflags="-s -w" -o "${TMP_DIR}/searxgo" ./cmd/server
 # Option B: Download prebuilt binary from GitHub Releases / Raw Repo
 else
