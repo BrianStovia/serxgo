@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 	"unicode"
 )
@@ -23,12 +25,28 @@ type TranslationResult struct {
 }
 
 var (
+	// High-performance HTTP client with dedicated connection pooling for high-throughput live chat
 	transClient = &http.Client{
 		Timeout: 4 * time.Second,
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   3 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			MaxIdleConnsPerHost:   30,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   3 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
 	}
-	transCache   = sync.Map{}
+	transCache   sync.Map
 	transCacheSz int64
 )
+
+const maxCacheEntries = 5000
 
 // TranslateText translates text from auto-detected language to target language
 func TranslateText(ctx context.Context, text, targetLang string) (*TranslationResult, error) {
@@ -37,8 +55,9 @@ func TranslateText(ctx context.Context, text, targetLang string) (*TranslationRe
 		return &TranslationResult{Original: text, Translated: text, SourceLang: "auto", TargetLang: targetLang}, nil
 	}
 
-	if targetLang == "" {
-		targetLang = "id"
+	target := strings.ToLower(strings.TrimSpace(targetLang))
+	if target == "" {
+		target = "id"
 	}
 
 	// If purely emojis, symbols, numbers, skip translation
@@ -54,12 +73,12 @@ func TranslateText(ctx context.Context, text, targetLang string) (*TranslationRe
 			Original:   clean,
 			Translated: clean,
 			SourceLang: "auto",
-			TargetLang: targetLang,
+			TargetLang: target,
 		}, nil
 	}
 
 	// Check cache
-	cacheKey := fmt.Sprintf("%s|%s", targetLang, clean)
+	cacheKey := fmt.Sprintf("%s|%s", target, clean)
 	if val, ok := transCache.Load(cacheKey); ok {
 		res := val.(*TranslationResult)
 		copyRes := *res
@@ -67,34 +86,39 @@ func TranslateText(ctx context.Context, text, targetLang string) (*TranslationRe
 		return &copyRes, nil
 	}
 
-	// 1. Try Google Translate client=dict-chrome-ex
-	res, err := translateViaGoogle(ctx, clean, targetLang)
+	// 1. Try Google Translate client=dict-chrome-ex (Fast & Accurate)
+	res, err := translateViaGoogle(ctx, clean, target)
 	if err == nil && res != nil && res.Translated != "" {
 		cacheTranslation(cacheKey, res)
 		return res, nil
 	}
 
-	// 2. Fallback to MyMemory
-	res, err = translateViaMyMemory(ctx, clean, targetLang)
+	// 2. Fallback to MyMemory API
+	res, err = translateViaMyMemory(ctx, clean, target)
 	if err == nil && res != nil && res.Translated != "" {
 		cacheTranslation(cacheKey, res)
 		return res, nil
 	}
 
-	// If both fail, return original
+	// If both fail, return original text gracefully
 	return &TranslationResult{
 		Original:   clean,
 		Translated: clean,
 		SourceLang: "unknown",
-		TargetLang: targetLang,
+		TargetLang: target,
 	}, nil
 }
 
 func cacheTranslation(key string, res *TranslationResult) {
-	if transCacheSz < 3000 {
-		transCache.Store(key, res)
-		transCacheSz++
+	currentSz := atomic.LoadInt64(&transCacheSz)
+	if currentSz >= maxCacheEntries {
+		// Auto-eviction: clear old cache once max capacity is reached to prevent memory leak
+		transCache = sync.Map{}
+		atomic.StoreInt64(&transCacheSz, 0)
 	}
+
+	transCache.Store(key, res)
+	atomic.AddInt64(&transCacheSz, 1)
 }
 
 func translateViaGoogle(ctx context.Context, text, targetLang string) (*TranslationResult, error) {
@@ -117,7 +141,8 @@ func translateViaGoogle(ctx context.Context, text, targetLang string) (*Translat
 		return nil, fmt.Errorf("google translate status %d", resp.StatusCode)
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	// Read limited body (max 512KB) to protect memory
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 512*1024))
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +211,7 @@ func translateViaMyMemory(ctx context.Context, text, targetLang string) (*Transl
 		ResponseStatus int `json:"responseStatus"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 512*1024)).Decode(&data); err != nil {
 		return nil, err
 	}
 
@@ -202,36 +227,65 @@ func translateViaMyMemory(ctx context.Context, text, targetLang string) (*Transl
 	}, nil
 }
 
-// ServeTranslate handles translation HTTP requests
+// ServeTranslate handles translation HTTP requests supporting both GET and POST
 func ServeTranslate(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "*")
+	w.Header().Set("Cache-Control", "public, max-age=120")
 
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	text := strings.TrimSpace(r.URL.Query().Get("text"))
-	target := strings.TrimSpace(r.URL.Query().Get("to"))
+	var text, target string
+
+	if r.Method == http.MethodPost {
+		contentType := r.Header.Get("Content-Type")
+		if strings.Contains(contentType, "application/json") {
+			var body struct {
+				Text string `json:"text"`
+				To   string `json:"to"`
+			}
+			if err := json.NewDecoder(io.LimitReader(r.Body, 64*1024)).Decode(&body); err == nil {
+				text = body.Text
+				target = body.To
+			}
+		} else {
+			_ = r.ParseForm()
+			text = r.FormValue("text")
+			target = r.FormValue("to")
+		}
+	}
+
+	// Fallback to URL query parameters if not provided in POST body
+	if text == "" {
+		text = r.URL.Query().Get("text")
+	}
+	if target == "" {
+		target = r.URL.Query().Get("to")
+	}
+
+	text = strings.TrimSpace(text)
+	target = strings.ToLower(strings.TrimSpace(target))
 	if target == "" {
 		target = "id"
 	}
 
 	if text == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "text parameter is required"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "text parameter is required"})
 		return
 	}
 
 	res, err := TranslateText(r.Context(), text, target)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}
 
-	json.NewEncoder(w).Encode(res)
+	_ = json.NewEncoder(w).Encode(res)
 }
