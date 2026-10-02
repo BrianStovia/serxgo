@@ -1128,7 +1128,7 @@
       <div class="streamer-details-card">
         <div class="streamer-profile">
           <div class="streamer-avatar-box">
-            <img id="streamerAvatar" class="streamer-avatar" src="" alt="Avatar" onerror="this.src='https://ui-avatars.com/api/?name=TikTok&background=ef4444&color=fff'">
+            <img id="streamerAvatar" class="streamer-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" alt="Avatar" onerror="this.src='https://ui-avatars.com/api/?name=TikTok&background=ef4444&color=fff'">
           </div>
           <div>
             <div class="streamer-name">
@@ -1176,7 +1176,7 @@
     <!-- Status Box (Offline / Not Found) -->
     <div id="statusBox" class="live-status-box">
       <div id="statusAvatarWrap" style="display:none; margin-bottom: 1rem;">
-        <img id="statusAvatar" src="" alt="Avatar" style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(239,68,68,0.5); box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+        <img id="statusAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" alt="Avatar" style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(239,68,68,0.5); box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
       </div>
       <div id="statusIcon" class="status-icon">😴</div>
       <h3 id="statusTitle" class="status-title">Akun Sedang Tidak Live</h3>
@@ -1490,76 +1490,82 @@
     function connectLiveChat(username) {
       if (chatEventSource) {
         chatEventSource.close();
+        chatEventSource = null;
       }
 
       const statusPill = document.getElementById('chatStatusPill');
       statusPill.className = 'chat-status-pill connecting';
       statusPill.textContent = 'Menghubungkan...';
 
-      const sseURL = `/api/tiktoklive/chat?user=${encodeURIComponent(username)}`;
-      chatEventSource = new EventSource(sseURL);
+      // Connect asynchronously to decouple SSE from initial browser navigation lifecycle
+      setTimeout(() => {
+        if (!username) return;
+        const sseURL = `/api/tiktoklive/chat?user=${encodeURIComponent(username)}`;
+        const es = new EventSource(sseURL);
+        chatEventSource = es;
 
-      chatEventSource.addEventListener('status', (e) => {
-        try {
-          const data = JSON.parse(e.data);
-          if (data.type === 'error' || data.type === 'disconnected') {
+        es.addEventListener('status', (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            if (data.type === 'error' || data.type === 'disconnected') {
+              statusPill.className = 'chat-status-pill disconnected';
+              statusPill.textContent = 'Offline';
+              addSystemNotice(`⚠️ ${data.message}`);
+            }
+          } catch (_) {}
+        });
+
+        es.addEventListener('connected', (e) => {
+          try {
+            statusPill.className = 'chat-status-pill connected';
+            statusPill.textContent = '🟢 Terhubung';
+            addSystemNotice('✅ Terhubung ke live chat TikTok!');
+          } catch (_) {}
+        });
+
+        es.addEventListener('chat', (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            addChatMessage(data);
+          } catch (_) {}
+        });
+
+        es.addEventListener('gift', (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            addGiftAlert(data);
+          } catch (_) {}
+        });
+
+        es.addEventListener('like', (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            handleIncomingLike(data);
+          } catch (_) {}
+        });
+
+        es.addEventListener('join', (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            if (data.user && data.user.nickname) {
+              addSystemNotice(`👋 ${escapeHtml(data.user.nickname)} bergabung`);
+            }
+          } catch (_) {}
+        });
+
+        es.addEventListener('end', (e) => {
+          try {
             statusPill.className = 'chat-status-pill disconnected';
-            statusPill.textContent = 'Offline';
-            addSystemNotice(`⚠️ ${data.message}`);
-          }
-        } catch (_) {}
-      });
+            statusPill.textContent = 'Siaran Selesai';
+            addSystemNotice('🔴 Siaran langsung TikTok telah berakhir.');
+          } catch (_) {}
+        });
 
-      chatEventSource.addEventListener('connected', (e) => {
-        try {
-          statusPill.className = 'chat-status-pill connected';
-          statusPill.textContent = '🟢 Terhubung';
-          addSystemNotice('✅ Terhubung ke live chat TikTok!');
-        } catch (_) {}
-      });
-
-      chatEventSource.addEventListener('chat', (e) => {
-        try {
-          const data = JSON.parse(e.data);
-          addChatMessage(data);
-        } catch (_) {}
-      });
-
-      chatEventSource.addEventListener('gift', (e) => {
-        try {
-          const data = JSON.parse(e.data);
-          addGiftAlert(data);
-        } catch (_) {}
-      });
-
-      chatEventSource.addEventListener('like', (e) => {
-        try {
-          const data = JSON.parse(e.data);
-          handleIncomingLike(data);
-        } catch (_) {}
-      });
-
-      chatEventSource.addEventListener('join', (e) => {
-        try {
-          const data = JSON.parse(e.data);
-          if (data.user && data.user.nickname) {
-            addSystemNotice(`👋 ${escapeHtml(data.user.nickname)} bergabung`);
-          }
-        } catch (_) {}
-      });
-
-      chatEventSource.addEventListener('end', (e) => {
-        try {
-          statusPill.className = 'chat-status-pill disconnected';
-          statusPill.textContent = 'Siaran Selesai';
-          addSystemNotice('🔴 Siaran langsung TikTok telah berakhir.');
-        } catch (_) {}
-      });
-
-      chatEventSource.onerror = () => {
-        statusPill.className = 'chat-status-pill connecting';
-        statusPill.textContent = 'Menghubungkan ulang...';
-      };
+        es.onerror = () => {
+          statusPill.className = 'chat-status-pill connecting';
+          statusPill.textContent = 'Menghubungkan ulang...';
+        };
+      }, 50);
     }
 
     async function addChatMessage(data) {
@@ -2007,12 +2013,22 @@
     }
 
     // Auto-load if user param is present in URL
-    window.addEventListener('DOMContentLoaded', () => {
-      const inputVal = document.getElementById('userInput').value.trim();
-      if (inputVal) {
-        loadLiveStream(inputVal);
-      }
-    });
+    // Defer initialization until the browser window has fully finished its loading cycle,
+    // ensuring the tab spinner transitions to the static favicon immediately.
+    function initAutoLoad() {
+      setTimeout(() => {
+        const inputVal = document.getElementById('userInput').value.trim();
+        if (inputVal) {
+          loadLiveStream(inputVal);
+        }
+      }, 80);
+    }
+
+    if (document.readyState === 'complete') {
+      initAutoLoad();
+    } else {
+      window.addEventListener('load', initAutoLoad);
+    }
   </script>
 </body>
 </html>
