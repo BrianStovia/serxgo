@@ -446,6 +446,66 @@
       color: #ef4444;
       background: rgba(239, 68, 68, 0.15);
     }
+    .translate-lang-select {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-glass);
+      color: var(--text-primary);
+      border-radius: 6px;
+      padding: 0.22rem 0.35rem;
+      font-size: 0.74rem;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+    .translate-lang-select option {
+      background: #18181b;
+      color: #fff;
+    }
+    .chat-msg-translation {
+      font-size: 0.85rem;
+      color: #f1f5f9;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+    .chat-msg-original-sub {
+      margin-top: 0.25rem;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 0.15rem 0.45rem;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .chat-msg-original-sub:hover {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+    .btn-manual-translate {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-glass);
+      border-radius: 4px;
+      padding: 0.1rem 0.35rem;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      margin-left: 0.4rem;
+      transition: all 0.15s ease;
+    }
+    .btn-manual-translate:hover {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+      border-color: rgba(239, 68, 68, 0.3);
+    }
 
     /* Pinned Gift Banner */
     .gift-banner-card {
@@ -983,6 +1043,21 @@
               <span id="chatStatusPill" class="chat-status-pill connecting">Menghubungkan...</span>
             </div>
             <div class="chat-header-tools">
+              <button type="button" class="btn-chat-tool active" id="btnTranslateToggle" onclick="toggleAutoTranslate()" title="Auto-Translate: Terjemahkan komentar otomatis">
+                <span id="translateIcon">🌐</span> <span id="translateLabel">Terjemah: ON</span>
+              </button>
+              <select id="translateTargetLang" class="translate-lang-select" onchange="changeTranslateTargetLang(this.value)" title="Pilih Bahasa Terjemahan">
+                <option value="id" selected>🇮🇩 ID</option>
+                <option value="en">🇬🇧 EN</option>
+                <option value="ja">🇯🇵 JA</option>
+                <option value="ko">🇰🇷 KO</option>
+                <option value="ar">🇸🇦 AR</option>
+                <option value="es">🇪🇸 ES</option>
+                <option value="fr">🇫🇷 FR</option>
+                <option value="de">🇩🇪 DE</option>
+                <option value="zh">🇨🇳 ZH</option>
+                <option value="ru">🇷🇺 RU</option>
+              </select>
               <button type="button" class="btn-chat-tool active" id="btnAutoScroll" onclick="toggleAutoScroll()" title="Auto-Scroll: Otomatis scroll ke pesan terbaru">📜 Scroll: ON</button>
               <button type="button" class="btn-chat-tool" id="btnSoundToggle" onclick="toggleChatSound()" title="Aktifkan/Nonaktifkan Suara Notifikasi Hadiah">🔔</button>
               <button type="button" class="btn-chat-tool" onclick="clearChatMessages()" title="Bersihkan Pesan">🗑️</button>
@@ -1079,6 +1154,9 @@
     let soundEnabled = true;
     let localLikeCount = 0;
     let giftBannerTimer = null;
+    let autoTranslateEnabled = true;
+    let currentTargetLang = 'id';
+    const translateCache = new Map();
 
     // Web Audio Synthesizer for celebration chime
     let audioCtx = null;
@@ -1386,11 +1464,12 @@
       };
     }
 
-    function addChatMessage(data) {
+    async function addChatMessage(data) {
       const list = document.getElementById('chatMessagesList');
       if (!list) return;
 
       const user = data.user || { nickname: 'Pengguna', username: 'user', avatar: '' };
+      const rawText = data.message || '';
       const row = document.createElement('div');
       row.className = 'chat-msg-row';
 
@@ -1403,21 +1482,70 @@
             <span>${escapeHtml(user.nickname || user.username)}</span>
             ${user.isSelf ? '<span class="chat-badge-pill">Anda</span>' : ''}
           </div>
-          <div class="chat-msg-content">${escapeHtml(data.message || '')}</div>
+          <div class="chat-msg-content">${escapeHtml(rawText)}</div>
         </div>
       `;
 
       list.appendChild(row);
       pruneChatList(list);
 
-      if (autoScrollChat) {
-        list.scrollTop = list.scrollHeight;
-        requestAnimationFrame(() => {
+      const doScroll = () => {
+        if (autoScrollChat) {
           list.scrollTop = list.scrollHeight;
+          requestAnimationFrame(() => {
+            list.scrollTop = list.scrollHeight;
+          });
+        } else {
+          const btn = document.getElementById('btnScrollDown');
+          if (btn) btn.style.display = 'flex';
+        }
+      };
+
+      doScroll();
+
+      // Auto-translation processing
+      if (rawText.trim().length > 0 && !user.isSelf) {
+        if (autoTranslateEnabled) {
+          const targetLang = currentTargetLang;
+          const transResult = await fetchTranslation(rawText, targetLang);
+          if (transResult && transResult.translated && transResult.translated.trim() !== rawText.trim()) {
+            applyTranslationToRow(row, rawText, transResult.translated, transResult.source_lang, targetLang);
+            if (autoScrollChat) doScroll();
+          }
+        }
+      }
+    }
+
+    function applyTranslationToRow(row, originalText, translatedText, sourceLang, targetLang) {
+      const contentDiv = row.querySelector('.chat-msg-content');
+      if (!contentDiv) return;
+
+      const srcTag = sourceLang ? `[${sourceLang.toUpperCase()}] ` : '';
+      let isShowingTranslation = true;
+
+      contentDiv.innerHTML = `
+        <div class="chat-msg-translation">${escapeHtml(translatedText)}</div>
+        <div class="chat-msg-original-sub" title="Klik untuk beralih antara terjemahan dan teks asli">
+          <span>🌐 ${srcTag}Asli: "${escapeHtml(originalText)}"</span>
+        </div>
+      `;
+
+      const subEl = contentDiv.querySelector('.chat-msg-original-sub');
+      if (subEl) {
+        subEl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          isShowingTranslation = !isShowingTranslation;
+          const transEl = contentDiv.querySelector('.chat-msg-translation');
+          if (transEl) {
+            if (isShowingTranslation) {
+              transEl.textContent = translatedText;
+              subEl.innerHTML = `<span>🌐 ${srcTag}Asli: "${escapeHtml(originalText)}"</span>`;
+            } else {
+              transEl.textContent = originalText;
+              subEl.innerHTML = `<span>🌐 Terjemahan [${targetLang.toUpperCase()}]: "${escapeHtml(translatedText)}"</span>`;
+            }
+          }
         });
-      } else {
-        const btn = document.getElementById('btnScrollDown');
-        if (btn) btn.style.display = 'flex';
       }
     }
 
@@ -1581,6 +1709,46 @@
           <span>🧹 Riwayat chat telah dibersihkan. Pesan baru akan tetap masuk secara langsung.</span>
         </div>
       `;
+    }
+
+    async function fetchTranslation(text, targetLang) {
+      if (!text || !text.trim()) return null;
+      const key = `${targetLang}:${text.trim()}`;
+      if (translateCache.has(key)) {
+        return translateCache.get(key);
+      }
+      try {
+        const resp = await fetch(`/api/tiktoklive/translate?text=${encodeURIComponent(text.trim())}&to=${encodeURIComponent(targetLang)}`);
+        if (!resp.ok) return null;
+        const res = await resp.json();
+        if (res && res.translated) {
+          translateCache.set(key, res);
+          return res;
+        }
+      } catch (err) {
+        console.error('Translation error:', err);
+      }
+      return null;
+    }
+
+    function toggleAutoTranslate() {
+      autoTranslateEnabled = !autoTranslateEnabled;
+      const btn = document.getElementById('btnTranslateToggle');
+      const label = document.getElementById('translateLabel');
+      if (autoTranslateEnabled) {
+        btn.classList.add('active');
+        if (label) label.textContent = 'Terjemah: ON';
+        addSystemNotice(`🌐 Auto-terjemah diaktifkan (Target: ${currentTargetLang.toUpperCase()})`);
+      } else {
+        btn.classList.remove('active');
+        if (label) label.textContent = 'Terjemah: OFF';
+        addSystemNotice('🌐 Auto-terjemah dinonaktifkan');
+      }
+    }
+
+    function changeTranslateTargetLang(lang) {
+      currentTargetLang = lang || 'id';
+      addSystemNotice(`🌐 Target terjemahan diubah ke: ${currentTargetLang.toUpperCase()}`);
     }
 
     function handleChatSubmit(e) {

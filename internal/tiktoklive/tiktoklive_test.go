@@ -100,3 +100,14 @@ func TestExtractUser(t *testing.T) {
 		t.Errorf("expected default nickname Pengguna, got %+v", u1)
 	}
 }
+
+func TestTranslateText(t *testing.T) {
+	res, err := TranslateText(context.Background(), "Hello", "id")
+	if err != nil {
+		t.Fatalf("TranslateText error: %v", err)
+	}
+	if res == nil || res.Translated == "" {
+		t.Fatalf("expected translated text, got empty")
+	}
+	t.Logf("Translation: %s -> %s (detected: %s)", res.Original, res.Translated, res.SourceLang)
+}
