@@ -997,7 +997,18 @@ a:hover {
   opacity: 0.65;
 }
 
-.nav-dropdown:hover .dropdown-chevron,
+@media (hover: hover) and (pointer: fine) {
+  .nav-dropdown:hover .dropdown-chevron {
+    transform: rotate(180deg);
+    opacity: 1;
+  }
+  .nav-dropdown:hover .nav-dropdown-panel {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
+}
+
 .nav-dropdown:focus-within .dropdown-chevron,
 .nav-dropdown.open .dropdown-chevron {
   transform: rotate(180deg);
@@ -1023,19 +1034,18 @@ a:hover {
     0 0 0 1px rgba(99, 102, 241, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
   padding: 0.5rem;
-  z-index: 99999;
+  z-index: 999999;
   opacity: 0;
   transform: translateY(-6px) scale(0.97);
   pointer-events: none;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.nav-dropdown:hover .nav-dropdown-panel,
 .nav-dropdown:focus-within .nav-dropdown-panel,
 .nav-dropdown.open .nav-dropdown-panel {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  pointer-events: auto;
+  opacity: 1 !important;
+  transform: translateY(0) scale(1) !important;
+  pointer-events: auto !important;
 }
 
 .header-nav .nav-dropdown-panel {
@@ -3929,6 +3939,15 @@ input:checked + .slider:before {
   /* Results Sticky Header */
   .results-header {
     padding: 0.5rem 0 0 0 !important;
+    overflow: visible !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1000 !important;
+  }
+
+  .results-header .container,
+  .results-header .header-top {
+    overflow: visible !important;
   }
 
   .header-top {
@@ -3948,12 +3967,36 @@ input:checked + .slider:before {
     grid-column: 2 !important;
     gap: 0.35rem !important;
     margin-left: 0 !important;
+    position: relative !important;
+    z-index: 1001 !important;
+    overflow: visible !important;
   }
 
   /* Hide desktop buttons redundant with bottom nav */
   .header-nav > a.nav-btn[href="/"],
   .header-nav .btn-open-bookmarks,
   .header-nav .cmd-k-badge {
+    display: none !important;
+  }
+
+  /* Mobile Hero Top Navigation: Prevent Tools from overflowing / getting pushed off screen */
+  .hero-wrapper .top-nav {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    padding: 0.5rem 0 !important;
+    gap: 0.5rem !important;
+    overflow: visible !important;
+  }
+
+  .hero-wrapper .top-nav .nav-dropdown {
+    margin-right: auto !important;
+    overflow: visible !important;
+  }
+
+  .hero-wrapper .top-nav .cmd-k-badge,
+  .hero-wrapper .top-nav .btn-open-bookmarks {
     display: none !important;
   }
 
@@ -4227,7 +4270,43 @@ html, body {
     padding-left: 0.75rem !important;
     padding-right: 0.75rem !important;
     box-sizing: border-box !important;
-    overflow-x: hidden !important;
+  }
+
+  /* Protect all navigation and header containers from clipping dropdowns */
+  .results-header,
+  .results-header .container,
+  .results-header .header-top,
+  .results-header .header-nav,
+  .app-header,
+  .app-header .container,
+  .app-header .header-nav,
+  .top-nav,
+  .top-nav.container,
+  .hero-wrapper .top-nav,
+  .nav-dropdown {
+    overflow: visible !important;
+  }
+
+  .nav-dropdown-panel {
+    position: absolute !important;
+    top: calc(100% + 8px) !important;
+    max-height: calc(85vh - 75px) !important;
+    max-width: calc(100vw - 20px) !important;
+    width: 280px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    z-index: 999999 !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.92), 0 0 0 1px rgba(99, 102, 241, 0.35) !important;
+  }
+
+  .header-nav .nav-dropdown-panel {
+    right: 0 !important;
+    left: auto !important;
+  }
+
+  .top-nav .nav-dropdown-panel {
+    left: 0 !important;
+    right: auto !important;
   }
 
   .results-layout {

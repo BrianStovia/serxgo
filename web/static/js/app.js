@@ -1124,6 +1124,14 @@
         return;
       }
 
+      if (e.target.closest('.dropdown-item')) {
+        document.querySelectorAll('.nav-dropdown.open').forEach(d => {
+          d.classList.remove('open');
+          d.querySelector('.nav-dropdown-trigger')?.setAttribute('aria-expanded', 'false');
+        });
+        return;
+      }
+
       if (!e.target.closest('.nav-dropdown-panel')) {
         document.querySelectorAll('.nav-dropdown.open').forEach(d => {
           d.classList.remove('open');

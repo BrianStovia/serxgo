@@ -767,7 +767,18 @@ a:hover {
   opacity: 0.65;
 }
 
-.nav-dropdown:hover .dropdown-chevron,
+@media (hover: hover) and (pointer: fine) {
+  .nav-dropdown:hover .dropdown-chevron {
+    transform: rotate(180deg);
+    opacity: 1;
+  }
+  .nav-dropdown:hover .nav-dropdown-panel {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
+}
+
 .nav-dropdown:focus-within .dropdown-chevron,
 .nav-dropdown.open .dropdown-chevron {
   transform: rotate(180deg);
@@ -793,19 +804,18 @@ a:hover {
     0 0 0 1px rgba(99, 102, 241, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
   padding: 0.5rem;
-  z-index: 99999;
+  z-index: 999999;
   opacity: 0;
   transform: translateY(-6px) scale(0.97);
   pointer-events: none;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.nav-dropdown:hover .nav-dropdown-panel,
 .nav-dropdown:focus-within .nav-dropdown-panel,
 .nav-dropdown.open .nav-dropdown-panel {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  pointer-events: auto;
+  opacity: 1 !important;
+  transform: translateY(0) scale(1) !important;
+  pointer-events: auto !important;
 }
 
 .header-nav .nav-dropdown-panel {
