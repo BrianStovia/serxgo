@@ -144,19 +144,37 @@
       overflow: hidden;
       box-shadow: 0 20px 50px rgba(0,0,0,0.6);
       display: none;
-      margin-bottom: 2rem;
+      margin: 0 auto 2rem;
+      max-width: 1060px;
+      transition: max-width 0.3s ease;
     }
+    .player-container.format-landscape {
+      max-width: 1360px;
+    }
+
     .player-chat-grid {
       display: grid;
-      grid-template-columns: 1fr 380px;
-      height: 640px;
-      max-height: 85vh;
+      grid-template-columns: 430px 1fr;
+      height: 740px;
+      max-height: calc(100vh - 140px);
       background: #08080a;
-      transition: grid-template-columns 0.3s ease;
+      transition: grid-template-columns 0.3s ease, height 0.3s ease;
       overflow: hidden;
     }
+    .player-container.format-landscape .player-chat-grid {
+      grid-template-columns: 1fr 380px;
+      height: 640px;
+    }
     .player-chat-grid.theater-mode {
-      grid-template-columns: 1fr;
+      grid-template-columns: 1fr !important;
+    }
+    .player-chat-grid.theater-mode .video-main-column {
+      align-items: center;
+      background: #000000;
+    }
+    .player-container:not(.format-landscape) .player-chat-grid.theater-mode .player-viewport {
+      max-width: 440px;
+      margin: 0 auto;
     }
 
     /* Video Column */
@@ -169,6 +187,7 @@
       max-height: 100%;
       position: relative;
       overflow: hidden;
+      border-right: 1px solid var(--border-glass);
     }
     .player-viewport {
       position: relative;
@@ -176,7 +195,7 @@
       flex: 1;
       min-height: 0;
       height: 100%;
-      background: #000000;
+      background: radial-gradient(circle at center, #13131a 0%, #000000 100%);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -187,6 +206,10 @@
       height: 100%;
       max-height: 100%;
       object-fit: contain;
+      transition: object-fit 0.2s ease;
+    }
+    .player-viewport.video-fit-cover video {
+      object-fit: cover;
     }
     .player-overlay-live {
       position: absolute;
@@ -324,6 +347,11 @@
     .btn-action:hover {
       background: rgba(255,255,255,0.12);
       border-color: rgba(255,255,255,0.2);
+    }
+    .btn-action.active {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.5);
+      color: #fca5a5;
     }
     .btn-action.btn-tiktok {
       background: rgba(239, 68, 68, 0.2);
@@ -837,14 +865,26 @@
     }
 
     @media (max-width: 980px) {
+      .player-container {
+        max-width: 100%;
+        border-radius: 14px;
+      }
       .player-chat-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
         height: auto;
         max-height: none;
       }
       .video-main-column {
         height: auto;
         max-height: none;
+        border-right: none;
+      }
+      .player-viewport {
+        width: 100%;
+        max-width: 420px;
+        height: min(68vh, 540px);
+        margin: 0 auto;
+        flex: none;
       }
       .chat-main-column {
         border-left: none;
@@ -852,9 +892,15 @@
         height: 480px;
         max-height: 480px;
       }
-      .player-viewport {
-        height: 420px;
-        flex: none;
+      .streamer-details-card {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 1rem;
+        gap: 0.8rem;
+      }
+      .streamer-actions {
+        width: 100%;
+        justify-content: flex-start;
       }
     }
   </style>
@@ -990,45 +1036,6 @@
             <div id="qualityButtons" style="display:flex; gap:0.4rem;"></div>
           </div>
 
-          <!-- Streamer & Room Details -->
-          <div class="streamer-details-card">
-            <div class="streamer-profile">
-              <div class="streamer-avatar-box">
-                <img id="streamerAvatar" class="streamer-avatar" src="" alt="Avatar" onerror="this.src='https://ui-avatars.com/api/?name=TikTok&background=ef4444&color=fff'">
-              </div>
-              <div>
-                <div class="streamer-name">
-                  <span id="streamerNickname">Streamer</span>
-                  <span style="color:#06b6d4; font-size:0.95rem;">✓</span>
-                </div>
-                <div id="streamerUsername" class="streamer-handle">@username</div>
-                <div id="streamTitle" class="stream-title">Judul Live Stream</div>
-              </div>
-            </div>
-
-            <div class="streamer-actions">
-              <button type="button" class="btn-action" onclick="copyM3U8()" title="Salin link stream m3u8">
-                <span>📋</span>
-                <span>Salin M3U8</span>
-              </button>
-              <button type="button" class="btn-action" onclick="togglePiP()" title="Picture in Picture">
-                <span>🪟</span>
-                <span>PiP</span>
-              </button>
-              <button type="button" class="btn-action" onclick="toggleFullscreen()" title="Layar Penuh">
-                <span>⛶</span>
-                <span>Layar Penuh</span>
-              </button>
-              <button type="button" class="btn-action" onclick="openPopout()" title="Buka di Jendela Popout Terpisah">
-                <span>↗️</span>
-                <span>Popout Player</span>
-              </button>
-              <a id="btnOpenTikTok" href="#" target="_blank" rel="noopener noreferrer" class="btn-action btn-tiktok" title="Buka siaran langsung di TikTok">
-                <span>🔗</span>
-                <span>TikTok Web</span>
-              </a>
-            </div>
-          </div>
         </div>
 
         <!-- Right: Live Comments Sidebar -->
@@ -1116,6 +1123,54 @@
         </div>
 
       </div>
+
+      <!-- Streamer & Room Details (Full-width Footer) -->
+      <div class="streamer-details-card">
+        <div class="streamer-profile">
+          <div class="streamer-avatar-box">
+            <img id="streamerAvatar" class="streamer-avatar" src="" alt="Avatar" onerror="this.src='https://ui-avatars.com/api/?name=TikTok&background=ef4444&color=fff'">
+          </div>
+          <div>
+            <div class="streamer-name">
+              <span id="streamerNickname">Streamer</span>
+              <span style="color:#06b6d4; font-size:0.95rem;">✓</span>
+            </div>
+            <div id="streamerUsername" class="streamer-handle">@username</div>
+            <div id="streamTitle" class="stream-title">Judul Live Stream</div>
+          </div>
+        </div>
+
+        <div class="streamer-actions">
+          <button type="button" class="btn-action active" id="btnFormatToggle" onclick="togglePlayerFormat()" title="Beralih Format Pemutar (Portrait 9:16 / Landscape 16:9)">
+            <span id="formatIcon">📱</span>
+            <span id="formatLabel">Portrait (9:16)</span>
+          </button>
+          <button type="button" class="btn-action" id="btnFitToggle" onclick="toggleVideoFit()" title="Pilih Pas (Contain) atau Penuh (Cover)">
+            <span id="fitIcon">↔️</span>
+            <span id="fitLabel">Fit: Pas</span>
+          </button>
+          <button type="button" class="btn-action" onclick="copyM3U8()" title="Salin link stream m3u8">
+            <span>📋</span>
+            <span>Salin M3U8</span>
+          </button>
+          <button type="button" class="btn-action" onclick="togglePiP()" title="Picture in Picture">
+            <span>🪟</span>
+            <span>PiP</span>
+          </button>
+          <button type="button" class="btn-action" onclick="toggleFullscreen()" title="Layar Penuh">
+            <span>⛶</span>
+            <span>Layar Penuh</span>
+          </button>
+          <button type="button" class="btn-action" onclick="openPopout()" title="Buka di Jendela Popout Terpisah">
+            <span>↗️</span>
+            <span>Popout Player</span>
+          </button>
+          <a id="btnOpenTikTok" href="#" target="_blank" rel="noopener noreferrer" class="btn-action btn-tiktok" title="Buka siaran langsung di TikTok">
+            <span>🔗</span>
+            <span>TikTok Web</span>
+          </a>
+        </div>
+      </div>
     </div>
 
     <!-- Status Box (Offline / Not Found) -->
@@ -1157,6 +1212,8 @@
     let autoTranslateEnabled = true;
     let currentTargetLang = 'id';
     const translateCache = new Map();
+    let currentFormat = 'portrait';
+    let currentVideoFit = 'contain';
 
     // Web Audio Synthesizer for celebration chime
     let audioCtx = null;
@@ -1206,6 +1263,47 @@
     function openPopout() {
       if (!currentUsername) return;
       window.open(`https://www.tiktok.com/@${encodeURIComponent(currentUsername)}/live`, 'TikTokLivePopout', 'width=960,height=720,menubar=no,toolbar=no,location=no,status=no');
+    }
+
+    function togglePlayerFormat() {
+      const container = document.getElementById('playerContainer');
+      const icon = document.getElementById('formatIcon');
+      const label = document.getElementById('formatLabel');
+      const btn = document.getElementById('btnFormatToggle');
+
+      if (currentFormat === 'portrait') {
+        currentFormat = 'landscape';
+        container.classList.add('format-landscape');
+        if (icon) icon.textContent = '🖥️';
+        if (label) label.textContent = 'Landscape (16:9)';
+        if (btn) btn.classList.remove('active');
+        addSystemNotice('📐 Format pemutar diubah ke Landscape (16:9)');
+      } else {
+        currentFormat = 'portrait';
+        container.classList.remove('format-landscape');
+        if (icon) icon.textContent = '📱';
+        if (label) label.textContent = 'Portrait (9:16)';
+        if (btn) btn.classList.add('active');
+        addSystemNotice('📱 Format pemutar diubah ke Portrait (9:16)');
+      }
+    }
+
+    function toggleVideoFit() {
+      const viewport = document.getElementById('playerViewport');
+      const icon = document.getElementById('fitIcon');
+      const label = document.getElementById('fitLabel');
+
+      if (currentVideoFit === 'contain') {
+        currentVideoFit = 'cover';
+        viewport.classList.add('video-fit-cover');
+        if (icon) icon.textContent = '↕️';
+        if (label) label.textContent = 'Fit: Penuh';
+      } else {
+        currentVideoFit = 'contain';
+        viewport.classList.remove('video-fit-cover');
+        if (icon) icon.textContent = '↔️';
+        if (label) label.textContent = 'Fit: Pas';
+      }
     }
 
     function setAccount(account) {
