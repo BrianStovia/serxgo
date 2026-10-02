@@ -93,3 +93,10 @@ func TestExtractLiveRoom(t *testing.T) {
 			liveInfo.IsLive, liveInfo.Title, liveInfo.ViewerCount, len(liveInfo.Qualities), liveInfo.StreamURL)
 	}
 }
+
+func TestExtractUser(t *testing.T) {
+	u1 := extractUser(nil)
+	if u1 == nil || u1.Nickname != "Pengguna" {
+		t.Errorf("expected default nickname Pengguna, got %+v", u1)
+	}
+}

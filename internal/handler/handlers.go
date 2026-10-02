@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"io/fs"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -189,9 +190,20 @@ func NewHandler(cfg *config.Config, agg *aggregator.Aggregator) (*Handler, error
 		},
 	}
 
-	tmpl, err := template.New("").Funcs(tmplFuncs).ParseFS(web.TemplatesFS, "templates/*.html", "templates/*.xml")
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse embedded templates: %w", err)
+	var tmpl *template.Template
+	if _, err := os.Stat("web/templates"); err == nil {
+		t, parseErr := template.New("").Funcs(tmplFuncs).ParseGlob("web/templates/*.html")
+		if parseErr == nil && t != nil {
+			t.ParseGlob("web/templates/*.xml")
+			tmpl = t
+		}
+	}
+	if tmpl == nil {
+		var err error
+		tmpl, err = template.New("").Funcs(tmplFuncs).ParseFS(web.TemplatesFS, "templates/*.html", "templates/*.xml")
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse embedded templates: %w", err)
+		}
 	}
 
 	return &Handler{
@@ -324,6 +336,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /live/tiktok/", h.ServeTikTokLive)
 	mux.HandleFunc("GET /api/tiktoklive/info", h.ServeAPITikTokLiveInfo)
 	mux.HandleFunc("GET /api/tiktoklive/proxy", h.ServeAPITikTokLiveProxy)
+	mux.HandleFunc("GET /api/tiktoklive/chat", h.ServeAPITikTokLiveChat)
 
 	mux.HandleFunc("GET /qr", h.ServeQR)
 	mux.HandleFunc("GET /api/qr/wifi", h.ServeAPIQRWiFi)

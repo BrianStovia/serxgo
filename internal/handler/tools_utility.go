@@ -881,6 +881,10 @@ func (h *Handler) ServeAPITikTokLiveProxy(w http.ResponseWriter, r *http.Request
 	tiktoklive.ServeProxy(w, r)
 }
 
+func (h *Handler) ServeAPITikTokLiveChat(w http.ResponseWriter, r *http.Request) {
+	tiktoklive.ServeChatSSE(w, r)
+}
+
 // ==============================================================================
 // 📱 QR Studio Handlers
 // ==============================================================================

@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{if .User}}{{.User}} - {{end}}Nonton TikTok Live Langsung - SearXGo</title>
+  <title>{{if .User}}{{.User}} - {{end}}Nonton TikTok Live &amp; Live Chat - SearXGo</title>
   <link rel="stylesheet" href="/static/css/main.css?v=4.2">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔴</text></svg>">
   <script src="/static/js/hls.min.js"></script>
   <script src="/static/js/htmx.min.js"></script>
   <style>
     .live-wrapper {
-      max-width: 1100px;
+      max-width: 1360px;
       margin: 0 auto;
       padding: 1.5rem 1rem 4rem;
     }
@@ -55,8 +55,9 @@
     .live-desc {
       color: var(--text-secondary);
       font-size: 0.95rem;
-      max-width: 600px;
+      max-width: 680px;
       margin: 0 auto;
+      line-height: 1.5;
     }
     .live-input-box {
       background: var(--bg-card);
@@ -134,6 +135,8 @@
       border-color: rgba(239, 68, 68, 0.4);
       color: var(--text-primary);
     }
+
+    /* Player & Chat Layout */
     .player-container {
       background: #000000;
       border: 1px solid var(--border-glass);
@@ -143,15 +146,35 @@
       display: none;
       margin-bottom: 2rem;
     }
+    .player-chat-grid {
+      display: grid;
+      grid-template-columns: 1fr 370px;
+      min-height: 600px;
+      background: #08080a;
+      transition: grid-template-columns 0.3s ease;
+    }
+    .player-chat-grid.theater-mode {
+      grid-template-columns: 1fr;
+    }
+
+    /* Video Column */
+    .video-main-column {
+      display: flex;
+      flex-direction: column;
+      background: #050507;
+      min-width: 0;
+      position: relative;
+    }
     .player-viewport {
       position: relative;
       width: 100%;
-      height: 580px;
-      max-height: 80vh;
-      background: #080808;
+      height: 570px;
+      max-height: 75vh;
+      background: #000000;
       display: flex;
       align-items: center;
       justify-content: center;
+      overflow: hidden;
     }
     .player-viewport video {
       width: 100%;
@@ -192,9 +215,43 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
       z-index: 10;
     }
+
+    /* Floating Hearts Layer over video */
+    .floating-hearts-layer {
+      position: absolute;
+      right: 2rem;
+      bottom: 2rem;
+      width: 100px;
+      height: 250px;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 9;
+    }
+    .floating-heart {
+      position: absolute;
+      bottom: 0;
+      font-size: 1.6rem;
+      animation: floatHeart 2.4s ease-out forwards;
+      opacity: 0.9;
+    }
+    @keyframes floatHeart {
+      0% {
+        opacity: 0.9;
+        transform: translateY(0) scale(0.7) rotate(0deg);
+      }
+      50% {
+        opacity: 1;
+        transform: translateY(-90px) scale(1.15) rotate(15deg);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-220px) scale(1.4) rotate(-20deg);
+      }
+    }
+
     .streamer-details-card {
       background: var(--bg-card);
-      padding: 1.25rem 1.5rem;
+      padding: 1.2rem 1.5rem;
       border-top: 1px solid var(--border-glass);
       display: flex;
       align-items: center;
@@ -211,8 +268,8 @@
       position: relative;
     }
     .streamer-avatar {
-      width: 54px;
-      height: 54px;
+      width: 52px;
+      height: 52px;
       border-radius: 50%;
       object-fit: cover;
       border: 2px solid #ef4444;
@@ -231,30 +288,30 @@
       color: var(--text-muted);
     }
     .stream-title {
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       color: var(--text-secondary);
       margin-top: 0.2rem;
-      max-width: 600px;
+      max-width: 550px;
     }
     .streamer-actions {
       display: flex;
       align-items: center;
-      gap: 0.6rem;
+      gap: 0.5rem;
       flex-wrap: wrap;
     }
     .btn-action {
       background: rgba(255,255,255,0.06);
       border: 1px solid var(--border-glass);
       color: var(--text-primary);
-      padding: 0.5rem 1rem;
+      padding: 0.45rem 0.85rem;
       border-radius: 10px;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       font-weight: 600;
       cursor: pointer;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.35rem;
       transition: all 0.15s ease;
     }
     .btn-action:hover {
@@ -274,8 +331,8 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.75rem 1.5rem;
-      background: rgba(0,0,0,0.4);
+      padding: 0.65rem 1.5rem;
+      background: rgba(0,0,0,0.5);
       border-top: 1px solid rgba(255,255,255,0.05);
       font-size: 0.82rem;
       color: var(--text-muted);
@@ -285,7 +342,7 @@
       background: rgba(255,255,255,0.08);
       border: 1px solid var(--border-glass);
       color: var(--text-secondary);
-      padding: 0.25rem 0.65rem;
+      padding: 0.22rem 0.6rem;
       border-radius: 6px;
       font-size: 0.78rem;
       cursor: pointer;
@@ -297,6 +354,346 @@
       border-color: #ef4444;
       font-weight: 700;
     }
+
+    /* Live Chat Column */
+    .chat-main-column {
+      display: flex;
+      flex-direction: column;
+      background: rgba(14, 14, 18, 0.96);
+      border-left: 1px solid var(--border-glass);
+      height: 100%;
+      min-height: 570px;
+      position: relative;
+    }
+    .chat-header {
+      padding: 0.9rem 1.1rem;
+      background: rgba(20, 20, 26, 0.85);
+      border-bottom: 1px solid var(--border-glass);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(12px);
+    }
+    .chat-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+    }
+    .chat-title-group h2 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .chat-status-pill {
+      font-size: 0.72rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .chat-status-pill.connected {
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+    .chat-status-pill.connecting {
+      background: rgba(234, 179, 8, 0.15);
+      color: #facc15;
+      border: 1px solid rgba(234, 179, 8, 0.3);
+    }
+    .chat-status-pill.disconnected {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .chat-header-tools {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .btn-chat-tool {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      border-radius: 6px;
+      padding: 0.3rem 0.45rem;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-chat-tool:hover {
+      background: rgba(255,255,255,0.08);
+      color: var(--text-primary);
+      border-color: var(--border-glass);
+    }
+    .btn-chat-tool.active {
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.15);
+    }
+
+    /* Pinned Gift Banner */
+    .gift-banner-card {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(239, 68, 68, 0.2));
+      border-bottom: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 0.6rem 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      animation: bannerSlide 0.35s ease-out;
+    }
+    @keyframes bannerSlide {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .gift-banner-icon {
+      font-size: 1.4rem;
+      animation: pulse-dot 1s infinite;
+    }
+    .gift-banner-details {
+      flex: 1;
+      min-width: 0;
+    }
+    .gift-banner-text {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #fbbf24;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .gift-banner-sub {
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+    }
+
+    /* Messages List */
+    .chat-messages-container {
+      flex: 1;
+      height: 430px;
+      overflow-y: auto;
+      padding: 0.85rem 0.9rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      scroll-behavior: smooth;
+    }
+    .chat-messages-container::-webkit-scrollbar {
+      width: 5px;
+    }
+    .chat-messages-container::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.12);
+      border-radius: 4px;
+    }
+    .chat-welcome-tip {
+      background: rgba(255,255,255,0.03);
+      border: 1px dashed var(--border-glass);
+      border-radius: 10px;
+      padding: 0.75rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      line-height: 1.4;
+      margin-bottom: 0.4rem;
+    }
+
+    /* Message Item */
+    .chat-msg-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.55rem;
+      animation: msgFadeIn 0.25s ease-out;
+    }
+    @keyframes msgFadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .chat-msg-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #1f2937;
+    }
+    .chat-msg-body {
+      flex: 1;
+      min-width: 0;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+      padding: 0.4rem 0.65rem;
+    }
+    .chat-msg-sender {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      margin-bottom: 0.15rem;
+    }
+    .chat-msg-sender.self-badge {
+      color: #f43f5e;
+    }
+    .chat-badge-pill {
+      font-size: 0.65rem;
+      padding: 0.05rem 0.35rem;
+      border-radius: 4px;
+      font-weight: 700;
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+    .chat-msg-content {
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      word-break: break-word;
+      line-height: 1.35;
+    }
+
+    /* Gift & System Events */
+    .chat-event-gift {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 10px;
+      padding: 0.45rem 0.7rem;
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      animation: msgFadeIn 0.25s ease-out;
+    }
+    .chat-gift-icon-img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+    }
+    .chat-event-gift-text {
+      font-size: 0.82rem;
+      color: #fde68a;
+      flex: 1;
+    }
+    .chat-event-system {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 0.15rem 0.5rem;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.02);
+      margin: 0.1rem auto;
+      display: inline-block;
+      max-width: 90%;
+    }
+
+    /* Scroll Down Indicator */
+    .btn-scroll-down {
+      position: absolute;
+      bottom: 95px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(239, 68, 68, 0.95);
+      color: #ffffff;
+      border: none;
+      border-radius: 20px;
+      padding: 0.35rem 0.85rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      animation: bounce 1.5s infinite;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translate(-50%, 0); }
+      50% { transform: translate(-50%, -4px); }
+    }
+
+    /* Quick Reaction Buttons */
+    .chat-reactions-row {
+      padding: 0.4rem 0.75rem;
+      background: rgba(18, 18, 22, 0.7);
+      border-top: 1px solid var(--border-glass);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      overflow-x: auto;
+    }
+    .quick-react-btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border-glass);
+      border-radius: 8px;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      color: var(--text-secondary);
+    }
+    .quick-react-btn:hover {
+      background: rgba(255,255,255,0.14);
+      transform: scale(1.08);
+    }
+    .quick-react-btn.btn-heart-like {
+      background: rgba(239, 68, 68, 0.18);
+      border-color: rgba(239, 68, 68, 0.35);
+      color: #fca5a5;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+    .quick-react-btn.btn-heart-like:hover {
+      background: rgba(239, 68, 68, 0.3);
+      color: #ffffff;
+    }
+
+    /* Chat Input Form */
+    .chat-input-row {
+      padding: 0.65rem 0.75rem;
+      background: rgba(16, 16, 20, 0.95);
+      border-top: 1px solid var(--border-glass);
+      display: flex;
+      gap: 0.45rem;
+    }
+    .chat-input-text {
+      flex: 1;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border-glass);
+      border-radius: 10px;
+      padding: 0.55rem 0.85rem;
+      color: var(--text-primary);
+      font-size: 0.86rem;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+    .chat-input-text:focus {
+      border-color: #ef4444;
+    }
+    .btn-send-chat {
+      background: #ef4444;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      padding: 0.55rem 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s ease;
+    }
+    .btn-send-chat:hover {
+      background: #dc2626;
+    }
+
+    /* Status Box (Offline / Not Found) */
     .live-status-box {
       border-radius: 16px;
       padding: 2.5rem 1.5rem;
@@ -338,6 +735,45 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
+    /* Floating re-open chat button when collapsed */
+    .btn-open-chat-float {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: rgba(0,0,0,0.75);
+      color: #fff;
+      border: 1px solid var(--border-glass);
+      border-radius: 8px;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      gap: 0.4rem;
+      backdrop-filter: blur(8px);
+      z-index: 10;
+    }
+    .btn-open-chat-float:hover {
+      background: rgba(239, 68, 68, 0.3);
+      border-color: #ef4444;
+    }
+
+    @media (max-width: 980px) {
+      .player-chat-grid {
+        grid-template-columns: 1fr;
+      }
+      .chat-main-column {
+        border-left: none;
+        border-top: 1px solid var(--border-glass);
+        height: 480px;
+        min-height: 480px;
+      }
+      .player-viewport {
+        height: 420px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -372,7 +808,7 @@
         </button>
         <div class="nav-dropdown-panel" role="menu">
           <div class="dropdown-section-label">🔴 Entertainment &amp; Live</div>
-          <a href="/tiktoklive" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🔴</span><div><div class="dropdown-item-title">TikTok Live Stream</div><div class="dropdown-item-desc">Nonton siaran langsung TikTok bebas gangguan</div></div></a>
+          <a href="/tiktoklive" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">🔴</span><div><div class="dropdown-item-title">TikTok Live Stream &amp; Chat</div><div class="dropdown-item-desc">Nonton siaran langsung dan interaksi komentar real-time</div></div></a>
           <a href="/media" class="dropdown-item" role="menuitem"><span class="dropdown-item-icon">📥</span><div><div class="dropdown-item-title">Media Downloader</div><div class="dropdown-item-desc">Ekstrak video TikTok, YouTube, IG</div></div></a>
           <div class="dropdown-divider"></div>
           <div class="dropdown-section-label">🌤️ Weather &amp; Finance</div>
@@ -393,10 +829,10 @@
     <div class="live-hero">
       <div class="live-hero-badge">
         <span class="live-pulse-dot"></span>
-        <span>TIKTOK LIVE DIRECT VIEWER</span>
+        <span>TIKTOK LIVE DIRECT VIEWER &amp; REAL-TIME CHAT</span>
       </div>
-      <h1 class="live-title">Nonton TikTok Live Langsung</h1>
-      <p class="live-desc">Tonton siaran langsung TikTok secara instan tanpa perlu login atau instal aplikasi. Didukung player HLS anti-buffering dan proxy live stream berkecepatan tinggi.</p>
+      <h1 class="live-title">Nonton TikTok Live &amp; Live Chat</h1>
+      <p class="live-desc">Tonton siaran langsung TikTok tanpa login dan pantau komentar, hadiah (gifts), serta interaksi penonton secara real-time melalui player HLS anti-buffering dan WebSocket WebCast.</p>
     </div>
 
     <!-- Search Input Box -->
@@ -406,22 +842,22 @@
           type="text" 
           id="userInput" 
           class="live-input" 
-          placeholder="Masukkan username TikTok (contoh: @jkt48.official) atau link Live..." 
+          placeholder="Masukkan username TikTok (contoh: aljazeera, skynews, atau link live)..." 
           value="{{.User}}"
           autocomplete="off"
           required
         >
         <button type="submit" id="btnSubmit" class="btn-watch-live">
           <span>▶️</span>
-          <span>Tonton Live</span>
+          <span>Tonton Live &amp; Chat</span>
         </button>
       </form>
 
       <!-- Preset Popular Accounts -->
       <div class="preset-chips">
-        <span class="preset-label">🔥 Siaran Aktif & Populer:</span>
-        <button type="button" class="preset-pill" onclick="setAccount('skynews')">🔴 @skynews (News 24/7)</button>
-        <button type="button" class="preset-pill" onclick="setAccount('aljazeera')">🔴 @aljazeera (Live)</button>
+        <span class="preset-label">🔥 Siaran Populer &amp; Aktif:</span>
+        <button type="button" class="preset-pill" onclick="setAccount('aljazeera')">🔴 @aljazeera (Live Now)</button>
+        <button type="button" class="preset-pill" onclick="setAccount('skynews')">🔴 @skynews (News)</button>
         <button type="button" class="preset-pill" onclick="setAccount('tiktok')">🔴 @tiktok (Official)</button>
         <button type="button" class="preset-pill" onclick="setAccount('redbull')">@redbull</button>
         <button type="button" class="preset-pill" onclick="setAccount('jkt48.official')">@jkt48.official</button>
@@ -432,68 +868,154 @@
     <!-- Loading State -->
     <div id="loadingBox" class="loading-spinner-box">
       <div class="live-spinner"></div>
-      <div style="font-weight: 700; color: var(--text-primary); font-size: 1.1rem; margin-bottom: 0.25rem;">Menghubungkan ke TikTok Live...</div>
-      <div style="color: var(--text-muted); font-size: 0.85rem;">Mengekstrak stream HLS dan data siaran langsung</div>
+      <div style="font-weight: 700; color: var(--text-primary); font-size: 1.1rem; margin-bottom: 0.25rem;">Menghubungkan ke TikTok Live &amp; Komentar...</div>
+      <div style="color: var(--text-muted); font-size: 0.85rem;">Mengekstrak stream HLS, data siaran, dan saluran live chat</div>
     </div>
 
-    <!-- Live Stream Player Container -->
+    <!-- Live Stream Player & Live Comments Grid -->
     <div id="playerContainer" class="player-container">
-      <div class="player-viewport">
-        <div class="player-overlay-live">
-          <span class="live-pulse-dot"></span>
-          <span>LIVE</span>
-        </div>
-        <div class="player-overlay-viewers">
-          <span>👥</span>
-          <span id="viewerCount">0</span> penonton
-        </div>
-        <video id="liveVideo" controls playsinline autoplay></video>
-      </div>
-
-      <!-- Quality Selector Toolbar -->
-      <div id="qualityToolbar" class="quality-selector-wrap" style="display:none;">
-        <span style="font-weight:700;">Resolusi:</span>
-        <div id="qualityButtons" style="display:flex; gap:0.4rem;"></div>
-      </div>
-
-      <!-- Streamer & Room Details -->
-      <div class="streamer-details-card">
-        <div class="streamer-profile">
-          <div class="streamer-avatar-box">
-            <img id="streamerAvatar" class="streamer-avatar" src="" alt="Avatar" onerror="this.src='https://ui-avatars.com/api/?name=TikTok&background=ef4444&color=fff'">
-          </div>
-          <div>
-            <div class="streamer-name">
-              <span id="streamerNickname">Streamer</span>
-              <span style="color:#06b6d4; font-size:0.95rem;">✓</span>
+      <div id="playerChatGrid" class="player-chat-grid">
+        
+        <!-- Left: Video Stream Column -->
+        <div class="video-main-column">
+          <div class="player-viewport" id="playerViewport">
+            <div class="player-overlay-live">
+              <span class="live-pulse-dot"></span>
+              <span>LIVE</span>
             </div>
-            <div id="streamerUsername" class="streamer-handle">@username</div>
-            <div id="streamTitle" class="stream-title">Judul Live Stream</div>
+            <div class="player-overlay-viewers">
+              <span>👥</span>
+              <span id="viewerCount">0</span> penonton
+            </div>
+
+            <!-- Floating button to reopen chat if collapsed -->
+            <button type="button" id="btnReopenChat" class="btn-open-chat-float" onclick="toggleChatSidebar()">
+              <span>💬</span>
+              <span>Buka Live Chat</span>
+            </button>
+
+            <!-- Video Player Element -->
+            <video id="liveVideo" controls playsinline autoplay></video>
+
+            <!-- Floating Hearts Container for Reactions -->
+            <div id="floatingHearts" class="floating-hearts-layer"></div>
+          </div>
+
+          <!-- Quality Selector Toolbar -->
+          <div id="qualityToolbar" class="quality-selector-wrap" style="display:none;">
+            <span style="font-weight:700;">Resolusi:</span>
+            <div id="qualityButtons" style="display:flex; gap:0.4rem;"></div>
+          </div>
+
+          <!-- Streamer & Room Details -->
+          <div class="streamer-details-card">
+            <div class="streamer-profile">
+              <div class="streamer-avatar-box">
+                <img id="streamerAvatar" class="streamer-avatar" src="" alt="Avatar" onerror="this.src='https://ui-avatars.com/api/?name=TikTok&background=ef4444&color=fff'">
+              </div>
+              <div>
+                <div class="streamer-name">
+                  <span id="streamerNickname">Streamer</span>
+                  <span style="color:#06b6d4; font-size:0.95rem;">✓</span>
+                </div>
+                <div id="streamerUsername" class="streamer-handle">@username</div>
+                <div id="streamTitle" class="stream-title">Judul Live Stream</div>
+              </div>
+            </div>
+
+            <div class="streamer-actions">
+              <button type="button" class="btn-action" onclick="copyM3U8()" title="Salin link stream m3u8">
+                <span>📋</span>
+                <span>Salin M3U8</span>
+              </button>
+              <button type="button" class="btn-action" onclick="togglePiP()" title="Picture in Picture">
+                <span>🪟</span>
+                <span>PiP</span>
+              </button>
+              <button type="button" class="btn-action" onclick="toggleFullscreen()" title="Layar Penuh">
+                <span>⛶</span>
+                <span>Layar Penuh</span>
+              </button>
+              <button type="button" class="btn-action" onclick="openPopout()" title="Buka di Jendela Popout Terpisah">
+                <span>↗️</span>
+                <span>Popout Player</span>
+              </button>
+              <a id="btnOpenTikTok" href="#" target="_blank" rel="noopener noreferrer" class="btn-action btn-tiktok" title="Buka siaran langsung di TikTok">
+                <span>🔗</span>
+                <span>TikTok Web</span>
+              </a>
+            </div>
           </div>
         </div>
 
-        <div class="streamer-actions">
-          <button type="button" class="btn-action" onclick="copyM3U8()" title="Salin link stream m3u8">
-            <span>📋</span>
-            <span>Salin M3U8</span>
+        <!-- Right: Live Comments Sidebar -->
+        <div class="chat-main-column" id="chatColumn">
+          <!-- Chat Header -->
+          <div class="chat-header">
+            <div class="chat-title-group">
+              <h2>
+                <span>💬</span>
+                <span>Live Chat</span>
+              </h2>
+              <span id="chatStatusPill" class="chat-status-pill connecting">Menghubungkan...</span>
+            </div>
+            <div class="chat-header-tools">
+              <button type="button" class="btn-chat-tool" id="btnSoundToggle" onclick="toggleChatSound()" title="Aktifkan/Nonaktifkan Suara Notifikasi Hadiah">🔔</button>
+              <button type="button" class="btn-chat-tool" onclick="clearChatMessages()" title="Bersihkan Pesan">🗑️</button>
+              <button type="button" class="btn-chat-tool" onclick="toggleChatSidebar()" title="Sembunyikan/Tampilkan Chat">✕</button>
+            </div>
+          </div>
+
+          <!-- Pinned Gift Alert Banner -->
+          <div id="giftBanner" class="gift-banner-card" style="display:none;">
+            <span class="gift-banner-icon">🎁</span>
+            <div class="gift-banner-details">
+              <div id="giftBannerUser" class="gift-banner-text">Pengguna mengirim hadiah!</div>
+              <div id="giftBannerSub" class="gift-banner-sub">Hadiah TikTok Live</div>
+            </div>
+          </div>
+
+          <!-- Live Chat Stream Messages List -->
+          <div class="chat-messages-container" id="chatMessagesList" onscroll="handleChatScroll(this)">
+            <div class="chat-welcome-tip">
+              <span>👋 <strong>Selamat datang di Live Chat!</strong> Komentar, reaksi, dan hadiah penonton TikTok akan muncul otomatis di sini secara real-time.</span>
+            </div>
+          </div>
+
+          <!-- Scroll to Bottom Button -->
+          <button type="button" id="btnScrollDown" class="btn-scroll-down" onclick="scrollToBottomChat()" style="display:none;">
+            <span>Pesan Baru ↓</span>
           </button>
-          <button type="button" class="btn-action" onclick="togglePiP()" title="Picture in Picture">
-            <span>🪟</span>
-            <span>PiP</span>
-          </button>
-          <button type="button" class="btn-action" onclick="toggleFullscreen()" title="Layar Penuh">
-            <span>⛶</span>
-            <span>Layar Penuh</span>
-          </button>
-          <button type="button" class="btn-action" onclick="openPopout()" title="Buka di Jendela Popout Terpisah">
-            <span>↗️</span>
-            <span>Popout Player</span>
-          </button>
-          <a id="btnOpenTikTok" href="#" target="_blank" rel="noopener noreferrer" class="btn-action btn-tiktok" title="Buka siaran langsung di TikTok">
-            <span>🔗</span>
-            <span>TikTok Web</span>
-          </a>
+
+          <!-- Quick Reaction Buttons -->
+          <div class="chat-reactions-row">
+            <button type="button" class="quick-react-btn btn-heart-like" onclick="sendQuickReaction('❤️')" title="Kirim Like ke siaran">
+              <span>❤️</span>
+              <span id="likeCounterLabel">Like</span>
+            </button>
+            <button type="button" class="quick-react-btn" onclick="sendQuickReaction('🔥')">🔥</button>
+            <button type="button" class="quick-react-btn" onclick="sendQuickReaction('👏')">👏</button>
+            <button type="button" class="quick-react-btn" onclick="sendQuickReaction('😂')">😂</button>
+            <button type="button" class="quick-react-btn" onclick="sendQuickReaction('🎉')">🎉</button>
+            <button type="button" class="quick-react-btn" onclick="sendQuickReaction('💯')">💯</button>
+          </div>
+
+          <!-- Interactive Chat Input -->
+          <form class="chat-input-row" onsubmit="handleChatSubmit(event)">
+            <input 
+              type="text" 
+              id="chatInputText" 
+              class="chat-input-text" 
+              placeholder="Tulis komentar kamu..." 
+              maxlength="150"
+              autocomplete="off"
+            >
+            <button type="submit" class="btn-send-chat" title="Kirim Pesan">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
+          </form>
         </div>
+
       </div>
     </div>
 
@@ -506,6 +1028,9 @@
       <h3 id="statusTitle" class="status-title">Akun Sedang Tidak Live</h3>
       <p id="statusDesc" class="status-desc">Kreator ini sedang offline atau belum memulai siaran langsung saat ini.</p>
       <div style="display:flex; justify-content:center; gap:0.75rem; flex-wrap: wrap;">
+        <button type="button" class="btn-action" style="background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.5); color: #fff;" onclick="setAccount('aljazeera')">
+          <span>🔴 Tonton Akun Live: @aljazeera</span>
+        </button>
         <button type="button" class="btn-action" style="background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.5); color: #fff;" onclick="setAccount('skynews')">
           <span>🔴 Tonton Akun Live: @skynews</span>
         </button>
@@ -525,6 +1050,56 @@
     let currentStreamURL = '';
     let currentQualities = [];
     let currentUsername = '';
+    let chatEventSource = null;
+    let autoScrollChat = true;
+    let soundEnabled = true;
+    let localLikeCount = 0;
+    let giftBannerTimer = null;
+
+    // Web Audio Synthesizer for celebration chime
+    let audioCtx = null;
+    function playCelebrationChime() {
+      if (!soundEnabled) return;
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, now); // D5
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.12); // A5
+
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      } catch (e) {
+        // audio context not allowed yet
+      }
+    }
+
+    function toggleChatSound() {
+      soundEnabled = !soundEnabled;
+      const btn = document.getElementById('btnSoundToggle');
+      if (soundEnabled) {
+        btn.textContent = '🔔';
+        btn.classList.add('active');
+        btn.title = 'Suara Notifikasi Hadiah: Aktif';
+      } else {
+        btn.textContent = '🔕';
+        btn.classList.remove('active');
+        btn.title = 'Suara Notifikasi Hadiah: Hening';
+      }
+    }
 
     function openPopout() {
       if (!currentUsername) return;
@@ -554,10 +1129,14 @@
       urlParams.set('user', userInput);
       window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
 
-      // Reset previous player
+      // Reset previous player & chat
       if (currentHls) {
         currentHls.destroy();
         currentHls = null;
+      }
+      if (chatEventSource) {
+        chatEventSource.close();
+        chatEventSource = null;
       }
       videoEl.pause();
       videoEl.src = '';
@@ -583,7 +1162,7 @@
           showStatus(
             '😴', 
             `${displayUser} Sedang Offline`, 
-            'Kreator ini sedang tidak melakukan siaran langsung (Live) di TikTok saat ini. Silakan coba akun lain yang sedang aktif atau klik tombol di bawah untuk membuka jadwal di TikTok.', 
+            'Kreator ini sedang tidak melakukan siaran langsung (Live) di TikTok saat ini. Silakan coba akun lain yang sedang aktif di atas.', 
             data.share_url || `https://www.tiktok.com/@${data.username}/live`,
             data.avatar,
             data.username
@@ -593,6 +1172,9 @@
 
         // Channel is LIVE!
         displayLivePlayer(data);
+
+        // Connect real-time Live Chat
+        connectLiveChat(data.username);
 
       } catch (err) {
         loadingBox.style.display = 'none';
@@ -629,7 +1211,7 @@
 
       if (currentQualities.length > 0) {
         qualityToolbar.style.display = 'flex';
-        currentQualities.forEach((q, idx) => {
+        currentQualities.forEach((q) => {
           if (q.type === 'm3u8' || q.url.includes('.m3u8')) {
             const btn = document.createElement('button');
             btn.type = 'button';
@@ -645,7 +1227,7 @@
 
       playerContainer.style.display = 'block';
 
-      // Play Stream via SearXGo HLS Proxy (Bypasses CORS & Referer restrictions)
+      // Play Stream via SearXGo HLS Proxy
       playHlsStream(currentStreamURL);
     }
 
@@ -700,6 +1282,315 @@
       document.querySelectorAll('.quality-btn').forEach(b => b.classList.remove('active'));
       if (clickedBtn) clickedBtn.classList.add('active');
       playHlsStream(newURL);
+    }
+
+    // ==============================================================================
+    // 💬 REAL-TIME LIVE CHAT & INTERACTION (SSE)
+    // ==============================================================================
+    function connectLiveChat(username) {
+      if (chatEventSource) {
+        chatEventSource.close();
+      }
+
+      const statusPill = document.getElementById('chatStatusPill');
+      statusPill.className = 'chat-status-pill connecting';
+      statusPill.textContent = 'Menghubungkan...';
+
+      const sseURL = `/api/tiktoklive/chat?user=${encodeURIComponent(username)}`;
+      chatEventSource = new EventSource(sseURL);
+
+      chatEventSource.addEventListener('status', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (data.type === 'error' || data.type === 'disconnected') {
+            statusPill.className = 'chat-status-pill disconnected';
+            statusPill.textContent = 'Offline';
+            addSystemNotice(`⚠️ ${data.message}`);
+          }
+        } catch (_) {}
+      });
+
+      chatEventSource.addEventListener('connected', (e) => {
+        try {
+          statusPill.className = 'chat-status-pill connected';
+          statusPill.textContent = '🟢 Terhubung';
+          addSystemNotice('✅ Terhubung ke live chat TikTok!');
+        } catch (_) {}
+      });
+
+      chatEventSource.addEventListener('chat', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          addChatMessage(data);
+        } catch (_) {}
+      });
+
+      chatEventSource.addEventListener('gift', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          addGiftAlert(data);
+        } catch (_) {}
+      });
+
+      chatEventSource.addEventListener('like', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          handleIncomingLike(data);
+        } catch (_) {}
+      });
+
+      chatEventSource.addEventListener('join', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (data.user && data.user.nickname) {
+            addSystemNotice(`👋 ${escapeHtml(data.user.nickname)} bergabung`);
+          }
+        } catch (_) {}
+      });
+
+      chatEventSource.addEventListener('end', (e) => {
+        try {
+          statusPill.className = 'chat-status-pill disconnected';
+          statusPill.textContent = 'Siaran Selesai';
+          addSystemNotice('🔴 Siaran langsung TikTok telah berakhir.');
+        } catch (_) {}
+      });
+
+      chatEventSource.onerror = () => {
+        statusPill.className = 'chat-status-pill connecting';
+        statusPill.textContent = 'Menghubungkan ulang...';
+      };
+    }
+
+    function addChatMessage(data) {
+      const list = document.getElementById('chatMessagesList');
+      if (!list) return;
+
+      const user = data.user || { nickname: 'Pengguna', username: 'user', avatar: '' };
+      const row = document.createElement('div');
+      row.className = 'chat-msg-row';
+
+      const avatarSrc = user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nickname || 'TikTok')}&background=ef4444&color=fff&size=64`;
+
+      row.innerHTML = `
+        <img class="chat-msg-avatar" src="${escapeHtml(avatarSrc)}" alt="" onerror="this.src='https://ui-avatars.com/api/?name=U&background=ef4444&color=fff'">
+        <div class="chat-msg-body">
+          <div class="chat-msg-sender">
+            <span>${escapeHtml(user.nickname || user.username)}</span>
+            ${user.isSelf ? '<span class="chat-badge-pill">Anda</span>' : ''}
+          </div>
+          <div class="chat-msg-content">${escapeHtml(data.message || '')}</div>
+        </div>
+      `;
+
+      list.appendChild(row);
+      pruneChatList(list);
+
+      if (autoScrollChat) {
+        list.scrollTop = list.scrollHeight;
+      } else {
+        document.getElementById('btnScrollDown').style.display = 'flex';
+      }
+    }
+
+    function addGiftAlert(data) {
+      const list = document.getElementById('chatMessagesList');
+      if (!list) return;
+
+      playCelebrationChime();
+
+      const user = data.user || { nickname: 'Seseorang' };
+      const giftName = data.gift_name || 'Hadiah';
+      const count = data.gift_count || 1;
+      const countLabel = count > 1 ? ` x${count}` : '';
+      const diamonds = data.diamonds ? ` (+${data.diamonds}💎)` : '';
+
+      // Update Pinned Gift Banner
+      showGiftBanner(user.nickname, giftName, countLabel);
+
+      // Append Gift Item into Chat
+      const giftEl = document.createElement('div');
+      giftEl.className = 'chat-event-gift';
+
+      let iconHtml = '🎁';
+      if (data.gift_icon) {
+        iconHtml = `<img class="chat-gift-icon-img" src="${escapeHtml(data.gift_icon)}" alt="Gift">`;
+      }
+
+      giftEl.innerHTML = `
+        <span>${iconHtml}</span>
+        <div class="chat-event-gift-text">
+          <strong>${escapeHtml(user.nickname)}</strong> mengirim <strong>${escapeHtml(giftName)}${countLabel}</strong>${diamonds}
+        </div>
+      `;
+
+      list.appendChild(giftEl);
+      pruneChatList(list);
+
+      // Spawn a burst of celebration hearts
+      spawnFloatingHeart('🎁');
+      spawnFloatingHeart('❤️');
+
+      if (autoScrollChat) {
+        list.scrollTop = list.scrollHeight;
+      }
+    }
+
+    function showGiftBanner(userName, giftName, countLabel) {
+      const banner = document.getElementById('giftBanner');
+      const userText = document.getElementById('giftBannerUser');
+      const subText = document.getElementById('giftBannerSub');
+
+      userText.textContent = `🎁 ${userName} mengirim ${giftName}${countLabel}!`;
+      subText.textContent = 'Dukungan untuk siaran langsung';
+      banner.style.display = 'flex';
+
+      if (giftBannerTimer) clearTimeout(giftBannerTimer);
+      giftBannerTimer = setTimeout(() => {
+        banner.style.display = 'none';
+      }, 5000);
+    }
+
+    function handleIncomingLike(data) {
+      localLikeCount += (data.like_count || 1);
+      const label = document.getElementById('likeCounterLabel');
+      if (label) label.textContent = formatNumber(localLikeCount);
+
+      // Random chance to spawn floating heart on incoming like
+      if (Math.random() < 0.4) {
+        spawnFloatingHeart('❤️');
+      }
+    }
+
+    function addSystemNotice(text) {
+      const list = document.getElementById('chatMessagesList');
+      if (!list) return;
+
+      const div = document.createElement('div');
+      div.className = 'chat-event-system';
+      div.textContent = text;
+      list.appendChild(div);
+      pruneChatList(list);
+
+      if (autoScrollChat) {
+        list.scrollTop = list.scrollHeight;
+      }
+    }
+
+    function pruneChatList(list) {
+      // Keep DOM lightweight by pruning old messages if count > 150
+      if (list.children.length > 150) {
+        for (let i = 0; i < 20; i++) {
+          if (list.firstChild && !list.firstChild.classList.contains('chat-welcome-tip')) {
+            list.removeChild(list.firstChild);
+          }
+        }
+      }
+    }
+
+    function handleChatScroll(listEl) {
+      const atBottom = listEl.scrollHeight - listEl.scrollTop <= listEl.clientHeight + 40;
+      autoScrollChat = atBottom;
+      const btn = document.getElementById('btnScrollDown');
+      if (atBottom) {
+        btn.style.display = 'none';
+      }
+    }
+
+    function scrollToBottomChat() {
+      const list = document.getElementById('chatMessagesList');
+      if (!list) return;
+      list.scrollTop = list.scrollHeight;
+      autoScrollChat = true;
+      document.getElementById('btnScrollDown').style.display = 'none';
+    }
+
+    function clearChatMessages() {
+      const list = document.getElementById('chatMessagesList');
+      if (!list) return;
+      list.innerHTML = `
+        <div class="chat-welcome-tip">
+          <span>🧹 Riwayat chat telah dibersihkan. Pesan baru akan tetap masuk secara langsung.</span>
+        </div>
+      `;
+    }
+
+    function handleChatSubmit(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('chatInputText');
+      const text = input.value.trim();
+      if (!text) return;
+
+      // Echo user message locally with distinct styling
+      addChatMessage({
+        user: {
+          nickname: 'Saya',
+          username: 'me',
+          avatar: '',
+          isSelf: true
+        },
+        message: text
+      });
+
+      input.value = '';
+      scrollToBottomChat();
+    }
+
+    function sendQuickReaction(emoji) {
+      spawnFloatingHeart(emoji);
+      localLikeCount++;
+      const label = document.getElementById('likeCounterLabel');
+      if (label) label.textContent = formatNumber(localLikeCount);
+
+      if (emoji !== '❤️') {
+        // Echo emoji in chat
+        addChatMessage({
+          user: {
+            nickname: 'Saya',
+            username: 'me',
+            avatar: '',
+            isSelf: true
+          },
+          message: emoji
+        });
+      }
+    }
+
+    function spawnFloatingHeart(emoji = '❤️') {
+      const container = document.getElementById('floatingHearts');
+      if (!container) return;
+
+      const heart = document.createElement('div');
+      heart.className = 'floating-heart';
+      heart.textContent = emoji;
+
+      // Random horizontal offset within container
+      const randomLeft = Math.floor(Math.random() * 60) + 15;
+      heart.style.left = `${randomLeft}px`;
+
+      container.appendChild(heart);
+
+      setTimeout(() => {
+        if (heart.parentNode === container) {
+          container.removeChild(heart);
+        }
+      }, 2500);
+    }
+
+    function toggleChatSidebar() {
+      const grid = document.getElementById('playerChatGrid');
+      const chatCol = document.getElementById('chatColumn');
+      const btnReopen = document.getElementById('btnReopenChat');
+
+      if (grid.classList.contains('theater-mode')) {
+        grid.classList.remove('theater-mode');
+        chatCol.style.display = 'flex';
+        btnReopen.style.display = 'none';
+      } else {
+        grid.classList.add('theater-mode');
+        chatCol.style.display = 'none';
+        btnReopen.style.display = 'inline-flex';
+      }
     }
 
     function showStatus(icon, title, desc, link, avatar, username) {
@@ -769,6 +1660,16 @@
       } else {
         document.exitFullscreen?.() || document.webkitExitFullscreen?.();
       }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
 
     // Auto-load if user param is present in URL
