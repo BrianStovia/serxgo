@@ -1219,6 +1219,10 @@
                 <option value="zh">🇨🇳 ZH</option>
                 <option value="ru">🇷🇺 RU</option>
               </select>
+              <select id="translateEngineSelect" class="translate-lang-select" onchange="changeTranslateEngine(this.value)" title="Pilih Engine Terjemahan (Server API atau Browser Bawaan)">
+                <option value="api" selected>🌐 Server API</option>
+                <option value="browser">⚡ Browser Bawaan</option>
+              </select>
               <button type="button" class="btn-chat-tool active" id="btnAutoScroll" onclick="toggleAutoScroll()" title="Auto-Scroll: Otomatis scroll ke pesan terbaru">📜 Scroll: ON</button>
               <button type="button" class="btn-chat-tool" id="btnSoundToggle" onclick="toggleChatSound()" title="Aktifkan/Nonaktifkan Suara Notifikasi Hadiah">🔔</button>
               <button type="button" class="btn-chat-tool" id="btnLeaderboardToggle" onclick="toggleGiftersLeaderboard()" title="Peringkat Donatur (Top Gifters)">
@@ -1399,6 +1403,7 @@
     let giftBannerTimer = null;
     let autoTranslateEnabled = true;
     let currentTargetLang = 'id';
+    let currentTranslateEngine = 'api'; // 'api' (Server API) or 'browser' (Browser Built-in AI/Translator)
     const translateCache = new Map();
     let currentFormat = 'portrait';
     let currentVideoFit = 'contain';
@@ -2052,10 +2057,25 @@
 
     async function fetchTranslation(text, targetLang) {
       if (!text || !text.trim()) return null;
-      const key = `${targetLang}:${text.trim()}`;
+      const key = `${currentTranslateEngine}:${targetLang}:${text.trim()}`;
       if (translateCache.has(key)) {
         return translateCache.get(key);
       }
+
+      // If user selected Browser Built-in AI / Translator Engine
+      if (currentTranslateEngine === 'browser') {
+        try {
+          const browserRes = await translateWithBrowserEngine(text.trim(), targetLang);
+          if (browserRes && browserRes.translated) {
+            translateCache.set(key, browserRes);
+            return browserRes;
+          }
+        } catch (bErr) {
+          console.warn('Browser engine translation failed, falling back to Server API:', bErr);
+        }
+      }
+
+      // Default: Server API Translation (Google / MyMemory fallback)
       try {
         const resp = await fetch(`/api/tiktoklive/translate?text=${encodeURIComponent(text.trim())}&to=${encodeURIComponent(targetLang)}`);
         if (!resp.ok) return null;
@@ -2068,6 +2088,53 @@
         console.error('Translation error:', err);
       }
       return null;
+    }
+
+    async function translateWithBrowserEngine(text, targetLang) {
+      // 1. Chrome 131+ Built-in Translator API (window.translation)
+      if (typeof window !== 'undefined' && 'translation' in window && typeof window.translation.createTranslator === 'function') {
+        const translator = await window.translation.createTranslator({ targetLanguage: targetLang });
+        if (translator && typeof translator.translate === 'function') {
+          const trans = await translator.translate(text);
+          return {
+            original: text,
+            translated: trans,
+            source_lang: 'browser-ai',
+            target_lang: targetLang
+          };
+        }
+      }
+
+      // 2. Chrome window.ai.translator preview
+      if (typeof window !== 'undefined' && 'ai' in window && window.ai && typeof window.ai.translator?.create === 'function') {
+        const translator = await window.ai.translator.create({ targetLanguage: targetLang });
+        if (translator && typeof translator.translate === 'function') {
+          const trans = await translator.translate(text);
+          return {
+            original: text,
+            translated: trans,
+            source_lang: 'browser-ai',
+            target_lang: targetLang
+          };
+        }
+      }
+
+      throw new Error('Chrome Built-in Translator API tidak aktif atau belum didukung di browser ini.');
+    }
+
+    function changeTranslateEngine(engine) {
+      currentTranslateEngine = engine || 'api';
+      if (currentTranslateEngine === 'browser') {
+        const isSupported = ('translation' in window && typeof window.translation?.createTranslator === 'function') ||
+                            ('ai' in window && window.ai && typeof window.ai?.translator?.create === 'function');
+        if (isSupported) {
+          addSystemNotice('⚡ Menggunakan Engine Terjemahan Bawaan Browser (On-Device AI)');
+        } else {
+          addSystemNotice('ℹ️ Browser Translator API belum aktif di browser Anda. Sistem akan otomatis fallback ke Server API bila diperlukan.');
+        }
+      } else {
+        addSystemNotice('🌐 Menggunakan Engine Terjemahan Server API (Google / MyMemory)');
+      }
     }
 
     function toggleAutoTranslate() {
