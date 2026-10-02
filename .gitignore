@@ -15,6 +15,7 @@ build/
 *.test
 *.out
 coverage.html
+*_test.go
 
 # Operating System and IDE files
 .DS_Store
