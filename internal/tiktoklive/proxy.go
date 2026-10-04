@@ -81,6 +81,7 @@ func ServeProxy(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS, HEAD")
 	w.Header().Set("Access-Control-Allow-Headers", "*")
+	w.Header().Set("Access-Control-Expose-Headers", "Content-Length, Content-Range, Accept-Ranges")
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 
 	// If upstream returned error (e.g. 403, 404, 500), forward status and body directly without parsing as M3U8

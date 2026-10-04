@@ -1178,7 +1178,7 @@
             </button>
 
             <!-- Video Player Element -->
-            <video id="liveVideo" controls playsinline autoplay></video>
+            <video id="liveVideo" controls playsinline preload="auto"></video>
 
             <!-- Floating Hearts Container for Reactions -->
             <div id="floatingHearts" class="floating-hearts-layer"></div>
@@ -1655,40 +1655,69 @@
       const videoEl = document.getElementById('liveVideo');
       const proxiedURL = `/api/tiktoklive/proxy?url=${encodeURIComponent(streamURL)}`;
 
+      // 1. Destroy existing HLS instance cleanly
+      if (currentHls) {
+        currentHls.destroy();
+        currentHls = null;
+      }
+
+      // 2. Clear previous media pipeline state to avoid Chromium MEDIA_ERR_SRC_NOT_SUPPORTED locking
+      videoEl.pause();
+      videoEl.removeAttribute('src');
+      videoEl.load();
+
+      // 3. MSE HLS Engine (Chromium & Firefox)
       if (Hls.isSupported()) {
-        if (currentHls) {
-          currentHls.destroy();
-        }
         currentHls = new Hls({
           enableWorker: true,
           lowLatencyMode: true,
           backBufferLength: 60,
+          maxBufferLength: 30,
           manifestLoadingTimeOut: 15000,
           manifestLoadingMaxRetry: 5,
           levelLoadingTimeOut: 15000,
           levelLoadingMaxRetry: 5,
           fragLoadingTimeOut: 20000,
-          fragLoadingMaxRetry: 5
+          fragLoadingMaxRetry: 5,
+          xhrSetup: function(xhr, url) {
+            xhr.withCredentials = false;
+          }
         });
-        currentHls.loadSource(proxiedURL);
+
+        // Attach media FIRST before loading source
         currentHls.attachMedia(videoEl);
-        currentHls.on(Hls.Events.MANIFEST_PARSED, function () {
-          videoEl.play().catch(() => {
-            // Autoplay with sound might be blocked by browser policy, play muted
-            videoEl.muted = true;
-            videoEl.play();
-          });
+
+        currentHls.on(Hls.Events.MEDIA_ATTACHED, function () {
+          currentHls.loadSource(proxiedURL);
         });
+
+        currentHls.on(Hls.Events.MANIFEST_PARSED, function () {
+          // In Chromium, unmuted autoplay might be rejected without user gesture; fallback to muted
+          const playPromise = videoEl.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(function (error) {
+              console.warn('[TikTokLive] Autoplay with audio blocked by browser policy, switching to muted:', error);
+              videoEl.muted = true;
+              videoEl.play().catch(function (err) {
+                console.warn('[TikTokLive] Autoplay muted also blocked, waiting for user click:', err);
+              });
+            });
+          }
+        });
+
         currentHls.on(Hls.Events.ERROR, function (event, data) {
           if (data.fatal) {
             switch (data.type) {
               case Hls.ErrorTypes.NETWORK_ERROR:
+                console.warn('[TikTokLive] HLS Network error, attempting recovery...');
                 currentHls.startLoad();
                 break;
               case Hls.ErrorTypes.MEDIA_ERROR:
+                console.warn('[TikTokLive] HLS Media error, attempting recovery...');
                 currentHls.recoverMediaError();
                 break;
               default:
+                console.error('[TikTokLive] HLS Fatal error:', data);
                 currentHls.destroy();
                 break;
             }
@@ -1698,7 +1727,10 @@
         // Native Safari / iOS HLS
         videoEl.src = proxiedURL;
         videoEl.addEventListener('loadedmetadata', function () {
-          videoEl.play();
+          videoEl.play().catch(function () {
+            videoEl.muted = true;
+            videoEl.play();
+          });
         });
       }
     }
