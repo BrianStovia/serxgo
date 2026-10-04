@@ -20,7 +20,7 @@
 
 .btn-image-search:hover {
   color: var(--accent-primary);
-  background: rgba(99, 102, 241, 0.12);
+  background: var(--badge-bg, rgba(255, 255, 255, 0.08));
   transform: scale(1.08);
 }
 
@@ -30,16 +30,16 @@
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--border-glow);
   border-radius: var(--radius-lg);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 20px var(--accent-glow, rgba(255, 255, 255, 0.1));
   animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .image-drop-zone {
-  border: 2px dashed rgba(99, 102, 241, 0.35);
+  border: 2px dashed var(--badge-border, rgba(255, 255, 255, 0.2));
   border-radius: var(--radius-md);
   padding: 2rem 1.5rem;
   text-align: center;
-  background: rgba(99, 102, 241, 0.03);
+  background: var(--bg-card);
   cursor: pointer;
   transition: all 0.25s ease;
   position: relative;
@@ -48,8 +48,8 @@
 .image-drop-zone:hover,
 .image-drop-zone.drag-over {
   border-color: var(--accent-primary);
-  background: rgba(99, 102, 241, 0.08);
-  box-shadow: 0 0 16px rgba(99, 102, 241, 0.2);
+  background: var(--bg-card-hover);
+  box-shadow: 0 0 16px var(--border-glow);
   transform: scale(1.005);
 }
 
@@ -137,9 +137,9 @@
   justify-content: center;
   gap: 0.35rem;
   padding: 0.35rem 0.75rem;
-  background: rgba(99, 102, 241, 0.12);
+  background: var(--badge-bg, rgba(255, 255, 255, 0.08));
   color: var(--accent-primary);
-  border: 1px solid rgba(99, 102, 241, 0.25);
+  border: 1px solid var(--badge-border, rgba(255, 255, 255, 0.15));
   border-radius: var(--radius-sm);
   font-size: 0.78rem;
   font-weight: 600;
@@ -240,9 +240,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  background: rgba(99, 102, 241, 0.15);
+  background: var(--badge-bg, rgba(255, 255, 255, 0.08));
   color: var(--accent-primary);
-  border: 1px solid rgba(99, 102, 241, 0.3);
+  border: 1px solid var(--badge-border, rgba(255, 255, 255, 0.15));
   border-radius: 4px;
   padding: 0.15rem 0.5rem;
   font-size: 0.72rem;
@@ -378,9 +378,9 @@
   font-weight: 600;
 }
 .sample-pill:hover {
-  background: rgba(99, 102, 241, 0.15);
+  background: var(--badge-bg, rgba(255, 255, 255, 0.1));
   color: var(--accent-primary);
-  border-color: rgba(99, 102, 241, 0.35);
+  border-color: var(--badge-border, rgba(255, 255, 255, 0.2));
   transform: translateY(-1px);
 }
 
@@ -419,7 +419,7 @@
 }
 .osint-input:focus {
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 0 0 3px var(--border-glow, rgba(255, 255, 255, 0.15));
 }
 .osint-input::placeholder {
   color: var(--text-muted);
@@ -457,8 +457,8 @@
   flex-shrink: 0;
 }
 .top-nav .nav-btn.active {
-  background: rgba(99, 102, 241, 0.15);
-  border-color: rgba(99, 102, 241, 0.35);
+  background: var(--badge-bg, rgba(255, 255, 255, 0.12));
+  border-color: var(--badge-border, rgba(255, 255, 255, 0.25));
 }
 
 /* ======================================================
@@ -1261,7 +1261,7 @@
       background: var(--accent-gradient);
       color: #fff;
       border-color: transparent;
-      box-shadow: 0 4px 14px rgba(99,102,241,0.3);
+      box-shadow: 0 4px 14px var(--accent-glow, rgba(255, 255, 255, 0.15));
     }
     .dorks-grid {
       display: grid;
@@ -1280,7 +1280,7 @@
     }
     .dork-card:hover {
       transform: translateY(-2px);
-      border-color: rgba(99,102,241,0.4);
+      border-color: var(--border-glow, rgba(255, 255, 255, 0.25));
     }
     .dork-header {
       display: flex;
@@ -1302,7 +1302,7 @@
     }
     .sev-high { background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
     .sev-medium { background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
-    .sev-info { background: rgba(99,102,241,0.2); color: #818cf8; border: 1px solid rgba(99,102,241,0.3); }
+    .sev-info { background: var(--badge-bg, rgba(255, 255, 255, 0.08)); color: var(--text-link); border: 1px solid var(--badge-border, rgba(255, 255, 255, 0.15)); }
     .dork-desc {
       font-size: 0.825rem;
       color: var(--text-muted);
@@ -1345,7 +1345,7 @@
       border: none;
     }
     .btn-searx:hover {
-      box-shadow: 0 4px 12px rgba(99,102,241,0.35);
+      box-shadow: 0 4px 12px var(--accent-glow, rgba(255, 255, 255, 0.15));
     }
     .btn-ext {
       background: rgba(255,255,255,0.06);

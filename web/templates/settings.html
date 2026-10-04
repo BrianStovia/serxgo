@@ -490,8 +490,9 @@
                 <div class="settings-sublabel">Choose color scheme style</div>
               </div>
               <select id="theme-select" name="theme" class="form-select" style="min-width:200px;">
-                <option value="dark" {{if eq .Theme "dark"}}selected{{end}}>Dark Glass (Default)</option>
-                <option value="light" {{if eq .Theme "light"}}selected{{end}}>Light Minimal</option>
+                <option value="dark" {{if eq .Theme "dark"}}selected{{end}}>Neutral Dark (Default)</option>
+                <option value="neutral" {{if eq .Theme "neutral"}}selected{{end}}>Neutral (Slate &amp; Zinc)</option>
+                <option value="light" {{if eq .Theme "light"}}selected{{end}}>Light Minimal (Neutral)</option>
                 <option value="black" {{if eq .Theme "black"}}selected{{end}}>OLED Pitch Black</option>
                 <option value="macchiato" {{if eq .Theme "macchiato"}}selected{{end}}>Macchiato</option>
                 <option value="mocha" {{if eq .Theme "mocha"}}selected{{end}}>Mocha</option>

@@ -214,7 +214,8 @@
       { category: 'Engines & Bangs', icon: '🔓', title: 'Data Breach & Leaks OSINT (!leak)', shortcut: '!leak', action: () => appendBang('!leak ') },
 
       // Themes
-      { category: 'Appearance', icon: '🌙', title: 'Theme: Dark Glass (Default)', action: () => { window.setTheme('dark'); showToast('Switched to Dark Glass theme'); } },
+      { category: 'Appearance', icon: '🌙', title: 'Theme: Neutral Dark (Default)', action: () => { window.setTheme('dark'); showToast('Switched to Neutral Dark theme'); } },
+      { category: 'Appearance', icon: '⚪', title: 'Theme: Neutral Palette (Slate & Zinc)', action: () => { window.setTheme('neutral'); showToast('Switched to Neutral theme'); } },
       { category: 'Appearance', icon: '☀️', title: 'Theme: Light Minimal', action: () => { window.setTheme('light'); showToast('Switched to Light Minimal theme'); } },
       { category: 'Appearance', icon: '🖤', title: 'Theme: OLED Pitch Black', action: () => { window.setTheme('black'); showToast('Switched to OLED Black theme'); } },
       { category: 'Appearance', icon: '🧛', title: 'Theme: Dracula Theme', action: () => { window.setTheme('dracula'); showToast('Switched to Dracula theme'); } },

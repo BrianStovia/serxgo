@@ -469,7 +469,7 @@ func (h *Handler) ServeConfig(w http.ResponseWriter, r *http.Request) {
 		},
 		"engine_count":    len(engine.FullEngineCatalog),
 		"safe_search":     []string{"off", "moderate", "strict"},
-		"themes":          []string{"dark", "light", "black", "oled", "dracula", "nord", "mocha", "macchiato", "cyberpunk"},
+		"themes":          []string{"dark", "light", "black", "oled", "neutral", "dracula", "nord", "mocha", "macchiato", "cyberpunk"},
 		"doi_resolvers":   []string{"oadoi.org", "sci-hub.se", "sci-hub.st", "sci-hub.ru", "libgen.is", "unpaywall.org"},
 		"limiter":          false,
 		"unlimited_search": true,

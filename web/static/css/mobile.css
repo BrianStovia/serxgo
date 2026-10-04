@@ -8,9 +8,9 @@
 
 .category-toggle-box:has(input:checked),
 .category-toggle-box.active {
-  border-color: var(--accent-primary, #6366f1) !important;
-  background: rgba(99, 102, 241, 0.16) !important;
-  box-shadow: 0 0 12px rgba(99, 102, 241, 0.28) !important;
+  border-color: var(--accent-primary, #71717a) !important;
+  background: var(--badge-bg, rgba(255, 255, 255, 0.12)) !important;
+  box-shadow: 0 0 12px var(--accent-glow, rgba(255, 255, 255, 0.15)) !important;
 }
 
 .category-toggle-box:has(input:checked) span,
@@ -21,13 +21,13 @@
 
 [data-theme="light"] .category-toggle-box:has(input:checked),
 [data-theme="light"] .category-toggle-box.active {
-  background: rgba(99, 102, 241, 0.1) !important;
-  border-color: #6366f1 !important;
+  background: var(--badge-bg, rgba(0, 0, 0, 0.08)) !important;
+  border-color: var(--accent-primary, #18181b) !important;
 }
 
 [data-theme="light"] .category-toggle-box:has(input:checked) span,
 [data-theme="light"] .category-toggle-box.active span {
-  color: #1e1b4b !important;
+  color: #18181b !important;
 }
 
 /* Mobile Bottom Navigation Bar (<768px) - Android Gesture & iOS Safe Area Fix */
@@ -496,7 +496,7 @@ html, body {
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
     z-index: 999999 !important;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.92), 0 0 0 1px rgba(99, 102, 241, 0.35) !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.92), 0 0 0 1px var(--border-glow, rgba(255, 255, 255, 0.15)) !important;
   }
 
   .header-nav .nav-dropdown-panel {
