@@ -1135,10 +1135,10 @@
       <!-- Preset Popular Accounts -->
       <div class="preset-chips">
         <span class="preset-label">🔥 Siaran Populer &amp; Aktif:</span>
+        <button type="button" class="preset-pill" onclick="setAccount('tribunnews')">🔴 @tribunnews (Live Indonesia)</button>
+        <button type="button" class="preset-pill" onclick="setAccount('skynews')">🔴 @skynews (News 24/7)</button>
         <button type="button" class="preset-pill" onclick="setAccount('aljazeera')">🔴 @aljazeera (Live Now)</button>
-        <button type="button" class="preset-pill" onclick="setAccount('skynews')">🔴 @skynews (News)</button>
-        <button type="button" class="preset-pill" onclick="setAccount('tiktok')">🔴 @tiktok (Official)</button>
-        <button type="button" class="preset-pill" onclick="setAccount('redbull')">@redbull</button>
+        <button type="button" class="preset-pill" onclick="setAccount('nbcnews')">🔴 @nbcnews (News)</button>
         <button type="button" class="preset-pill" onclick="setAccount('jkt48.official')">@jkt48.official</button>
         <button type="button" class="preset-pill" onclick="setAccount('mrbeast')">@mrbeast</button>
       </div>
@@ -1308,7 +1308,7 @@
       <div class="streamer-details-card">
         <div class="streamer-profile">
           <div class="streamer-avatar-box">
-            <img id="streamerAvatar" class="streamer-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" alt="Avatar" onerror="this.src='https://ui-avatars.com/api/?name=TikTok&background=ef4444&color=fff'">
+            <img id="streamerAvatar" class="streamer-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" alt="Avatar" onerror="this.onerror=null; this.src=getDefaultAvatar('TikTok');">
           </div>
           <div>
             <div class="streamer-name">
@@ -1513,6 +1513,11 @@
       }
     }
 
+    function getDefaultAvatar(name) {
+      const initial = (name ? String(name).trim().charAt(0) : 'U').toUpperCase() || 'U';
+      return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='20' fill='%23ef4444'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' font-weight='bold' fill='%23ffffff'%3E${encodeURIComponent(initial)}%3C/text%3E%3C/svg%3E`;
+    }
+
     function setAccount(account) {
       document.getElementById('userInput').value = account;
       loadLiveStream(account);
@@ -1611,7 +1616,7 @@
       if (data.avatar) {
         avatarEl.src = data.avatar;
       } else {
-        avatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.nickname || data.username)}&background=ef4444&color=fff`;
+        avatarEl.src = getDefaultAvatar(data.nickname || data.username);
       }
 
       document.getElementById('btnOpenTikTok').href = data.share_url || `https://www.tiktok.com/@${data.username}/live`;
@@ -1657,7 +1662,13 @@
         currentHls = new Hls({
           enableWorker: true,
           lowLatencyMode: true,
-          backBufferLength: 60
+          backBufferLength: 60,
+          manifestLoadingTimeOut: 15000,
+          manifestLoadingMaxRetry: 5,
+          levelLoadingTimeOut: 15000,
+          levelLoadingMaxRetry: 5,
+          fragLoadingTimeOut: 20000,
+          fragLoadingMaxRetry: 5
         });
         currentHls.loadSource(proxiedURL);
         currentHls.attachMedia(videoEl);
@@ -1804,10 +1815,10 @@
         row.style.display = 'none';
       }
 
-      const avatarSrc = user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nickname || 'TikTok')}&background=ef4444&color=fff&size=64`;
+      const avatarSrc = user.avatar || getDefaultAvatar(user.nickname || 'U');
 
       row.innerHTML = `
-        <img class="chat-msg-avatar" src="${escapeHtml(avatarSrc)}" alt="" onerror="this.src='https://ui-avatars.com/api/?name=U&background=ef4444&color=fff'">
+        <img class="chat-msg-avatar" src="${escapeHtml(avatarSrc)}" alt="" onerror="this.onerror=null; this.src=getDefaultAvatar('${escapeHtml(user.nickname || 'U')}');">
         <div class="chat-msg-body">
           <div class="chat-msg-sender">
             <span>${escapeHtml(user.nickname || user.username)}</span>
@@ -2338,7 +2349,7 @@
         <div class="leaderboard-item">
           <span class="leaderboard-rank">${medals[idx] || (idx+1)}</span>
           <div class="leaderboard-user">
-            <img src="${escapeHtml(g.avatar || 'https://ui-avatars.com/api/?name='+encodeURIComponent(g.nickname)+'&background=ef4444&color=fff')}" alt="" style="width:22px; height:22px; border-radius:50%; object-fit:cover;">
+            <img src="${escapeHtml(g.avatar || getDefaultAvatar(g.nickname))}" alt="" onerror="this.onerror=null; this.src=getDefaultAvatar('${escapeHtml(g.nickname || 'U')}');" style="width:22px; height:22px; border-radius:50%; object-fit:cover;">
             <span class="leaderboard-user-name">${escapeHtml(g.nickname)}</span>
           </div>
           <div class="leaderboard-diamonds">

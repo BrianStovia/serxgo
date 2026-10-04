@@ -1,5 +1,5 @@
 // SearXGo Service Worker for PWA & Offline Support
-const CACHE_NAME = 'searxgo-v4';
+const CACHE_NAME = 'searxgo-v5';
 const ASSETS_TO_CACHE = [
   '/',
   '/static/css/main.css',
@@ -31,7 +31,13 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
 
-  // Network-first with cache fallback for static assets
+  // 1. Do not intercept cross-origin requests (e.g. CDNs, avatars, external services)
+  if (url.origin !== self.location.origin) return;
+
+  // 2. Do not intercept API requests (live streams, SSE chat, instant answers, etc.)
+  if (url.pathname.startsWith('/api/')) return;
+
+  // 3. Network-first with cache fallback for static assets
   if (url.pathname.startsWith('/static/') || url.pathname === '/manifest.webmanifest') {
     event.respondWith(
       fetch(event.request).then(res => {
@@ -40,15 +46,19 @@ self.addEventListener('fetch', event => {
           caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
         }
         return res;
-      }).catch(() => caches.match(event.request))
+      }).catch(async () => {
+        const cached = await caches.match(event.request);
+        return cached || new Response('Offline asset unavailable', { status: 503, headers: { 'Content-Type': 'text/plain' } });
+      })
     );
     return;
   }
 
-  // Network with fallback for pages
+  // 4. Network with cache fallback for HTML pages
   event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request);
+    fetch(event.request).catch(async () => {
+      const cached = await caches.match(event.request);
+      return cached || new Response('Offline page unavailable', { status: 503, headers: { 'Content-Type': 'text/plain' } });
     })
   );
 });

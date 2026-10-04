@@ -84,6 +84,32 @@ func CleanUsername(input string) string {
 	return input
 }
 
+// CleanStreamURL normalizes and unwraps TikTok live stream URLs, such as unresolvable Crius P2P wrappers
+func CleanStreamURL(rawURL string) string {
+	rawURL = strings.TrimSpace(rawURL)
+	if rawURL == "" {
+		return ""
+	}
+
+	// Unwrap TikTok Crius proxy wrapper (e.g. *.realcrius.com/pull-*.tiktokcdn.com/...)
+	if idx := strings.Index(rawURL, ".realcrius.com/"); idx != -1 {
+		realPath := rawURL[idx+len(".realcrius.com/"):]
+		if strings.HasPrefix(realPath, "pull-") || strings.Contains(realPath, ".tiktokcdn.com") {
+			return "https://" + realPath
+		}
+	}
+
+	// Unwrap any intermediate wrapper domain before /pull-*.tiktokcdn.com
+	if idx := strings.Index(rawURL, "/pull-"); idx != -1 && strings.Contains(rawURL, ".tiktokcdn.com") {
+		if !strings.HasPrefix(rawURL, "https://pull-") && !strings.HasPrefix(rawURL, "http://pull-") {
+			realPath := rawURL[idx+1:]
+			return "https://" + realPath
+		}
+	}
+
+	return rawURL
+}
+
 // SolveSlardarWAF solves the SHA256 PoW challenge provided by TikTok WAF
 func SolveSlardarWAF(csB64 string) (string, error) {
 	pad := len(csB64) % 4
@@ -328,9 +354,11 @@ func (s *Service) parseUserInfo(user, liveRoom map[string]interface{}, username 
 		roomID = fmt.Sprintf("%.0f", r)
 	}
 
-	statusNum := 0
-	if st, ok := user["status"].(float64); ok {
-		statusNum = int(st)
+	var roomStatus int = -1
+	if liveRoom != nil {
+		if lrs, ok := liveRoom["status"].(float64); ok {
+			roomStatus = int(lrs)
+		}
 	}
 
 	title := ""
@@ -349,17 +377,15 @@ func (s *Service) parseUserInfo(user, liveRoom map[string]interface{}, username 
 				viewerCount = int64(uc)
 			}
 		}
-		if statusNum == 0 {
-			if lrs, ok := liveRoom["status"].(float64); ok {
-				statusNum = int(lrs)
-			}
-		}
 	}
 
-	isLive := (statusNum == 2)
-
+	// In TikTok liveRoom:
+	// Status 2: Active live stream
+	// Status 4: Active broadcast (Live Studio/RTMP/Media)
+	// Status 3: Stream ended/offline
+	// User["status"] is user profile status and must not be used for live determination.
 	info := &LiveRoomInfo{
-		IsLive:      isLive,
+		IsLive:      false,
 		RoomID:      roomID,
 		Username:    username,
 		Nickname:    nickname,
@@ -374,9 +400,29 @@ func (s *Service) parseUserInfo(user, liveRoom map[string]interface{}, username 
 	if liveRoom != nil {
 		if sd, ok := liveRoom["streamData"].(map[string]interface{}); ok {
 			s.populateFromStreamData(info, sd)
-		} else if su, ok := liveRoom["streamUrl"].(map[string]interface{}); ok {
-			s.populateStreams(info, su)
 		}
+		// If no qualities or no HLS stream URL, try hevcStreamData
+		if len(info.Qualities) == 0 || info.StreamURL == "" {
+			if hsd, ok := liveRoom["hevcStreamData"].(map[string]interface{}); ok {
+				s.populateFromStreamData(info, hsd)
+			}
+		}
+		// Fallback to legacy streamUrl
+		if len(info.Qualities) == 0 {
+			if su, ok := liveRoom["streamUrl"].(map[string]interface{}); ok {
+				s.populateStreams(info, su)
+			}
+		}
+	}
+
+	// Channel is only live if the room is active (status 2 or 4) and has a valid HLS stream
+	if (roomStatus == 2 || roomStatus == 4) && info.StreamURL != "" {
+		info.IsLive = true
+	} else {
+		info.IsLive = false
+		info.StreamURL = ""
+		info.FLVURL = ""
+		info.Qualities = []StreamQuality{}
 	}
 
 	return info
@@ -425,7 +471,10 @@ func (s *Service) parseRehydrationData(root map[string]interface{}, username str
 	}
 
 	status, _ := liveRoom["status"].(float64)
-	isLive := int(status) == 2
+	isLive := int(status) == 2 || int(status) == 4
+	if int(status) == 3 {
+		isLive = false
+	}
 
 	roomID := fmt.Sprintf("%v", liveRoom["roomId"])
 	title, _ := liveRoom["title"].(string)
@@ -464,8 +513,26 @@ func (s *Service) parseRehydrationData(root map[string]interface{}, username str
 
 	if sd, ok := liveRoom["streamData"].(map[string]interface{}); ok {
 		s.populateFromStreamData(info, sd)
-	} else if streamURLData, ok := liveRoom["streamUrl"].(map[string]interface{}); ok {
-		s.populateStreams(info, streamURLData)
+	}
+	if len(info.Qualities) == 0 || info.StreamURL == "" {
+		if hsd, ok := liveRoom["hevcStreamData"].(map[string]interface{}); ok {
+			s.populateFromStreamData(info, hsd)
+		}
+	}
+	if len(info.Qualities) == 0 {
+		if streamURLData, ok := liveRoom["streamUrl"].(map[string]interface{}); ok {
+			s.populateStreams(info, streamURLData)
+		}
+	}
+
+	roomStatus := int(status)
+	if (roomStatus == 2 || roomStatus == 4) && info.StreamURL != "" {
+		info.IsLive = true
+	} else {
+		info.IsLive = false
+		info.StreamURL = ""
+		info.FLVURL = ""
+		info.Qualities = []StreamQuality{}
 	}
 
 	return info
@@ -492,35 +559,75 @@ func (s *Service) populateFromStreamData(info *LiveRoomInfo, sd map[string]inter
 		return
 	}
 
-	order := []string{"origin", "uhd", "hd", "sd", "ld"}
+	order := []string{"origin", "uhd_60", "uhd", "hd_60", "hd", "sd", "ld"}
+	processedKeys := make(map[string]bool)
 	for _, key := range order {
 		qObj, ok := dataMap[key].(map[string]interface{})
 		if !ok {
 			continue
 		}
-		mainMap, _ := qObj["main"].(map[string]interface{})
-		if mainMap == nil {
+		processedKeys[key] = true
+		s.addQualityFromObj(info, key, qObj)
+	}
+
+	// Also process any non-standard quality keys present (excluding audio-only)
+	for key, val := range dataMap {
+		if processedKeys[key] || key == "ao" {
 			continue
 		}
-
-		hlsURL, _ := mainMap["hls"].(string)
-		flvURL, _ := mainMap["flv"].(string)
-
-		qLabel := strings.ToUpper(key)
-		switch key {
-		case "origin":
-			qLabel = "Origin (1080p)"
-		case "uhd":
-			qLabel = "UHD (720p 60fps)"
-		case "hd":
-			qLabel = "HD (720p)"
-		case "sd":
-			qLabel = "SD (540p)"
-		case "ld":
-			qLabel = "Low (360p)"
+		if qObj, ok := val.(map[string]interface{}); ok {
+			s.addQualityFromObj(info, key, qObj)
 		}
+	}
+}
 
-		if hlsURL != "" {
+func (s *Service) addQualityFromObj(info *LiveRoomInfo, key string, qObj map[string]interface{}) {
+	mainMap, _ := qObj["main"].(map[string]interface{})
+	backupMap, _ := qObj["backup"].(map[string]interface{})
+
+	var hlsURL, flvURL string
+	if mainMap != nil {
+		hlsURL, _ = mainMap["hls"].(string)
+		flvURL, _ = mainMap["flv"].(string)
+	}
+	if hlsURL == "" && backupMap != nil {
+		hlsURL, _ = backupMap["hls"].(string)
+	}
+	if flvURL == "" && backupMap != nil {
+		flvURL, _ = backupMap["flv"].(string)
+	}
+
+	hlsURL = CleanStreamURL(hlsURL)
+	flvURL = CleanStreamURL(flvURL)
+
+	qLabel := strings.ToUpper(key)
+	switch key {
+	case "origin":
+		qLabel = "Origin (1080p)"
+	case "uhd_60":
+		qLabel = "UHD 60fps (1080p)"
+	case "uhd":
+		qLabel = "UHD (720p 60fps)"
+	case "hd_60":
+		qLabel = "HD 60fps (720p)"
+	case "hd":
+		qLabel = "HD (720p)"
+	case "sd":
+		qLabel = "SD (540p)"
+	case "ld":
+		qLabel = "Low (360p)"
+	}
+
+	// Avoid duplicate entries
+	if hlsURL != "" {
+		exists := false
+		for _, q := range info.Qualities {
+			if q.URL == hlsURL {
+				exists = true
+				break
+			}
+		}
+		if !exists {
 			info.Qualities = append(info.Qualities, StreamQuality{
 				Name: qLabel + " [HLS]",
 				URL:  hlsURL,
@@ -530,7 +637,17 @@ func (s *Service) populateFromStreamData(info *LiveRoomInfo, sd map[string]inter
 				info.StreamURL = hlsURL
 			}
 		}
-		if flvURL != "" {
+	}
+
+	if flvURL != "" {
+		exists := false
+		for _, q := range info.Qualities {
+			if q.URL == flvURL {
+				exists = true
+				break
+			}
+		}
+		if !exists {
 			info.Qualities = append(info.Qualities, StreamQuality{
 				Name: qLabel + " [FLV]",
 				URL:  flvURL,
@@ -570,7 +687,10 @@ func (s *Service) FetchRoomDetail(ctx context.Context, roomID, username string) 
 	}
 
 	status, _ := liveRoomInfo["status"].(float64)
-	isLive := int(status) == 2
+	isLive := int(status) == 2 || int(status) == 4
+	if int(status) == 3 {
+		isLive = false
+	}
 
 	title, _ := liveRoomInfo["title"].(string)
 	ownerInfo, _ := liveRoomInfo["ownerInfo"].(map[string]interface{})
@@ -598,8 +718,26 @@ func (s *Service) FetchRoomDetail(ctx context.Context, roomID, username string) 
 
 	if sd, ok := liveRoomInfo["streamData"].(map[string]interface{}); ok {
 		s.populateFromStreamData(info, sd)
-	} else if streamURL, ok := liveRoomInfo["streamUrl"].(map[string]interface{}); ok {
-		s.populateStreams(info, streamURL)
+	}
+	if len(info.Qualities) == 0 || info.StreamURL == "" {
+		if hsd, ok := liveRoomInfo["hevcStreamData"].(map[string]interface{}); ok {
+			s.populateFromStreamData(info, hsd)
+		}
+	}
+	if len(info.Qualities) == 0 {
+		if streamURL, ok := liveRoomInfo["streamUrl"].(map[string]interface{}); ok {
+			s.populateStreams(info, streamURL)
+		}
+	}
+
+	roomStatus := int(status)
+	if (roomStatus == 2 || roomStatus == 4) && info.StreamURL != "" {
+		info.IsLive = true
+	} else {
+		info.IsLive = false
+		info.StreamURL = ""
+		info.FLVURL = ""
+		info.Qualities = []StreamQuality{}
 	}
 
 	return info, nil
@@ -610,6 +748,7 @@ func (s *Service) populateStreams(info *LiveRoomInfo, streamURL map[string]inter
 	if pullURL, ok := streamURL["pull_url"].(map[string]interface{}); ok {
 		for qName, qVal := range pullURL {
 			if uStr, ok := qVal.(string); ok && uStr != "" {
+				uStr = CleanStreamURL(uStr)
 				info.Qualities = append(info.Qualities, StreamQuality{
 					Name: strings.ToUpper(qName),
 					URL:  uStr,
@@ -640,6 +779,9 @@ func (s *Service) populateStreams(info *LiveRoomInfo, streamURL map[string]inter
 							}
 							hlsURL, _ := mainMap["hls"].(string)
 							flvURL, _ := mainMap["flv"].(string)
+
+							hlsURL = CleanStreamURL(hlsURL)
+							flvURL = CleanStreamURL(flvURL)
 
 							qLabel := strings.ToUpper(qualityKey)
 							switch qualityKey {
@@ -684,6 +826,7 @@ func (s *Service) populateStreams(info *LiveRoomInfo, streamURL map[string]inter
 
 	// 3. Fallback to hls_pull_url
 	if hlsPull, ok := streamURL["hls_pull_url"].(string); ok && hlsPull != "" && info.StreamURL == "" {
+		hlsPull = CleanStreamURL(hlsPull)
 		info.StreamURL = hlsPull
 		info.Qualities = append(info.Qualities, StreamQuality{
 			Name: "Default [HLS]",
