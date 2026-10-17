@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -171,9 +172,19 @@ func SolveSlardarWAF(csB64 string) (string, error) {
 
 // Extract retrieves live stream metadata and m3u8 URLs for a given TikTok username, URL, or room ID
 func (s *Service) Extract(ctx context.Context, input string) (*LiveRoomInfo, error) {
+	return s.ExtractWithSession(ctx, input, "")
+}
+
+// ExtractWithSession retrieves live stream metadata with an optional authenticated sessionid cookie
+func (s *Service) ExtractWithSession(ctx context.Context, input, sessionID string) (*LiveRoomInfo, error) {
 	username := CleanUsername(input)
 	if username == "" {
 		return nil, fmt.Errorf("username or TikTok live URL is required")
+	}
+
+	sessionID = strings.TrimSpace(sessionID)
+	if sessionID == "" {
+		sessionID = strings.TrimSpace(os.Getenv("TIKTOK_SESSION_ID"))
 	}
 
 	// If numeric input, it might be a direct room_id
@@ -185,7 +196,7 @@ func (s *Service) Extract(ctx context.Context, input string) (*LiveRoomInfo, err
 	var lastOfflineInfo *LiveRoomInfo
 
 	// 1. Try primary official web API endpoint (Fast, structured JSON, bypasses SlardarWAF)
-	if apiInfo, err := s.fetchLiveFromAPI(ctx, username); err == nil && apiInfo != nil {
+	if apiInfo, err := s.fetchLiveFromAPI(ctx, username, sessionID); err == nil && apiInfo != nil {
 		if apiInfo.IsLive {
 			return apiInfo, nil
 		}
@@ -205,6 +216,9 @@ func (s *Service) Extract(ctx context.Context, input string) (*LiveRoomInfo, err
 		req.Header.Set("Sec-Fetch-Dest", "document")
 		req.Header.Set("Sec-Fetch-Mode", "navigate")
 		req.Header.Set("Sec-Fetch-Site", "none")
+		if sessionID != "" {
+			req.Header.Set("Cookie", fmt.Sprintf("sessionid=%s; sessionid_ss=%s; tt-target-idc=useast1a", sessionID, sessionID))
+		}
 
 		resp, err := s.httpClient.Do(req)
 		if err == nil {
@@ -281,16 +295,21 @@ func (s *Service) Extract(ctx context.Context, input string) (*LiveRoomInfo, err
 	}, nil
 }
 
-func (s *Service) fetchLiveFromAPI(ctx context.Context, username string) (*LiveRoomInfo, error) {
+func (s *Service) fetchLiveFromAPI(ctx context.Context, username, sessionID string) (*LiveRoomInfo, error) {
 	apiURL := fmt.Sprintf("https://www.tiktok.com/api-live/user/room/?aid=1988&app_name=tiktok_web&device_platform=web_pc&sourceType=54&uniqueId=%s", url.QueryEscape(username))
 	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
 	if err != nil {
 		return nil, err
 	}
 
+	cookieHeader := "tt-target-idc=useast1a"
+	if sessionID != "" {
+		cookieHeader += fmt.Sprintf("; sessionid=%s; sessionid_ss=%s", sessionID, sessionID)
+	}
+
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
 	req.Header.Set("Referer", "https://www.tiktok.com/")
-	req.Header.Set("Cookie", "tt-target-idc=useast1a")
+	req.Header.Set("Cookie", cookieHeader)
 	req.Header.Set("Accept", "application/json, text/plain, */*")
 	req.Header.Set("Sec-Ch-Ua", `"Chromium";v="126", "Google Chrome";v="126", "Not-A.Brand";v="99"`)
 	req.Header.Set("Sec-Ch-Ua-Mobile", "?0")

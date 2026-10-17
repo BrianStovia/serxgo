@@ -246,17 +246,94 @@
       z-index: 10;
     }
 
-    /* Mode Embed Web Player (Trik 3: Bypass 18+ & Merokok) */
-    .player-embed-iframe {
+    /* Mode Web Player Card (Bypass 18+ & X-Frame-Options) */
+    .web-player-card {
       width: 100%;
       height: 100%;
-      border: none;
-      background: #000000;
-      display: none;
+      background: radial-gradient(circle at center, #181824 0%, #08080c 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      text-align: center;
+      z-index: 5;
       position: absolute;
       top: 0;
       left: 0;
-      z-index: 5;
+    }
+    .web-player-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      margin-bottom: 0.85rem;
+    }
+    .web-player-avatar {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #ef4444;
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+      margin-bottom: 0.75rem;
+    }
+    .web-player-heading {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 0.4rem;
+    }
+    .web-player-desc {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      max-width: 420px;
+      line-height: 1.45;
+      margin: 0 auto;
+    }
+    .web-player-desc code {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      color: #f87171;
+      font-size: 0.78rem;
+    }
+
+    /* Cookie 18+ Modal */
+    .cookie-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 1rem;
+    }
+    .cookie-modal-card {
+      background: #14141a;
+      border: 1px solid var(--border-glass);
+      border-radius: 16px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+      animation: bannerSlide 0.25s ease-out;
+    }
+    .cookie-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      color: var(--text-primary);
     }
     .restricted-alert-toast {
       position: absolute;
@@ -1244,8 +1321,31 @@
             <!-- Video Player Element -->
             <video id="liveVideo" controls playsinline preload="auto"></video>
 
-            <!-- Mode Embed Web Player (Trik 3: Bypass 18+ & Merokok) -->
-            <iframe id="embedFrame" class="player-embed-iframe" frameborder="0" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation" allowfullscreen></iframe>
+            <!-- Mode Web Player Card (Bypass 18+ & X-Frame-Options) -->
+            <div id="webPlayerCard" class="web-player-card" style="display:none;">
+              <div class="web-player-badge">
+                <span class="live-pulse-dot"></span>
+                <span>MODE WEB PLAYER (18+ UNLOCKED)</span>
+              </div>
+              <div>
+                <img id="webPlayerAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" alt="Avatar" class="web-player-avatar">
+              </div>
+              <h3 id="webPlayerTitle" class="web-player-heading">Siaran TikTok Sedang Berjalan</h3>
+              <p class="web-player-desc">
+                Siaran live ini dibatasi usia/merokok oleh TikTok. Siaran dibuka di jendela Web Player mandiri agar bebas dari blokir <code>X-Frame-Options</code> dan langsung menggunakan sesi akun TikTok Anda.
+              </p>
+              <div style="display:flex; gap:0.6rem; justify-content:center; flex-wrap:wrap; margin-top:1.2rem;">
+                <button type="button" class="btn-action active" onclick="openWebPlayerWindow()" style="background:#ef4444; color:#fff; border-color:#ef4444; font-weight:700;">
+                  <span>↗️ Fokus / Buka Jendela Web Player</span>
+                </button>
+                <button type="button" class="btn-action" onclick="openCookieModal()" style="background:rgba(255,255,255,0.08);">
+                  <span>🔑 Pasang Cookie 18+ (Putar di Sini)</span>
+                </button>
+                <button type="button" class="btn-action" onclick="setEmbedMode(false)">
+                  <span>⚡ Kembali ke Pemutar HLS</span>
+                </button>
+              </div>
+            </div>
 
             <!-- Restricted Stream Alert Overlay -->
             <div id="restrictedAlertToast" class="restricted-alert-toast">
@@ -1405,9 +1505,13 @@
         </div>
 
         <div class="streamer-actions">
-          <button type="button" class="btn-action" id="btnEmbedToggle" onclick="toggleEmbedMode()" title="Beralih antara Pemutar HLS dan Mode Embed Web (Bypass batasan 18+ / merokok)">
+          <button type="button" class="btn-action" id="btnEmbedToggle" onclick="toggleEmbedMode()" title="Beralih antara Pemutar HLS dan Mode Web Player (Bypass batasan 18+ / merokok)">
             <span id="embedIcon">🛡️</span>
-            <span id="embedLabel">Mode Embed Web</span>
+            <span id="embedLabel">Mode Web Player</span>
+          </button>
+          <button type="button" class="btn-action" id="btnCookieModal" onclick="openCookieModal()" title="Konfigurasi Cookie sessionid 18+ untuk memutar siaran merokok langsung di sini">
+            <span>🔑</span>
+            <span id="cookieBtnLabel">Cookie 18+</span>
           </button>
           <button type="button" class="btn-action active" id="btnFormatToggle" onclick="togglePlayerFormat()" title="Beralih Format Pemutar (Portrait 9:16 / Landscape 16:9)">
             <span id="formatIcon">📱</span>
@@ -1463,7 +1567,10 @@
       <p id="statusDesc" class="status-desc">Kreator ini sedang offline atau belum memulai siaran langsung saat ini.</p>
       <div style="display:flex; justify-content:center; gap:0.75rem; flex-wrap: wrap;">
         <button type="button" id="statusEmbedBtn" class="btn-action" style="background: linear-gradient(135deg, #ef4444, #dc2626); border-color: #ef4444; color: #fff; font-weight: 700; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);" onclick="launchEmbedDirectly()">
-          <span>🛡️ Putar Mode Embed Web (Bypass 18+)</span>
+          <span>🛡️ Putar Mode Web Player (Bypass 18+)</span>
+        </button>
+        <button type="button" class="btn-action" style="background: rgba(255, 255, 255, 0.08);" onclick="openCookieModal()">
+          <span>🔑 Pasang Cookie 18+</span>
         </button>
         <button type="button" class="btn-action" style="background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.5); color: #fff;" onclick="setAccount('aljazeera')">
           <span>🔴 Tonton Akun Live: @aljazeera</span>
@@ -1477,6 +1584,33 @@
         <a id="statusLiveWebBtn" href="#" target="_blank" rel="noopener noreferrer" class="btn-action" style="background: rgba(255,255,255,0.08);">
           <span>🪟 Buka Web Live TikTok</span>
         </a>
+      </div>
+    </div>
+
+    <!-- Cookie 18+ Modal Dialog -->
+    <div id="cookieModal" class="cookie-modal-overlay" style="display:none;" onclick="handleCookieModalBackdrop(event)">
+      <div class="cookie-modal-card">
+        <div class="cookie-modal-header">
+          <div style="display:flex; align-items:center; gap:0.5rem; font-weight:800; font-size:1.05rem;">
+            <span>🔑</span>
+            <span>Konfigurasi Cookie TikTok 18+</span>
+          </div>
+          <button type="button" class="btn-chat-tool" onclick="closeCookieModal()">✕</button>
+        </div>
+        <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.45; margin-bottom:1rem;">
+          Masukkan cookie <code>sessionid</code> dari akun TikTok dewasa (18+) Anda. Server akan menyertakan cookie ini sehingga siaran yang dibatasi usia/merokok dapat <strong>diputar langsung di dalam pemutar video utama tanpa jendela popout</strong>!
+        </p>
+        <div style="margin-bottom:1rem;">
+          <label style="font-size:0.78rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:0.35rem;">Cookie sessionid:</label>
+          <input type="text" id="inputCookieSession" class="live-input" style="width:100%; font-family:monospace; font-size:0.85rem;" placeholder="Contoh: 7a8b9c0d1e2f3a4b..." autocomplete="off">
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+          <span id="cookieStatusLabel" style="font-size:0.78rem; color:#4ade80;"></span>
+          <div style="display:flex; gap:0.5rem;">
+            <button type="button" class="btn-action" onclick="clearSavedCookie()">Hapus</button>
+            <button type="button" class="btn-action active" style="background:#ef4444; border-color:#ef4444; color:#fff;" onclick="saveCookieSession()">Simpan &amp; Terapkan</button>
+          </div>
+        </div>
       </div>
     </div>
   </main>
@@ -1622,9 +1756,30 @@
     }
 
     // ==============================================================================
-    // 🛡️ TRIK 3: MODE EMBED WEB PLAYER FALLBACK (BYPASS 18+ & MEROKOK)
+    // 🛡️ MODE WEB PLAYER & COOKIE 18+ UNLOCK
     // ==============================================================================
     let isEmbedMode = false;
+    let webPlayerWindow = null;
+
+    function openWebPlayerWindow() {
+      if (!currentUsername) return;
+      const targetURL = `https://www.tiktok.com/@${encodeURIComponent(currentUsername)}/live`;
+      const w = 480;
+      const h = 820;
+      const left = Math.max(0, (window.screen.width - w) / 2);
+      const top = Math.max(0, (window.screen.height - h) / 2);
+
+      if (webPlayerWindow && !webPlayerWindow.closed) {
+        webPlayerWindow.location.href = targetURL;
+        webPlayerWindow.focus();
+      } else {
+        webPlayerWindow = window.open(
+          targetURL,
+          'TikTokLivePlayer',
+          `width=${w},height=${h},top=${top},left=${left},menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes`
+        );
+      }
+    }
 
     function toggleEmbedMode() {
       if (!currentUsername) {
@@ -1641,7 +1796,7 @@
     function setEmbedMode(enable) {
       isEmbedMode = enable;
       const videoEl = document.getElementById('liveVideo');
-      const embedFrame = document.getElementById('embedFrame');
+      const webCard = document.getElementById('webPlayerCard');
       const btn = document.getElementById('btnEmbedToggle');
       const icon = document.getElementById('embedIcon');
       const label = document.getElementById('embedLabel');
@@ -1657,29 +1812,32 @@
         videoEl.pause();
         videoEl.style.display = 'none';
 
-        // Display embed iframe pointing to TikTok live
-        const targetURL = `https://www.tiktok.com/@${encodeURIComponent(currentUsername)}/live`;
-        if (embedFrame.src !== targetURL) {
-          embedFrame.src = targetURL;
+        // Update card info and display it
+        if (webCard) {
+          const avatarSrc = document.getElementById('streamerAvatar').src || getDefaultAvatar(currentUsername);
+          document.getElementById('webPlayerAvatar').src = avatarSrc;
+          document.getElementById('webPlayerTitle').textContent = `@${currentUsername} - Live Stream (18+)`;
+          webCard.style.display = 'flex';
         }
-        embedFrame.style.display = 'block';
+
+        // Open/Focus Web Player window
+        openWebPlayerWindow();
 
         if (btn) btn.classList.add('active');
         if (icon) icon.textContent = '⚡';
         if (label) label.textContent = 'Mode Stream HLS';
         if (qualityToolbar) qualityToolbar.style.display = 'none';
 
-        addSystemNotice('🛡️ Mode Embed Web Aktif (Bypass 18+ & Merokok). Sesi web browser digunakan untuk siaran.');
+        addSystemNotice('🛡️ Mode Web Player Aktif: Memutar di jendela mandiri untuk bypass restriksi 18+ & X-Frame-Options.');
       } else {
-        // Hide embed frame
-        embedFrame.style.display = 'none';
-        embedFrame.src = 'about:blank';
+        // Hide web card
+        if (webCard) webCard.style.display = 'none';
 
         // Restore video
         videoEl.style.display = 'block';
         if (btn) btn.classList.remove('active');
         if (icon) icon.textContent = '🛡️';
-        if (label) label.textContent = 'Mode Embed Web';
+        if (label) label.textContent = 'Mode Web Player';
 
         if (currentQualities && currentQualities.length > 0 && qualityToolbar) {
           qualityToolbar.style.display = 'flex';
@@ -1712,7 +1870,7 @@
 
       document.getElementById('streamerNickname').textContent = cleanUser;
       document.getElementById('streamerUsername').textContent = '@' + cleanUser;
-      document.getElementById('streamTitle').textContent = 'Siaran Langsung TikTok Live (Mode Embed Web)';
+      document.getElementById('streamTitle').textContent = 'Siaran Langsung TikTok Live (Mode Web Player)';
       document.getElementById('streamerAvatar').src = getDefaultAvatar(cleanUser);
       document.getElementById('btnOpenTikTok').href = `https://www.tiktok.com/@${encodeURIComponent(cleanUser)}/live`;
 
@@ -1737,6 +1895,78 @@
     function switchToEmbedFromToast() {
       hideRestrictedToast();
       setEmbedMode(true);
+    }
+
+    // Cookie 18+ Modal Management
+    function openCookieModal() {
+      const modal = document.getElementById('cookieModal');
+      const input = document.getElementById('inputCookieSession');
+      const status = document.getElementById('cookieStatusLabel');
+      const saved = localStorage.getItem('tiktok_sessionid') || '';
+      input.value = saved;
+      if (saved) {
+        status.textContent = '✅ Cookie 18+ Aktif';
+        status.style.color = '#4ade80';
+      } else {
+        status.textContent = 'Belum ada cookie';
+        status.style.color = 'var(--text-muted)';
+      }
+      modal.style.display = 'flex';
+    }
+
+    function closeCookieModal() {
+      const modal = document.getElementById('cookieModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function handleCookieModalBackdrop(e) {
+      if (e.target && e.target.id === 'cookieModal') {
+        closeCookieModal();
+      }
+    }
+
+    function saveCookieSession() {
+      const input = document.getElementById('inputCookieSession');
+      const val = input.value.trim();
+      if (val) {
+        localStorage.setItem('tiktok_sessionid', val);
+        addSystemNotice('🔑 Cookie sessionid 18+ berhasil disimpan!');
+        updateCookieBtnUI(true);
+      } else {
+        localStorage.removeItem('tiktok_sessionid');
+        addSystemNotice('🔑 Cookie 18+ dihapus.');
+        updateCookieBtnUI(false);
+      }
+      closeCookieModal();
+      // Reload current stream with cookie
+      const user = document.getElementById('userInput').value.trim() || currentUsername;
+      if (user) {
+        loadLiveStream(user);
+      }
+    }
+
+    function clearSavedCookie() {
+      localStorage.removeItem('tiktok_sessionid');
+      document.getElementById('inputCookieSession').value = '';
+      const status = document.getElementById('cookieStatusLabel');
+      status.textContent = 'Cookie dihapus';
+      status.style.color = 'var(--text-muted)';
+      updateCookieBtnUI(false);
+      addSystemNotice('🔑 Cookie 18+ berhasil dihapus.');
+    }
+
+    function updateCookieBtnUI(hasCookie) {
+      const btn = document.getElementById('btnCookieModal');
+      const label = document.getElementById('cookieBtnLabel');
+      if (btn && label) {
+        if (hasCookie) {
+          btn.classList.add('active');
+          label.textContent = 'Cookie 18+ (Aktif)';
+        } else {
+          btn.classList.remove('active');
+          label.textContent = 'Cookie 18+';
+        }
+      }
     }
 
     async function loadLiveStream(userInput) {
@@ -1776,8 +2006,15 @@
       playerContainer.style.display = 'none';
       statusBox.style.display = 'none';
 
+      const savedSession = localStorage.getItem('tiktok_sessionid') || '';
+      updateCookieBtnUI(!!savedSession);
+      let apiReqUrl = `/api/tiktoklive/info?user=${encodeURIComponent(userInput)}`;
+      if (savedSession) {
+        apiReqUrl += `&sessionid=${encodeURIComponent(savedSession)}`;
+      }
+
       try {
-        const res = await fetch(`/api/tiktoklive/info?user=${encodeURIComponent(userInput)}`);
+        const res = await fetch(apiReqUrl);
         const data = await res.json();
 
         loadingBox.style.display = 'none';
@@ -1795,7 +2032,7 @@
             showStatus(
               '🔞', 
               `${displayUser} Dibatasi (18+ / Merokok)`, 
-              'Siaran sedang berlangsung, namun dibatasi oleh TikTok karena terdeteksi merokok/vape atau konten 18+. Anda dapat langsung memutar siaran menggunakan Mode Embed Web di bawah tanpa dialihkan keluar.', 
+              'Siaran sedang berlangsung, namun dibatasi oleh TikTok karena terdeteksi merokok/vape atau konten 18+. Anda dapat langsung memutar siaran menggunakan Mode Web Player atau memasang Cookie 18+ di bawah.', 
               data.share_url || `https://www.tiktok.com/@${data.username}/live`,
               data.avatar,
               data.username,
@@ -1805,7 +2042,7 @@
             showStatus(
               '😴', 
               `${displayUser} Sedang Offline`, 
-              'Kreator ini sedang tidak melakukan siaran langsung (Live) di TikTok saat ini. Jika Anda yakin akun sedang live (misalnya dibatasi 18+), Anda bisa mencoba Mode Embed Web di bawah.', 
+              'Kreator ini sedang tidak melakukan siaran langsung (Live) di TikTok saat ini. Jika Anda yakin akun sedang live (misalnya dibatasi 18+), Anda bisa mencoba Mode Web Player di bawah.', 
               data.share_url || `https://www.tiktok.com/@${data.username}/live`,
               data.avatar,
               data.username,
@@ -1851,10 +2088,9 @@
 
       // Reset Embed mode state if previously active
       isEmbedMode = false;
-      const embedFrame = document.getElementById('embedFrame');
-      if (embedFrame) {
-        embedFrame.style.display = 'none';
-        embedFrame.src = 'about:blank';
+      const webCard = document.getElementById('webPlayerCard');
+      if (webCard) {
+        webCard.style.display = 'none';
       }
       videoEl.style.display = 'block';
       const btnEmbed = document.getElementById('btnEmbedToggle');
@@ -1862,7 +2098,7 @@
       const embedIcon = document.getElementById('embedIcon');
       if (embedIcon) embedIcon.textContent = '🛡️';
       const embedLabel = document.getElementById('embedLabel');
-      if (embedLabel) embedLabel.textContent = 'Mode Embed Web';
+      if (embedLabel) embedLabel.textContent = 'Mode Web Player';
       hideRestrictedToast();
 
       // Setup Quality buttons

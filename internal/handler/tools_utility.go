@@ -867,7 +867,12 @@ func (h *Handler) ServeAPITikTokLiveInfo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	info, err := h.tiktokLiveService.Extract(r.Context(), user)
+	sessionID := strings.TrimSpace(r.URL.Query().Get("sessionid"))
+	if sessionID == "" {
+		sessionID = strings.TrimSpace(r.URL.Query().Get("cookie"))
+	}
+
+	info, err := h.tiktokLiveService.ExtractWithSession(r.Context(), user, sessionID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
