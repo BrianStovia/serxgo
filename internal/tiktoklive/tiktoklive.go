@@ -25,19 +25,20 @@ type StreamQuality struct {
 
 // LiveRoomInfo represents extracted metadata for a TikTok Live room
 type LiveRoomInfo struct {
-	IsLive      bool            `json:"is_live"`
-	RoomID      string          `json:"room_id"`
-	Username    string          `json:"username"`
-	Nickname    string          `json:"nickname"`
-	Avatar      string          `json:"avatar"`
-	Title       string          `json:"title"`
-	ViewerCount int64           `json:"viewer_count"`
-	LikeCount   int64           `json:"like_count"`
-	StartedAt   int64           `json:"started_at"`
-	StreamURL   string          `json:"stream_url"` // Default best m3u8
-	FLVURL      string          `json:"flv_url,omitempty"`
-	Qualities   []StreamQuality `json:"qualities"`
-	ShareURL    string          `json:"share_url"`
+	IsLive       bool            `json:"is_live"`
+	IsRestricted bool            `json:"is_restricted,omitempty"`
+	RoomID       string          `json:"room_id"`
+	Username     string          `json:"username"`
+	Nickname     string          `json:"nickname"`
+	Avatar       string          `json:"avatar"`
+	Title        string          `json:"title"`
+	ViewerCount  int64           `json:"viewer_count"`
+	LikeCount    int64           `json:"like_count"`
+	StartedAt    int64           `json:"started_at"`
+	StreamURL    string          `json:"stream_url"` // Default best m3u8
+	FLVURL       string          `json:"flv_url,omitempty"`
+	Qualities    []StreamQuality `json:"qualities"`
+	ShareURL     string          `json:"share_url"`
 }
 
 type Service struct {
@@ -418,6 +419,13 @@ func (s *Service) parseUserInfo(user, liveRoom map[string]interface{}, username 
 	// Channel is only live if the room is active (status 2 or 4) and has a valid HLS stream
 	if (roomStatus == 2 || roomStatus == 4) && info.StreamURL != "" {
 		info.IsLive = true
+	} else if roomStatus == 2 || roomStatus == 4 {
+		// Active live room, but stream URL blocked by TikTok restriction (e.g. 18+ or tobacco/smoking)
+		info.IsLive = false
+		info.IsRestricted = true
+		info.StreamURL = ""
+		info.FLVURL = ""
+		info.Qualities = []StreamQuality{}
 	} else {
 		info.IsLive = false
 		info.StreamURL = ""
@@ -528,6 +536,12 @@ func (s *Service) parseRehydrationData(root map[string]interface{}, username str
 	roomStatus := int(status)
 	if (roomStatus == 2 || roomStatus == 4) && info.StreamURL != "" {
 		info.IsLive = true
+	} else if roomStatus == 2 || roomStatus == 4 {
+		info.IsLive = false
+		info.IsRestricted = true
+		info.StreamURL = ""
+		info.FLVURL = ""
+		info.Qualities = []StreamQuality{}
 	} else {
 		info.IsLive = false
 		info.StreamURL = ""
@@ -733,6 +747,12 @@ func (s *Service) FetchRoomDetail(ctx context.Context, roomID, username string) 
 	roomStatus := int(status)
 	if (roomStatus == 2 || roomStatus == 4) && info.StreamURL != "" {
 		info.IsLive = true
+	} else if roomStatus == 2 || roomStatus == 4 {
+		info.IsLive = false
+		info.IsRestricted = true
+		info.StreamURL = ""
+		info.FLVURL = ""
+		info.Qualities = []StreamQuality{}
 	} else {
 		info.IsLive = false
 		info.StreamURL = ""
