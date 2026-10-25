@@ -18,7 +18,7 @@
 </div>
 <div align="center">
 "Tested and fully operational on a $1.5/month (Rp 25.000) low-spec VPS under high concurrency workloads."
-</>
+</div>
 ---
 
 ## 🌟 Key Features
