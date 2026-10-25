@@ -16,8 +16,9 @@
 
 [✨ Features](#-key-features) • [🚀 Quickstart](#-quickstart) • [🔍 Search Syntax & Bangs](#-search-bangs--syntax-cheatsheet) • [🌐 REST API](#-api--integration-endpoints) • [⚙️ Configuration](#-configuration) • [🛡️ Privacy Architecture](#-privacy--security-architecture)
 </div>
-**"Tested and fully operational on a $1.5/month (Rp 25.000) low-spec VPS under high concurrency workloads."**
-
+<div align="center">
+"Tested and fully operational on a $1.5/month (Rp 25.000) low-spec VPS under high concurrency workloads."
+</>
 ---
 
 ## 🌟 Key Features
