@@ -2129,9 +2129,9 @@
       playHlsStream(currentStreamURL);
     }
 
-    function playHlsStream(streamURL) {
+    function playHlsStream(streamURL, useDirect = false) {
       const videoEl = document.getElementById('liveVideo');
-      const proxiedURL = `/api/tiktoklive/proxy?url=${encodeURIComponent(streamURL)}`;
+      const targetSource = useDirect ? streamURL : `/api/tiktoklive/proxy?url=${encodeURIComponent(streamURL)}`;
 
       // 1. Destroy existing HLS instance cleanly
       if (currentHls) {
@@ -2152,11 +2152,11 @@
           backBufferLength: 60,
           maxBufferLength: 30,
           manifestLoadingTimeOut: 15000,
-          manifestLoadingMaxRetry: 5,
+          manifestLoadingMaxRetry: 4,
           levelLoadingTimeOut: 15000,
-          levelLoadingMaxRetry: 5,
+          levelLoadingMaxRetry: 4,
           fragLoadingTimeOut: 20000,
-          fragLoadingMaxRetry: 5,
+          fragLoadingMaxRetry: 4,
           xhrSetup: function(xhr, url) {
             xhr.withCredentials = false;
           }
@@ -2166,10 +2166,13 @@
         currentHls.attachMedia(videoEl);
 
         currentHls.on(Hls.Events.MEDIA_ATTACHED, function () {
-          currentHls.loadSource(proxiedURL);
+          currentHls.loadSource(targetSource);
         });
 
         currentHls.on(Hls.Events.MANIFEST_PARSED, function () {
+          if (useDirect) {
+            console.log('[TikTokLive] Direct CDN stream loaded successfully');
+          }
           // In Chromium, unmuted autoplay might be rejected without user gesture; fallback to muted
           const playPromise = videoEl.play();
           if (playPromise !== undefined) {
@@ -2187,6 +2190,13 @@
           if (data.fatal) {
             switch (data.type) {
               case Hls.ErrorTypes.NETWORK_ERROR:
+                if (!useDirect) {
+                  console.warn('[TikTokLive] HLS Proxy network error (kemungkinan IP server dibatasi CDN TikTok), mencoba Direct CDN Stream...');
+                  currentHls.destroy();
+                  currentHls = null;
+                  playHlsStream(streamURL, true);
+                  return;
+                }
                 console.warn('[TikTokLive] HLS Network error, attempting recovery...');
                 currentHls.startLoad();
                 showRestrictedToast();
@@ -2197,6 +2207,13 @@
                 break;
               default:
                 console.error('[TikTokLive] HLS Fatal error:', data);
+                if (!useDirect) {
+                  console.warn('[TikTokLive] Fatal error with proxy, retrying with Direct CDN Stream...');
+                  currentHls.destroy();
+                  currentHls = null;
+                  playHlsStream(streamURL, true);
+                  return;
+                }
                 showRestrictedToast();
                 currentHls.destroy();
                 break;
@@ -2205,13 +2222,21 @@
         });
       } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
         // Native Safari / iOS HLS
-        videoEl.src = proxiedURL;
+        videoEl.src = targetSource;
         videoEl.addEventListener('loadedmetadata', function () {
           videoEl.play().catch(function () {
             videoEl.muted = true;
             videoEl.play();
           });
         });
+        videoEl.onerror = function() {
+          if (!useDirect) {
+            console.warn('[TikTokLive] Native HLS proxy failed, trying direct stream URL...');
+            playHlsStream(streamURL, true);
+          } else {
+            showRestrictedToast();
+          }
+        };
       }
     }
 
