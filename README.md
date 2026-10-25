@@ -15,8 +15,8 @@
 *100% feature parity with SearXNG, zero telemetry, zero database dependencies, and sub-second multi-engine aggregation.*
 
 [✨ Features](#-key-features) • [🚀 Quickstart](#-quickstart) • [🔍 Search Syntax & Bangs](#-search-bangs--syntax-cheatsheet) • [🌐 REST API](#-api--integration-endpoints) • [⚙️ Configuration](#-configuration) • [🛡️ Privacy Architecture](#-privacy--security-architecture)
-"Tested and fully operational on a $1.5/month (Rp 25.000) low-spec VPS under high concurrency workloads."
 </div>
+"Tested and fully operational on a $1.5/month (Rp 25.000) low-spec VPS under high concurrency workloads."
 
 ---
 
