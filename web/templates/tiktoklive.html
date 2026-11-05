@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{if .User}}{{.User}} - {{end}}Nonton TikTok Live &amp; Live Chat - SearXGo</title>
+  <title>{{if .User}}{{.User}} - {{end}}Watch TikTok Live &amp; Live Chat</title>
   <link rel="stylesheet" href="/static/css/main.css?v=4.2">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔴</text></svg>">
   <script src="/static/js/hls.min.js"></script>
@@ -1247,12 +1247,8 @@
 
   <main class="live-wrapper">
     <div class="live-hero">
-      <div class="live-hero-badge">
-        <span class="live-pulse-dot"></span>
-        <span>TIKTOK LIVE DIRECT VIEWER &amp; REAL-TIME CHAT</span>
-      </div>
-      <h1 class="live-title">Nonton TikTok Live &amp; Live Chat</h1>
-      <p class="live-desc">Tonton siaran langsung TikTok tanpa login dan pantau komentar, hadiah (gifts), serta interaksi penonton secara real-time melalui player HLS anti-buffering dan WebSocket WebCast.</p>
+      <h1 class="live-title">Watch TikTok Live &amp; Live Chat</h1>
+      <p class="live-desc">Watch TikTok live streams without logging in, and monitor comments, gifts, and viewer interactions in real-time using an anti-buffering HLS player and WebSocket WebCast.</p>
     </div>
 
     <!-- Search Input Box -->
@@ -1262,7 +1258,7 @@
           type="text" 
           id="userInput" 
           class="live-input" 
-          placeholder="Masukkan username TikTok (contoh: aljazeera, skynews, atau link live)..." 
+          placeholder="Input Username (example: aljazeera, skynews, atau link live)..." 
           value="{{.User}}"
           autocomplete="off"
           required
@@ -1274,7 +1270,7 @@
       </form>
 
       <!-- Preset Popular Accounts -->
-      <div class="preset-chips">
+      <!-- <div class="preset-chips">
         <span class="preset-label">🔥 Siaran Populer &amp; Aktif:</span>
         <button type="button" class="preset-pill" onclick="setAccount('tribunnews')">🔴 @tribunnews (Live Indonesia)</button>
         <button type="button" class="preset-pill" onclick="setAccount('skynews')">🔴 @skynews (News 24/7)</button>
@@ -1283,7 +1279,7 @@
         <button type="button" class="preset-pill" onclick="setAccount('jkt48.official')">@jkt48.official</button>
         <button type="button" class="preset-pill" onclick="setAccount('mrbeast')">@mrbeast</button>
       </div>
-    </div>
+    </div> -->
 
     <!-- Loading State -->
     <div id="loadingBox" class="loading-spinner-box">
