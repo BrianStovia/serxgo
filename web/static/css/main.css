@@ -1241,6 +1241,31 @@ a:hover {
   .app-header .nav-links {
     display: none !important;
   }
+
+  .app-header.compact-tool-header {
+    gap: 0.5rem !important;
+    padding: 0.65rem 0.75rem !important;
+  }
+
+  .app-header.compact-tool-header .header-left {
+    flex: 0 1 auto !important;
+    gap: 0.5rem !important;
+  }
+
+  .app-header.compact-tool-header .header-badge,
+  .app-header.compact-tool-header .compact-tool-nav > .nav-link {
+    display: none !important;
+  }
+
+  .app-header.compact-tool-header .compact-tool-nav {
+    flex: 0 0 auto !important;
+    margin-left: auto !important;
+    overflow: visible !important;
+  }
+
+  .app-header.compact-tool-header .header-right {
+    gap: 0.25rem !important;
+  }
 }
 
 .app-header .nav-link {
@@ -4345,6 +4370,14 @@ html, body {
   .header-nav .nav-dropdown-panel {
     right: 0 !important;
     left: auto !important;
+  }
+
+  .app-header.compact-tool-header .nav-dropdown-panel {
+    position: fixed !important;
+    top: 64px !important;
+    right: 0.5rem !important;
+    left: auto !important;
+    width: min(280px, calc(100vw - 1rem)) !important;
   }
 
   .top-nav .nav-dropdown-panel {
