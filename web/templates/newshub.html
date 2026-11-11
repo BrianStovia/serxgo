@@ -32,6 +32,10 @@
     .news-card-actions { display: flex; gap: 6px; flex-wrap: wrap; border-top: 1px solid var(--border-subtle); padding-top: 12px; }
     .action-pill { font-size: 0.75rem; padding: 3px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.06); color: var(--text-muted); border: 1px solid var(--border-subtle); transition: all 0.15s; }
     .action-pill:hover { background: var(--accent-primary); color: white; border-color: var(--accent-primary); }
+    .news-results-footer { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 24px auto 0; }
+    .news-results-count { margin: 0; color: var(--text-muted); font-size: 0.85rem; }
+    .news-load-more { padding: 10px 18px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+    .news-load-more:hover { background: var(--accent-primary); border-color: var(--accent-primary); color: #fff; }
     .search-filter-wrap { max-width: 480px; margin: 0 auto 24px; position: relative; }
     .search-filter-input { width: 100%; padding: 10px 16px 10px 38px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 0.9rem; outline: none; box-sizing: border-box; }
     .search-filter-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 0.9rem; color: var(--text-muted); pointer-events: none; }
@@ -160,6 +164,10 @@
 
     <!-- News Grid -->
     <div class="news-grid" id="news-grid" style="display: none;"></div>
+    <div class="news-results-footer" id="news-results-footer" style="display: none;">
+      <p class="news-results-count" id="news-results-count" aria-live="polite"></p>
+      <button type="button" class="news-load-more" id="news-load-more" aria-controls="news-grid">Muat berita lagi</button>
+    </div>
 
     <div id="no-articles" style="display: none; text-align: center; padding: 60px 0; color: var(--text-muted);">
       <h3>No news matching your filter</h3>
@@ -168,10 +176,16 @@
   </main>
 
   <script>
+    const NEWS_PAGE_SIZE = 24;
+    const NEWS_INITIAL_PAGE_SIZE = window.matchMedia('(max-width: 768px)').matches ? 12 : NEWS_PAGE_SIZE;
     let currentCategory = 'all';
     let currentRegion = 'all';
     let allArticles = [];
+    let visibleArticleCount = NEWS_INITIAL_PAGE_SIZE;
     const newsGrid = document.getElementById('news-grid');
+    const resultsFooter = document.getElementById('news-results-footer');
+    const resultsCount = document.getElementById('news-results-count');
+    const loadMoreButton = document.getElementById('news-load-more');
     const loading = document.getElementById('loading');
     const noArticles = document.getElementById('no-articles');
     const searchInput = document.getElementById('news-search');
@@ -183,6 +197,7 @@
         document.querySelectorAll('.region-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentRegion = btn.dataset.region;
+        visibleArticleCount = NEWS_INITIAL_PAGE_SIZE;
         loadNews();
       });
     });
@@ -193,6 +208,7 @@
         document.querySelectorAll('.channel-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentCategory = btn.dataset.category;
+        visibleArticleCount = NEWS_INITIAL_PAGE_SIZE;
         loadNews();
       });
     });
@@ -206,6 +222,14 @@
 
     if (searchInput) {
       searchInput.addEventListener('input', () => {
+        visibleArticleCount = NEWS_INITIAL_PAGE_SIZE;
+        renderArticles();
+      });
+    }
+
+    if (loadMoreButton) {
+      loadMoreButton.addEventListener('click', () => {
+        visibleArticleCount += NEWS_PAGE_SIZE;
         renderArticles();
       });
     }
@@ -213,6 +237,7 @@
     async function loadNews(force = false) {
       loading.style.display = 'block';
       newsGrid.style.display = 'none';
+      resultsFooter.style.display = 'none';
       noArticles.style.display = 'none';
 
       try {
@@ -257,15 +282,18 @@
 
       if (filtered.length === 0) {
         newsGrid.style.display = 'none';
+        resultsFooter.style.display = 'none';
         noArticles.style.display = 'block';
         return;
       }
 
       noArticles.style.display = 'none';
       newsGrid.style.display = 'grid';
+      resultsFooter.style.display = 'flex';
       newsGrid.innerHTML = '';
 
-      filtered.forEach(article => {
+      const articlesToRender = filtered.slice(0, visibleArticleCount);
+      articlesToRender.forEach(article => {
         const card = document.createElement('article');
         card.className = 'news-card';
 
@@ -294,6 +322,14 @@
         `;
         newsGrid.appendChild(card);
       });
+
+      const renderedCount = articlesToRender.length;
+      resultsCount.textContent = `Menampilkan ${renderedCount.toLocaleString('id-ID')} dari ${filtered.length.toLocaleString('id-ID')} berita`;
+      const remainingCount = filtered.length - renderedCount;
+      loadMoreButton.hidden = remainingCount <= 0;
+      if (remainingCount > 0) {
+        loadMoreButton.textContent = `Muat ${Math.min(NEWS_PAGE_SIZE, remainingCount).toLocaleString('id-ID')} berita lagi`;
+      }
     }
 
     function escapeHtml(str) {
