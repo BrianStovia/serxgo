@@ -852,7 +852,21 @@ func (h *Handler) ServeTikTokLive(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) ServeAPITikTokLiveInfo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Cache-Control", "no-store")
+	if r.Method == http.MethodDelete {
+		http.SetCookie(w, &http.Cookie{
+			Name:     tiktoklive.SessionCookieName,
+			Value:    "",
+			Path:     "/api/tiktoklive",
+			MaxAge:   -1,
+			Expires:  time.Unix(1, 0),
+			HttpOnly: true,
+			Secure:   r.TLS != nil,
+			SameSite: http.SameSiteStrictMode,
+		})
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
 
 	user := strings.TrimSpace(r.URL.Query().Get("user"))
 	if user == "" {
@@ -861,15 +875,64 @@ func (h *Handler) ServeAPITikTokLiveInfo(w http.ResponseWriter, r *http.Request)
 	if user == "" {
 		user = strings.TrimSpace(r.URL.Query().Get("url"))
 	}
+
+	sessionID := ""
+	if r.Method == http.MethodPost {
+		r.Body = http.MaxBytesReader(w, r.Body, 8*1024)
+		var payload struct {
+			User      string  `json:"user"`
+			SessionID *string `json:"sessionid"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "invalid request body"})
+			return
+		}
+		if user == "" {
+			user = strings.TrimSpace(payload.User)
+		}
+		if payload.SessionID != nil {
+			sessionID = strings.TrimSpace(*payload.SessionID)
+		}
+		if payload.SessionID != nil && sessionID != "" {
+			if !isValidTikTokSessionID(sessionID) {
+				w.WriteHeader(http.StatusBadRequest)
+				_ = json.NewEncoder(w).Encode(map[string]string{"error": "invalid TikTok session cookie"})
+				return
+			}
+			http.SetCookie(w, &http.Cookie{
+				Name:     tiktoklive.SessionCookieName,
+				Value:    sessionID,
+				Path:     "/api/tiktoklive",
+				MaxAge:   7 * 24 * 60 * 60,
+				HttpOnly: true,
+				Secure:   r.TLS != nil,
+				SameSite: http.SameSiteStrictMode,
+			})
+		} else if payload.SessionID != nil {
+			http.SetCookie(w, &http.Cookie{
+				Name:     tiktoklive.SessionCookieName,
+				Value:    "",
+				Path:     "/api/tiktoklive",
+				MaxAge:   -1,
+				Expires:  time.Unix(1, 0),
+				HttpOnly: true,
+				Secure:   r.TLS != nil,
+				SameSite: http.SameSiteStrictMode,
+			})
+		} else if c, err := r.Cookie(tiktoklive.SessionCookieName); err == nil {
+			sessionID = c.Value
+		}
+	}
 	if user == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"error": "user or url parameter is required"})
 		return
 	}
-
-	sessionID := strings.TrimSpace(r.URL.Query().Get("sessionid"))
-	if sessionID == "" {
-		sessionID = strings.TrimSpace(r.URL.Query().Get("cookie"))
+	if r.Method == http.MethodGet && sessionID == "" {
+		if c, err := r.Cookie(tiktoklive.SessionCookieName); err == nil {
+			sessionID = c.Value
+		}
 	}
 
 	info, err := h.tiktokLiveService.ExtractWithSession(r.Context(), user, sessionID)
@@ -880,6 +943,18 @@ func (h *Handler) ServeAPITikTokLiveInfo(w http.ResponseWriter, r *http.Request)
 	}
 
 	json.NewEncoder(w).Encode(info)
+}
+
+func isValidTikTokSessionID(sessionID string) bool {
+	if sessionID == "" || len(sessionID) > 4096 {
+		return false
+	}
+	for _, r := range sessionID {
+		if r <= 0x20 || r == 0x7f || r == ';' || r == ',' {
+			return false
+		}
+	}
+	return true
 }
 
 func (h *Handler) ServeAPITikTokLiveProxy(w http.ResponseWriter, r *http.Request) {

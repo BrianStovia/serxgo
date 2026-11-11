@@ -46,6 +46,27 @@ type Service struct {
 	httpClient *http.Client
 }
 
+const SessionCookieName = "searxgo_tiktok_session"
+
+func sessionCookieHeader(sessionID string) string {
+	if !validSessionID(sessionID) {
+		return ""
+	}
+	return fmt.Sprintf("sessionid=%s; sessionid_ss=%s", sessionID, sessionID)
+}
+
+func validSessionID(sessionID string) bool {
+	if sessionID == "" || len(sessionID) > 4096 {
+		return false
+	}
+	for _, r := range sessionID {
+		if r <= 0x20 || r == 0x7f || r == ';' || r == ',' {
+			return false
+		}
+	}
+	return true
+}
+
 func NewService() *Service {
 	return &Service{
 		httpClient: &http.Client{
@@ -190,7 +211,7 @@ func (s *Service) ExtractWithSession(ctx context.Context, input, sessionID strin
 	// If numeric input, it might be a direct room_id
 	isNumeric := regexp.MustCompile(`^\d{15,25}$`).MatchString(username)
 	if isNumeric {
-		return s.FetchRoomDetail(ctx, username, username)
+		return s.FetchRoomDetail(ctx, username, username, sessionID)
 	}
 
 	var lastOfflineInfo *LiveRoomInfo
@@ -217,7 +238,9 @@ func (s *Service) ExtractWithSession(ctx context.Context, input, sessionID strin
 		req.Header.Set("Sec-Fetch-Mode", "navigate")
 		req.Header.Set("Sec-Fetch-Site", "none")
 		if sessionID != "" {
-			req.Header.Set("Cookie", fmt.Sprintf("sessionid=%s; sessionid_ss=%s; tt-target-idc=useast1a", sessionID, sessionID))
+			if cookie := sessionCookieHeader(sessionID); cookie != "" {
+				req.Header.Set("Cookie", cookie)
+			}
 		}
 
 		resp, err := s.httpClient.Do(req)
@@ -231,7 +254,11 @@ func (s *Service) ExtractWithSession(ctx context.Context, input, sessionID strin
 				if sol, solveErr := SolveSlardarWAF(csMatch[1]); solveErr == nil && sol != "" {
 					retryReq, _ := http.NewRequestWithContext(ctx, "GET", targetURL, nil)
 					retryReq.Header = req.Header.Clone()
-					retryReq.Header.Set("Cookie", fmt.Sprintf("_wafchallengeid=%s", sol))
+					cookie := req.Header.Get("Cookie")
+					if cookie != "" {
+						cookie += "; "
+					}
+					retryReq.Header.Set("Cookie", cookie+fmt.Sprintf("_wafchallengeid=%s", sol))
 					if retryResp, err := s.httpClient.Do(retryReq); err == nil {
 						defer retryResp.Body.Close()
 						if retryBytes, err := io.ReadAll(retryResp.Body); err == nil && len(retryBytes) > len(bodyBytes) {
@@ -273,7 +300,7 @@ func (s *Service) ExtractWithSession(ctx context.Context, input, sessionID strin
 
 			// Try Room ID fallback check
 			if rMatch := roomIDRegex.FindStringSubmatch(bodyStr); len(rMatch) > 1 {
-				if detailInfo, err := s.FetchRoomDetail(ctx, rMatch[1], username); err == nil && detailInfo != nil && detailInfo.IsLive {
+				if detailInfo, err := s.FetchRoomDetail(ctx, rMatch[1], username, sessionID); err == nil && detailInfo != nil && detailInfo.IsLive {
 					return detailInfo, nil
 				}
 			}
@@ -302,14 +329,12 @@ func (s *Service) fetchLiveFromAPI(ctx context.Context, username, sessionID stri
 		return nil, err
 	}
 
-	cookieHeader := "tt-target-idc=useast1a"
-	if sessionID != "" {
-		cookieHeader += fmt.Sprintf("; sessionid=%s; sessionid_ss=%s", sessionID, sessionID)
+	if cookieHeader := sessionCookieHeader(sessionID); cookieHeader != "" {
+		req.Header.Set("Cookie", cookieHeader)
 	}
 
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
 	req.Header.Set("Referer", "https://www.tiktok.com/")
-	req.Header.Set("Cookie", cookieHeader)
 	req.Header.Set("Accept", "application/json, text/plain, */*")
 	req.Header.Set("Sec-Ch-Ua", `"Chromium";v="126", "Google Chrome";v="126", "Not-A.Brand";v="99"`)
 	req.Header.Set("Sec-Ch-Ua-Mobile", "?0")
@@ -694,7 +719,7 @@ func (s *Service) addQualityFromObj(info *LiveRoomInfo, key string, qObj map[str
 }
 
 // FetchRoomDetail queries TikTok's live room detail API using room_id
-func (s *Service) FetchRoomDetail(ctx context.Context, roomID, username string) (*LiveRoomInfo, error) {
+func (s *Service) FetchRoomDetail(ctx context.Context, roomID, username string, sessionIDs ...string) (*LiveRoomInfo, error) {
 	apiURL := fmt.Sprintf("https://www.tiktok.com/api/live/detail/?roomID=%s", roomID)
 	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
 	if err != nil {
@@ -702,6 +727,11 @@ func (s *Service) FetchRoomDetail(ctx context.Context, roomID, username string) 
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
 	req.Header.Set("Referer", fmt.Sprintf("https://www.tiktok.com/@%s/live", username))
+	if len(sessionIDs) > 0 {
+		if cookie := sessionCookieHeader(sessionIDs[0]); cookie != "" {
+			req.Header.Set("Cookie", cookie)
+		}
+	}
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {

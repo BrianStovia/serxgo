@@ -68,6 +68,11 @@ func ServeProxy(w http.ResponseWriter, r *http.Request) {
 	req.Header.Set("Sec-Fetch-Dest", "empty")
 	req.Header.Set("Sec-Fetch-Mode", "cors")
 	req.Header.Set("Sec-Fetch-Site", "cross-site")
+	if session, err := r.Cookie(SessionCookieName); err == nil && isTikTokMediaHost(parsedTarget.Hostname()) {
+		if cookie := sessionCookieHeader(session.Value); cookie != "" {
+			req.Header.Set("Cookie", cookie)
+		}
+	}
 
 	// Forward client Range header if requested (for seeking or chunked range loading)
 	if rangeHdr := r.Header.Get("Range"); rangeHdr != "" {
@@ -181,6 +186,16 @@ func ServeProxy(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(resp.StatusCode)
 	io.Copy(w, resp.Body)
+}
+
+func isTikTokMediaHost(host string) bool {
+	host = strings.ToLower(strings.TrimSuffix(host, "."))
+	for _, domain := range []string{"tiktok.com", "tiktokcdn.com", "tiktokv.com"} {
+		if host == domain || strings.HasSuffix(host, "."+domain) {
+			return true
+		}
+	}
+	return false
 }
 
 func rewriteURIAttribute(line, baseURL string) string {

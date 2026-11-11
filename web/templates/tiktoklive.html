@@ -1950,6 +1950,7 @@
       status.style.color = 'var(--text-muted)';
       updateCookieBtnUI(false);
       addSystemNotice('🔑 Cookie 18+ berhasil dihapus.');
+      fetch('/api/tiktoklive/info', { method: 'DELETE', credentials: 'same-origin' }).catch(() => {});
     }
 
     function updateCookieBtnUI(hasCookie) {
@@ -2005,13 +2006,14 @@
 
       const savedSession = localStorage.getItem('tiktok_sessionid') || '';
       updateCookieBtnUI(!!savedSession);
-      let apiReqUrl = `/api/tiktoklive/info?user=${encodeURIComponent(userInput)}`;
-      if (savedSession) {
-        apiReqUrl += `&sessionid=${encodeURIComponent(savedSession)}`;
-      }
 
       try {
-        const res = await fetch(apiReqUrl);
+        const res = await fetch('/api/tiktoklive/info', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user: userInput, sessionid: savedSession })
+        });
         const data = await res.json();
 
         loadingBox.style.display = 'none';
@@ -2187,6 +2189,13 @@
             switch (data.type) {
               case Hls.ErrorTypes.NETWORK_ERROR:
                 if (!useDirect) {
+                  if (localStorage.getItem('tiktok_sessionid')) {
+                    console.warn('[TikTokLive] Authenticated proxy playback failed; keeping the session cookie on the proxy path.');
+                    showRestrictedToast();
+                    currentHls.destroy();
+                    currentHls = null;
+                    return;
+                  }
                   console.warn('[TikTokLive] HLS Proxy network error (kemungkinan IP server dibatasi CDN TikTok), mencoba Direct CDN Stream...');
                   currentHls.destroy();
                   currentHls = null;
@@ -2204,6 +2213,12 @@
               default:
                 console.error('[TikTokLive] HLS Fatal error:', data);
                 if (!useDirect) {
+                  if (localStorage.getItem('tiktok_sessionid')) {
+                    showRestrictedToast();
+                    currentHls.destroy();
+                    currentHls = null;
+                    return;
+                  }
                   console.warn('[TikTokLive] Fatal error with proxy, retrying with Direct CDN Stream...');
                   currentHls.destroy();
                   currentHls = null;

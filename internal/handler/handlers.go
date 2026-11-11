@@ -334,6 +334,8 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /live/tiktok", h.ServeTikTokLive)
 	mux.HandleFunc("GET /live/tiktok/", h.ServeTikTokLive)
 	mux.HandleFunc("GET /api/tiktoklive/info", h.ServeAPITikTokLiveInfo)
+	mux.HandleFunc("POST /api/tiktoklive/info", h.ServeAPITikTokLiveInfo)
+	mux.HandleFunc("DELETE /api/tiktoklive/info", h.ServeAPITikTokLiveInfo)
 	mux.HandleFunc("GET /api/tiktoklive/proxy", h.ServeAPITikTokLiveProxy)
 	mux.HandleFunc("GET /api/tiktoklive/chat", h.ServeAPITikTokLiveChat)
 	mux.HandleFunc("GET /api/tiktoklive/translate", h.ServeAPITikTokLiveTranslate)
