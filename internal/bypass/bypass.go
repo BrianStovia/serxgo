@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"searxgo/internal/netguard"
 )
 
 type MirrorLink struct {
@@ -37,9 +39,7 @@ type Service struct {
 
 func NewService() *Service {
 	return &Service{
-		httpClient: &http.Client{
-			Timeout: 8 * time.Second,
-		},
+		httpClient: netguard.NewHTTPClient(8*time.Second, 5),
 	}
 }
 
@@ -47,7 +47,7 @@ func GenerateMirrors(targetURL string) []MirrorLink {
 	encodedURL := url.QueryEscape(targetURL)
 	rawURL := targetURL
 
-	u, err := url.Parse(targetURL)
+	u, err := netguard.ValidatePublicURL(targetURL)
 	isMedium := false
 	if err == nil && (strings.Contains(u.Host, "medium.com") || strings.Contains(u.Host, "towardsdatascience.com")) {
 		isMedium = true
@@ -113,9 +113,9 @@ var (
 )
 
 func (s *Service) ExtractClean(ctx context.Context, targetURL string) (*BypassArticle, error) {
-	u, err := url.Parse(targetURL)
+	u, err := netguard.ValidatePublicURL(targetURL)
 	if err != nil {
-		return nil, fmt.Errorf("invalid URL: %w", err)
+		return nil, fmt.Errorf("invalid or restricted URL: %w", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "GET", targetURL, nil)

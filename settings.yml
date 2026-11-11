@@ -1,6 +1,6 @@
 # ==============================================================================
 # SearXGo - Privacy-respecting metasearch engine configuration
-# Full parity with SearXNG settings.yml specification
+# Runtime configuration for SearXGo
 # ==============================================================================
 
 general:
@@ -14,10 +14,15 @@ general:
 server:
   port: 8184
   bind_address: "0.0.0.0"
-  secret_key: "searxgo-secret-key-change-in-prod"
   base_url: false
   image_proxy: true
   http_protocol_version: "1.1"
+  trusted_proxies: []
+
+limiter:
+  enabled: true
+  rate: 20
+  burst: 40
 
 search:
   safe_search: 0                     # 0: Off (100% Uncensored / Tanpa Sensor), 1: Moderate, 2: Strict

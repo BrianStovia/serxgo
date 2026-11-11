@@ -1094,6 +1094,7 @@ func (h *Handler) ServeAPITester(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) ServeAPIExecuteRequest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	var payload apitester.RequestPayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		w.WriteHeader(http.StatusBadRequest)

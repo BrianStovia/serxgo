@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"searxgo/internal/models"
+	"searxgo/internal/netguard"
 )
 
 // CheckNetworkOSINTQuery parses and executes instant network & security intelligence queries
@@ -183,13 +184,9 @@ func checkDNSRecords(ctx context.Context, domain string) *models.InstantAnswer {
 
 // 2. SSL/TLS Certificate Handshake Inspector
 func checkSSLCertificate(ctx context.Context, domain string) *models.InstantAnswer {
-	dialer := &net.Dialer{Timeout: 3 * time.Second}
-	tlsConfig := &tls.Config{
-		ServerName: domain,
-		InsecureSkipVerify: false,
-	}
-
-	conn, err := tls.DialWithDialer(dialer, "tcp", domain+":443", tlsConfig)
+	dialCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	conn, err := netguard.DialContext(dialCtx, "tcp", net.JoinHostPort(domain, "443"))
 	if err != nil {
 		return &models.InstantAnswer{
 			Type:        "tools",
@@ -199,9 +196,14 @@ func checkSSLCertificate(ctx context.Context, domain string) *models.InstantAnsw
 			URL:         fmt.Sprintf("https://www.ssllabs.com/ssltest/analyze.html?d=%s", url.QueryEscape(domain)),
 		}
 	}
-	defer conn.Close()
+	tlsConn := tls.Client(conn, &tls.Config{ServerName: domain, MinVersion: tls.VersionTLS12})
+	if err := tlsConn.HandshakeContext(dialCtx); err != nil {
+		conn.Close()
+		return nil
+	}
+	defer tlsConn.Close()
 
-	state := conn.ConnectionState()
+	state := tlsConn.ConnectionState()
 	if len(state.PeerCertificates) == 0 {
 		return nil
 	}
@@ -274,15 +276,7 @@ func checkSecurityHeaders(ctx context.Context, domain string) *models.InstantAns
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
 
-	client := &http.Client{
-		Timeout: 3 * time.Second,
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			if len(via) >= 3 {
-				return http.ErrUseLastResponse
-			}
-			return nil
-		},
-	}
+	client := netguard.NewHTTPClient(3*time.Second, 3)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -351,15 +345,15 @@ func checkWhoisRDAP(ctx context.Context, target string) *models.InstantAnswer {
 	defer resp.Body.Close()
 
 	var rdapData struct {
-		LdhName string `json:"ldhName"`
-		Handle  string `json:"handle"`
+		LdhName string   `json:"ldhName"`
+		Handle  string   `json:"handle"`
 		Status  []string `json:"status"`
 		Events  []struct {
 			EventAction string `json:"eventAction"`
 			EventDate   string `json:"eventDate"`
 		} `json:"events"`
 		Entities []struct {
-			Roles []string `json:"roles"`
+			Roles      []string      `json:"roles"`
 			VcardArray []interface{} `json:"vcardArray"`
 		} `json:"entities"`
 	}
@@ -460,9 +454,9 @@ func checkSubdomains(ctx context.Context, domain string) *models.InstantAnswer {
 	}
 
 	attrs := map[string]string{
-		"Total Discovered": fmt.Sprintf("%d unique subdomains", len(subList)),
+		"Total Discovered":  fmt.Sprintf("%d unique subdomains", len(subList)),
 		"Sample Subdomains": topSubdomains,
-		"Data Source":      "Certificate Transparency Logs (crt.sh)",
+		"Data Source":       "Certificate Transparency Logs (crt.sh)",
 	}
 
 	return &models.InstantAnswer{
@@ -508,11 +502,11 @@ func checkCVELookup(ctx context.Context, target string) *models.InstantAnswer {
 	defer resp.Body.Close()
 
 	var cveData struct {
-		ID       string `json:"id"`
-		Summary  string `json:"summary"`
-		Details  string `json:"details"`
-		Modified string `json:"modified"`
-		Published string `json:"published"`
+		ID               string `json:"id"`
+		Summary          string `json:"summary"`
+		Details          string `json:"details"`
+		Modified         string `json:"modified"`
+		Published        string `json:"published"`
 		DatabaseSpecific struct {
 			Severity string `json:"severity"`
 		} `json:"database_specific"`

@@ -5,11 +5,11 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
+
+	"searxgo/internal/netguard"
 )
 
 // RequestPayload represents the API request from client
@@ -53,16 +53,8 @@ func ExecuteRequest(ctx context.Context, payload RequestPayload) *ResponsePayloa
 		payload.URL = rawURL
 	}
 
-	parsedURL, err := url.Parse(rawURL)
-	if err != nil {
-		res.Error = fmt.Sprintf("Invalid URL: %v", err)
-		return res
-	}
-
-	// SSRF check for private / internal addresses
-	host := parsedURL.Hostname()
-	if isPrivateHost(host) {
-		res.Error = "Connecting to localhost or private loopback addresses is restricted for security."
+	if _, err := netguard.ValidatePublicURL(rawURL); err != nil {
+		res.Error = fmt.Sprintf("Invalid or restricted URL: %v", err)
 		return res
 	}
 
@@ -70,16 +62,19 @@ func ExecuteRequest(ctx context.Context, payload RequestPayload) *ResponsePayloa
 	if method == "" {
 		method = "GET"
 	}
+	switch method {
+	case http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodHead, http.MethodOptions:
+	default:
+		res.Error = "Unsupported HTTP method"
+		return res
+	}
 
 	var bodyReader io.Reader
 	if payload.Body != "" && method != "GET" && method != "HEAD" {
 		bodyReader = bytes.NewBufferString(payload.Body)
 	}
 
-	// Setup custom client with timeout
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
+	client := netguard.NewHTTPClient(15*time.Second, 5)
 
 	if !payload.FollowRedirects {
 		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
@@ -258,15 +253,4 @@ func GenerateJS(p RequestPayload) string {
 	sb.WriteString(".catch(err => console.error(err));\n")
 
 	return sb.String()
-}
-
-func isPrivateHost(host string) bool {
-	if strings.EqualFold(host, "localhost") || strings.HasSuffix(host, ".localhost") {
-		return true
-	}
-	ip := net.ParseIP(host)
-	if ip != nil {
-		return ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsUnspecified()
-	}
-	return false
 }

@@ -44,27 +44,27 @@ type SearchRequest struct {
 	OpenInNewTab      bool
 	InfiniteScroll    bool
 	Theme             string
-	DirectRedirectURL string   // Filled if bang is a direct jump (e.g. !yt!)
-	SiteFilter        string   // e.g. site:github.com
-	ExcludedSites     []string // e.g. -site:pinterest.com
-	RemoveTrackers    bool     // SearXNG tracker_url_remover plugin (default true)
-	Autocomplete      string   // "duckduckgo", "google", "brave", "bing", "wikipedia", "startpage", "qwant", "all", "off"
-	Filetype          string   // e.g. "pdf", "epub", "docx", "zip", "mp3"
-	Intitle           string   // e.g. "tutorial"
-	Inurl             string   // e.g. "wiki"
-	ExactPhrase       string   // e.g. "exact matched phrase"
-	PageSize          int      // Configurable results per page (default 20, max 50)
-	Country           string   // Country code (e.g. "id", "us", "de")
-	Region            string   // Region code (e.g. "id-id", "en-us")
+	DirectRedirectURL string     // Filled if bang is a direct jump (e.g. !yt!)
+	SiteFilter        string     // e.g. site:github.com
+	ExcludedSites     []string   // e.g. -site:pinterest.com
+	RemoveTrackers    bool       // SearXNG tracker_url_remover plugin (default true)
+	Autocomplete      string     // "duckduckgo", "google", "brave", "bing", "wikipedia", "startpage", "qwant", "all", "off"
+	Filetype          string     // e.g. "pdf", "epub", "docx", "zip", "mp3"
+	Intitle           string     // e.g. "tutorial"
+	Inurl             string     // e.g. "wiki"
+	ExactPhrase       string     // e.g. "exact matched phrase"
+	PageSize          int        // Configurable results per page (default 20, max 50)
+	Country           string     // Country code (e.g. "id", "us", "de")
+	Region            string     // Region code (e.g. "id-id", "en-us")
 	DateAfter         *time.Time // Filter results after this date
 	DateBefore        *time.Time // Filter results before this date
-	MustTerms         []string // Terms that must appear (AND / +term)
-	MustNotTerms      []string // Terms that must NOT appear (NOT / -term)
+	MustTerms         []string   // Terms that must appear (AND / +term)
+	MustNotTerms      []string   // Terms that must NOT appear (NOT / -term)
 	OrTerms           [][]string // Grouped OR alternatives
-	IsFallback        bool     // Indicates whether query execution is running in secondary fallback mode
-	DeepSearch        bool     // Multi-offset concurrent crawling (page 1, 2, 3 fanout)
-	CrossCategory     bool     // Federated hybrid search blending web, code, news, science, discussions
-	QueryVariants     []string // Bilingual & synonym expanded query terms
+	IsFallback        bool       // Indicates whether query execution is running in secondary fallback mode
+	DeepSearch        bool       // Multi-offset concurrent crawling (page 1, 2, 3 fanout)
+	CrossCategory     bool       // Federated hybrid search blending web, code, news, science, discussions
+	QueryVariants     []string   // Bilingual & synonym expanded query terms
 }
 
 // SearchResult represents a single item returned by any search engine
@@ -101,6 +101,8 @@ type InstantAnswer struct {
 	Title       string            `json:"title"`
 	Value       string            `json:"value"`
 	Description string            `json:"description,omitempty"`
+	ActionURL   string            `json:"action_url,omitempty"`
+	ActionLabel string            `json:"action_label,omitempty"`
 	URL         string            `json:"url,omitempty"`
 	Thumbnail   string            `json:"thumbnail,omitempty"`
 	Attributes  map[string]string `json:"attributes,omitempty"`

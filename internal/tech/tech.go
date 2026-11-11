@@ -2,14 +2,14 @@ package tech
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"regexp"
 	"strings"
 	"time"
+
+	"searxgo/internal/netguard"
 )
 
 type TechItem struct {
@@ -50,12 +50,7 @@ type Inspector struct {
 
 func NewInspector() *Inspector {
 	return &Inspector{
-		client: &http.Client{
-			Timeout: 10 * time.Second,
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			},
-		},
+		client: netguard.NewHTTPClient(10*time.Second, 5),
 	}
 }
 
@@ -65,7 +60,7 @@ func (ins *Inspector) Analyze(ctx context.Context, rawURL string) (*TechReport, 
 		raw = "https://" + raw
 	}
 
-	parsed, err := url.Parse(raw)
+	parsed, err := netguard.ValidatePublicURL(raw)
 	if err != nil {
 		return nil, fmt.Errorf("invalid URL: %w", err)
 	}

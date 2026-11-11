@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 	"unicode"
+
+	"searxgo/internal/netguard"
 )
 
 // ThreatLevel represents severity of a detected threat signal
@@ -44,24 +46,24 @@ type RedirectHop struct {
 
 // ThreatReport is the full URL threat intelligence output
 type ThreatReport struct {
-	InputURL      string         `json:"input_url"`
-	FinalURL      string         `json:"final_url"`
-	FinalDomain   string         `json:"final_domain"`
-	FinalStatusCode int          `json:"final_status_code"`
-	ScanDuration  string         `json:"scan_duration"`
-	ThreatLevel   ThreatLevel    `json:"threat_level"`
-	ThreatScore   int            `json:"threat_score"` // 0 = clean, 100 = critical
-	Signals       []ThreatSignal `json:"signals"`
-	RedirectChain []RedirectHop  `json:"redirect_chain"`
-	IsShortened   bool           `json:"is_shortened"`
-	HasSSL        bool           `json:"has_ssl"`
-	SSLIssuer     string         `json:"ssl_issuer,omitempty"`
-	SSLValidTo    string         `json:"ssl_valid_to,omitempty"`
-	SSLDaysLeft   int            `json:"ssl_days_left,omitempty"`
-	IPv4          []string       `json:"ipv4,omitempty"`
-	ServerHeader  string         `json:"server_header,omitempty"`
-	ContentType   string         `json:"content_type,omitempty"`
-	Summary       string         `json:"summary"`
+	InputURL        string         `json:"input_url"`
+	FinalURL        string         `json:"final_url"`
+	FinalDomain     string         `json:"final_domain"`
+	FinalStatusCode int            `json:"final_status_code"`
+	ScanDuration    string         `json:"scan_duration"`
+	ThreatLevel     ThreatLevel    `json:"threat_level"`
+	ThreatScore     int            `json:"threat_score"` // 0 = clean, 100 = critical
+	Signals         []ThreatSignal `json:"signals"`
+	RedirectChain   []RedirectHop  `json:"redirect_chain"`
+	IsShortened     bool           `json:"is_shortened"`
+	HasSSL          bool           `json:"has_ssl"`
+	SSLIssuer       string         `json:"ssl_issuer,omitempty"`
+	SSLValidTo      string         `json:"ssl_valid_to,omitempty"`
+	SSLDaysLeft     int            `json:"ssl_days_left,omitempty"`
+	IPv4            []string       `json:"ipv4,omitempty"`
+	ServerHeader    string         `json:"server_header,omitempty"`
+	ContentType     string         `json:"content_type,omitempty"`
+	Summary         string         `json:"summary"`
 }
 
 // Known URL shortener domains
@@ -75,7 +77,7 @@ var urlShorteners = map[string]bool{
 	"v.gd": true, "mcaf.ee": true, "qr.net": true, "dik.si": true,
 }
 
-// Known malicious TLDs (higher risk) 
+// Known malicious TLDs (higher risk)
 var riskyTLDs = map[string]bool{
 	".tk": true, ".ml": true, ".ga": true, ".cf": true, ".gq": true,
 	".xyz": true, ".top": true, ".work": true, ".click": true, ".loan": true,
@@ -110,10 +112,10 @@ var rxSuspiciousKeywords = regexp.MustCompile(`(?i)(paypal|apple|google|microsof
 func ScanURL(ctx context.Context, rawURL string) *ThreatReport {
 	start := time.Now()
 	report := &ThreatReport{
-		InputURL:    rawURL,
-		ThreatLevel: ThreatSafe,
-		ThreatScore: 0,
-		Signals:     []ThreatSignal{},
+		InputURL:      rawURL,
+		ThreatLevel:   ThreatSafe,
+		ThreatScore:   0,
+		Signals:       []ThreatSignal{},
 		RedirectChain: []RedirectHop{},
 	}
 
@@ -126,6 +128,11 @@ func ScanURL(ctx context.Context, rawURL string) *ThreatReport {
 	if err != nil {
 		report.Summary = "Invalid URL format."
 		report.ThreatLevel = ThreatMedium
+		return report
+	}
+	if _, err := netguard.ValidatePublicURL(rawURL); err != nil {
+		report.ThreatLevel = ThreatMedium
+		report.Summary = "Target rejected: " + err.Error()
 		return report
 	}
 
@@ -303,21 +310,16 @@ func ScanURL(ctx context.Context, rawURL string) *ThreatReport {
 }
 
 func traceRedirects(ctx context.Context, rawURL string, report *ThreatReport, mu *sync.Mutex) {
-	client := &http.Client{
-		Timeout: 4 * time.Second,
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			if len(via) >= 8 {
-				return http.ErrUseLastResponse
-			}
-			return nil
-		},
-	}
+	client := netguard.NewHTTPClient(4*time.Second, 0)
 
 	hops := []RedirectHop{}
 	step := 0
 	currentURL := rawURL
 
 	for step < 10 {
+		if _, err := netguard.ValidatePublicURL(currentURL); err != nil {
+			break
+		}
 		req, err := http.NewRequestWithContext(ctx, "GET", currentURL, nil)
 		if err != nil {
 			break
@@ -325,12 +327,7 @@ func traceRedirects(ctx context.Context, rawURL string, report *ThreatReport, mu
 		req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; SearXGo-ThreatScanner/1.0)")
 
 		// Temporarily disable follow redirects for manual tracing
-		noRedirectClient := &http.Client{
-			Timeout: 3 * time.Second,
-			CheckRedirect: func(req *http.Request, via []*http.Request) error {
-				return http.ErrUseLastResponse
-			},
-		}
+		noRedirectClient := netguard.NewHTTPClient(3*time.Second, 0)
 
 		resp, err := noRedirectClient.Do(req)
 		if err != nil {
@@ -374,7 +371,7 @@ func traceRedirects(ctx context.Context, rawURL string, report *ThreatReport, mu
 		}
 	}
 
-	// Check for HTTP→HTTPS downgrade  
+	// Check for HTTP→HTTPS downgrade
 	if len(hops) > 0 {
 		firstHop := hops[0]
 		var lastHop RedirectHop
@@ -427,11 +424,9 @@ func traceRedirects(ctx context.Context, rawURL string, report *ThreatReport, mu
 }
 
 func probeSSL(ctx context.Context, hostname string, report *ThreatReport, mu *sync.Mutex) {
-	d := &tls.Dialer{
-		NetDialer: &net.Dialer{Timeout: 3 * time.Second},
-		Config:    &tls.Config{InsecureSkipVerify: false, ServerName: hostname},
-	}
-	conn, err := d.DialContext(ctx, "tcp", hostname+":443")
+	dialCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	conn, err := netguard.DialContext(dialCtx, "tcp", net.JoinHostPort(hostname, "443"))
 	if err != nil {
 		mu.Lock()
 		report.HasSSL = false
@@ -448,8 +443,9 @@ func probeSSL(ctx context.Context, hostname string, report *ThreatReport, mu *sy
 	}
 	defer conn.Close()
 
-	tlsConn, ok := conn.(*tls.Conn)
-	if !ok {
+	tlsConn := tls.Client(conn, &tls.Config{ServerName: hostname, MinVersion: tls.VersionTLS12})
+	if err := tlsConn.HandshakeContext(dialCtx); err != nil {
+		conn.Close()
 		return
 	}
 

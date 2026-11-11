@@ -399,7 +399,10 @@
         </div>
         <div class="instant-value">{{.Value}}</div>
         {{if .Description}}
-          <div class="instant-desc">{{safe .Description}}</div>
+          <div class="instant-desc" style="white-space:pre-wrap">{{.Description}}</div>
+        {{end}}
+        {{if .ActionURL}}
+          <a class="action-btn btn-searx" href="{{.ActionURL}}">{{.ActionLabel}}</a>
         {{end}}
         {{if .Attributes}}
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:0.5rem; margin-top:0.75rem;">

@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"searxgo/internal/netguard"
 )
 
 // HeaderAuditItem describes the status of an HTTP security header
@@ -21,41 +23,41 @@ type HeaderAuditItem struct {
 
 // ReconReport is the comprehensive domain security and intelligence report
 type ReconReport struct {
-	Domain          string                     `json:"domain"`
-	SecurityScore   int                        `json:"security_score"`
-	SecurityGrade   string                     `json:"security_grade"` // A+, A, B, C, D, F
-	ScanTime        string                     `json:"scan_time"`
-	ResponseTimeMs  int64                      `json:"response_time_ms"`
-	StatusCode      int                        `json:"status_code"`
-	FinalURL        string                     `json:"final_url"`
-	
+	Domain         string `json:"domain"`
+	SecurityScore  int    `json:"security_score"`
+	SecurityGrade  string `json:"security_grade"` // A+, A, B, C, D, F
+	ScanTime       string `json:"scan_time"`
+	ResponseTimeMs int64  `json:"response_time_ms"`
+	StatusCode     int    `json:"status_code"`
+	FinalURL       string `json:"final_url"`
+
 	// SSL / TLS
-	SSLActive       bool                       `json:"ssl_active"`
-	SSLIssuer       string                     `json:"ssl_issuer"`
-	SSLSubject      string                     `json:"ssl_subject"`
-	SSLValidTo      string                     `json:"ssl_valid_to"`
-	SSLDaysLeft     int                        `json:"ssl_days_left"`
-	SSLCipher       string                     `json:"ssl_cipher"`
-	TLSVersion      string                     `json:"tls_version"`
-	
+	SSLActive   bool   `json:"ssl_active"`
+	SSLIssuer   string `json:"ssl_issuer"`
+	SSLSubject  string `json:"ssl_subject"`
+	SSLValidTo  string `json:"ssl_valid_to"`
+	SSLDaysLeft int    `json:"ssl_days_left"`
+	SSLCipher   string `json:"ssl_cipher"`
+	TLSVersion  string `json:"tls_version"`
+
 	// HTTP Security Headers
-	Headers         map[string]HeaderAuditItem `json:"headers"`
-	
+	Headers map[string]HeaderAuditItem `json:"headers"`
+
 	// DNS & Mail Security
-	IPv4            []string                   `json:"ipv4"`
-	IPv6            []string                   `json:"ipv6"`
-	MX              []string                   `json:"mx"`
-	NS              []string                   `json:"ns"`
-	TXT             []string                   `json:"txt"`
-	SPFConfigured   bool                       `json:"spf_configured"`
-	SPFRecord       string                     `json:"spf_record,omitempty"`
-	DMARCConfigured bool                       `json:"dmarc_configured"`
-	DMARCRecord     string                     `json:"dmarc_record,omitempty"`
-	
+	IPv4            []string `json:"ipv4"`
+	IPv6            []string `json:"ipv6"`
+	MX              []string `json:"mx"`
+	NS              []string `json:"ns"`
+	TXT             []string `json:"txt"`
+	SPFConfigured   bool     `json:"spf_configured"`
+	SPFRecord       string   `json:"spf_record,omitempty"`
+	DMARCConfigured bool     `json:"dmarc_configured"`
+	DMARCRecord     string   `json:"dmarc_record,omitempty"`
+
 	// Tech Stack & Fingerprinting
-	ServerHeader    string                     `json:"server_header,omitempty"`
-	PoweredBy       string                     `json:"powered_by,omitempty"`
-	DetectedTech    []string                   `json:"detected_tech"`
+	ServerHeader string   `json:"server_header,omitempty"`
+	PoweredBy    string   `json:"powered_by,omitempty"`
+	DetectedTech []string `json:"detected_tech"`
 }
 
 // CleanDomain normalizes user input into a bare domain name
@@ -78,6 +80,9 @@ func AuditDomain(ctx context.Context, target string) (*ReconReport, error) {
 	if domain == "" {
 		return nil, fmt.Errorf("domain cannot be empty")
 	}
+	if _, err := netguard.ValidatePublicURL("https://" + domain); err != nil {
+		return nil, fmt.Errorf("invalid or restricted target: %w", err)
+	}
 
 	start := time.Now()
 	report := &ReconReport{
@@ -90,11 +95,20 @@ func AuditDomain(ctx context.Context, target string) (*ReconReport, error) {
 	score := 100
 
 	// 1. SSL/TLS Certificate Inspection
-	dialer := &net.Dialer{Timeout: 3 * time.Second}
-	tlsConn, err := tls.DialWithDialer(dialer, "tcp", net.JoinHostPort(domain, "443"), &tls.Config{
-		InsecureSkipVerify: false,
-		ServerName:         domain,
-	})
+	dialCtx, cancelDial := context.WithTimeout(ctx, 3*time.Second)
+	conn, err := netguard.DialContext(dialCtx, "tcp", net.JoinHostPort(domain, "443"))
+	cancelDial()
+	var tlsConn *tls.Conn
+	if err == nil {
+		tlsConn = tls.Client(conn, &tls.Config{ServerName: domain, MinVersion: tls.VersionTLS12})
+		handshakeCtx, cancelHandshake := context.WithTimeout(ctx, 3*time.Second)
+		err = tlsConn.HandshakeContext(handshakeCtx)
+		cancelHandshake()
+		if err != nil {
+			tlsConn.Close()
+			tlsConn = nil
+		}
+	}
 	if err == nil {
 		defer tlsConn.Close()
 		state := tlsConn.ConnectionState()
@@ -123,15 +137,7 @@ func AuditDomain(ctx context.Context, target string) (*ReconReport, error) {
 	}
 
 	// 2. HTTP Request & Security Headers Audit
-	client := &http.Client{
-		Timeout: 4 * time.Second,
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			if len(via) >= 5 {
-				return http.ErrUseLastResponse
-			}
-			return nil
-		},
-	}
+	client := netguard.NewHTTPClient(4*time.Second, 5)
 
 	targetURL := "https://" + domain
 	req, err := http.NewRequestWithContext(ctx, "GET", targetURL, nil)
@@ -192,8 +198,12 @@ func AuditDomain(ctx context.Context, target string) (*ReconReport, error) {
 	resolveDNS(ctx, domain, report)
 
 	// Calculate Final Letter Grade
-	if score > 100 { score = 100 }
-	if score < 0 { score = 0 }
+	if score > 100 {
+		score = 100
+	}
+	if score < 0 {
+		score = 0
+	}
 	report.SecurityScore = score
 
 	switch {
@@ -226,24 +236,54 @@ func detectTech(report *ReconReport, resp *http.Response) {
 	}
 
 	server := strings.ToLower(h.Get("Server"))
-	if strings.Contains(server, "cloudflare") { add("Cloudflare CDN & WAF") }
-	if strings.Contains(server, "nginx") { add("Nginx") }
-	if strings.Contains(server, "apache") { add("Apache HTTP Server") }
-	if strings.Contains(server, "caddy") { add("Caddy Server") }
-	if strings.Contains(server, "litespeed") { add("LiteSpeed Web Server") }
-	if strings.Contains(server, "gunicorn") { add("Gunicorn Python") }
+	if strings.Contains(server, "cloudflare") {
+		add("Cloudflare CDN & WAF")
+	}
+	if strings.Contains(server, "nginx") {
+		add("Nginx")
+	}
+	if strings.Contains(server, "apache") {
+		add("Apache HTTP Server")
+	}
+	if strings.Contains(server, "caddy") {
+		add("Caddy Server")
+	}
+	if strings.Contains(server, "litespeed") {
+		add("LiteSpeed Web Server")
+	}
+	if strings.Contains(server, "gunicorn") {
+		add("Gunicorn Python")
+	}
 
 	powered := strings.ToLower(h.Get("X-Powered-By"))
-	if strings.Contains(powered, "php") { add("PHP (" + h.Get("X-Powered-By") + ")") }
-	if strings.Contains(powered, "express") { add("Node.js / Express") }
-	if strings.Contains(powered, "asp.net") { add("ASP.NET") }
-	if strings.Contains(powered, "next.js") { add("Next.js React") }
+	if strings.Contains(powered, "php") {
+		add("PHP (" + h.Get("X-Powered-By") + ")")
+	}
+	if strings.Contains(powered, "express") {
+		add("Node.js / Express")
+	}
+	if strings.Contains(powered, "asp.net") {
+		add("ASP.NET")
+	}
+	if strings.Contains(powered, "next.js") {
+		add("Next.js React")
+	}
 
-	if h.Get("CF-Ray") != "" { add("Cloudflare Edge Network") }
-	if h.Get("X-Varnish") != "" { add("Varnish Cache") }
-	if h.Get("X-Cache") != "" { add("Reverse Proxy Cache (" + h.Get("X-Cache") + ")") }
-	if strings.Contains(strings.ToLower(h.Get("Set-Cookie")), "wp-") { add("WordPress") }
-	if strings.Contains(strings.ToLower(h.Get("Set-Cookie")), "laravel") { add("Laravel Framework") }
+	if h.Get("CF-Ray") != "" {
+		add("Cloudflare Edge Network")
+	}
+	if h.Get("X-Varnish") != "" {
+		add("Varnish Cache")
+	}
+	if h.Get("X-Cache") != "" {
+		add("Reverse Proxy Cache (" + h.Get("X-Cache") + ")")
+	}
+	if strings.Contains(strings.ToLower(h.Get("Set-Cookie")), "wp-") {
+		add("WordPress")
+	}
+	if strings.Contains(strings.ToLower(h.Get("Set-Cookie")), "laravel") {
+		add("Laravel Framework")
+	}
 }
 
 func resolveDNS(ctx context.Context, domain string, report *ReconReport) {

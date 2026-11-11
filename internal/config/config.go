@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -14,7 +15,6 @@ type Config struct {
 	Port              int
 	Timeout           time.Duration
 	SafeSearchDefault int
-	ImageProxySecret  string
 	MaxResults        int
 	DefaultPageSize   int
 	MaxPageSize       int
@@ -22,6 +22,7 @@ type Config struct {
 	LimiterEnabled    bool
 	LimiterRate       float64
 	LimiterBurst      int
+	TrustedProxies    []string
 }
 
 // settingsYML mirrors the structure of settings.yml
@@ -30,10 +31,15 @@ type settingsYML struct {
 		Debug bool `yaml:"debug"`
 	} `yaml:"general"`
 	Server struct {
-		Port      int    `yaml:"port"`
-		BindAddr  string `yaml:"bind_address"`
-		SecretKey string `yaml:"secret_key"`
+		Port           int      `yaml:"port"`
+		BindAddr       string   `yaml:"bind_address"`
+		TrustedProxies []string `yaml:"trusted_proxies"`
 	} `yaml:"server"`
+	Limiter struct {
+		Enabled *bool   `yaml:"enabled"`
+		Rate    float64 `yaml:"rate"`
+		Burst   int     `yaml:"burst"`
+	} `yaml:"limiter"`
 	Search struct {
 		SafeSearch int `yaml:"safe_search"`
 	} `yaml:"search"`
@@ -132,18 +138,15 @@ func LoadConfig() *Config {
 	}
 	timeoutMs := envInt(ymlTimeoutMs, "SEARXNG_TIMEOUT_MS", "SEARCH_TIMEOUT_MS", "TIMEOUT_MS")
 
-	// --- Secret key ---
-	ymlSecret := yml.Server.SecretKey
-	if ymlSecret == "" {
-		ymlSecret = "searxgo-secret-key-change-in-prod"
-	}
-	secret := envStr(ymlSecret, "SEARXNG_SECRET_KEY", "SECRET_KEY")
-
 	// --- Debug ---
 	debug := envBool(yml.General.Debug, "SEARXNG_DEBUG", "DEBUG")
 
 	// --- Limiter ---
-	limiterEnabled := envBool(false, "SEARXNG_LIMITER", "LIMITER_ENABLED")
+	limiterEnabled := true
+	if yml.Limiter.Enabled != nil {
+		limiterEnabled = *yml.Limiter.Enabled
+	}
+	limiterEnabled = envBool(limiterEnabled, "SEARXNG_LIMITER", "LIMITER_ENABLED")
 
 	// --- Safe search ---
 	safeSearch := envInt(yml.Search.SafeSearch, "SEARXNG_SAFE_SEARCH", "SAFE_SEARCH")
@@ -151,19 +154,31 @@ func LoadConfig() *Config {
 	// --- Page size ---
 	pageSize := envInt(20, "SEARXNG_PAGE_SIZE", "PAGE_SIZE", "RESULTS_PER_PAGE")
 
+	limiterRate := yml.Limiter.Rate
+	if limiterRate <= 0 {
+		limiterRate = 20
+	}
+	limiterBurst := yml.Limiter.Burst
+	if limiterBurst <= 0 {
+		limiterBurst = 40
+	}
+	trustedProxies := yml.Server.TrustedProxies
+	if env := os.Getenv("SEARXNG_TRUSTED_PROXIES"); env != "" {
+		trustedProxies = strings.Split(env, ",")
+	}
+
 	return &Config{
 		Host:              host,
 		Port:              port,
 		Timeout:           time.Duration(timeoutMs) * time.Millisecond,
 		SafeSearchDefault: safeSearch,
-		ImageProxySecret:  secret,
 		MaxResults:        50,
 		DefaultPageSize:   pageSize,
 		MaxPageSize:       50,
 		Debug:             debug,
 		LimiterEnabled:    limiterEnabled,
-		LimiterRate:       200.0,
-		LimiterBurst:      1000,
+		LimiterRate:       limiterRate,
+		LimiterBurst:      limiterBurst,
+		TrustedProxies:    trustedProxies,
 	}
 }
-

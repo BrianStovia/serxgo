@@ -1,15 +1,15 @@
 package proxy
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"searxgo/internal/netguard"
 )
 
 type ImageProxy struct {
@@ -17,68 +17,9 @@ type ImageProxy struct {
 }
 
 func NewImageProxy() *ImageProxy {
-	safeDialer := &net.Dialer{
-		Timeout:   5 * time.Second,
-		KeepAlive: 30 * time.Second,
-	}
-
-	transport := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			host, _, err := net.SplitHostPort(addr)
-			if err != nil {
-				host = addr
-			}
-
-			ip := net.ParseIP(host)
-			if ip == nil {
-				ips, err := net.LookupIP(host)
-				if err != nil || len(ips) == 0 {
-					return nil, fmt.Errorf("cannot resolve host: %v", err)
-				}
-				ip = ips[0]
-			}
-
-			if isPrivateIP(ip) {
-				return nil, fmt.Errorf("access to private network address is restricted")
-			}
-
-			return safeDialer.DialContext(ctx, network, addr)
-		},
-		MaxIdleConns:        100,
-		IdleConnTimeout:     90 * time.Second,
-		DisableKeepAlives:   false,
-	}
-
 	return &ImageProxy{
-		client: &http.Client{
-			Transport: transport,
-			Timeout:   8 * time.Second,
-		},
+		client: netguard.NewHTTPClient(8*time.Second, 5),
 	}
-}
-
-func isPrivateIP(ip net.IP) bool {
-	if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsUnspecified() {
-		return true
-	}
-	privateBlocks := []string{
-		"10.0.0.0/8",
-		"172.16.0.0/12",
-		"192.168.0.0/16",
-		"127.0.0.0/8",
-		"169.254.0.0/16",
-		"::1/128",
-		"fc00::/7",
-		"fe80::/10",
-	}
-	for _, block := range privateBlocks {
-		_, subnet, err := net.ParseCIDR(block)
-		if err == nil && subnet.Contains(ip) {
-			return true
-		}
-	}
-	return false
 }
 
 // ServeHTTP handles /proxy/image requests safely
@@ -112,6 +53,10 @@ func (p *ImageProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	parsed, err := url.Parse(rawTarget)
 	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") {
 		http.Error(w, "invalid image url", http.StatusBadRequest)
+		return
+	}
+	if _, err := netguard.ValidatePublicURL(rawTarget); err != nil {
+		http.Error(w, "restricted image url", http.StatusBadRequest)
 		return
 	}
 

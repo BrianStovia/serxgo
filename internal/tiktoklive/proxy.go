@@ -8,19 +8,12 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"searxgo/internal/netguard"
 )
 
 // ProxyClient handles fetching CDN chunks with proper Referer & User-Agent
-var proxyHttpClient = &http.Client{
-	Transport: &http.Transport{
-		TLSHandshakeTimeout:   10 * time.Second,
-		ResponseHeaderTimeout: 15 * time.Second,
-		IdleConnTimeout:       90 * time.Second,
-		MaxIdleConns:          100,
-		MaxIdleConnsPerHost:   20,
-	},
-	Timeout: 30 * time.Second,
-}
+var proxyHttpClient = netguard.NewHTTPClient(30*time.Second, 5)
 
 // ServeProxy streams an m3u8 playlist or TS chunk with CORS headers & rewritten URLs
 func ServeProxy(w http.ResponseWriter, r *http.Request) {
@@ -48,8 +41,12 @@ func ServeProxy(w http.ResponseWriter, r *http.Request) {
 
 	// Validate target URL
 	parsedTarget, err := url.Parse(rawURL)
-	if err != nil || (!strings.HasPrefix(parsedTarget.Scheme, "http")) {
+	if err != nil || (parsedTarget.Scheme != "http" && parsedTarget.Scheme != "https") {
 		http.Error(w, "invalid stream url", http.StatusBadRequest)
+		return
+	}
+	if _, err := netguard.ValidatePublicURL(rawURL); err != nil {
+		http.Error(w, "restricted stream target", http.StatusBadRequest)
 		return
 	}
 

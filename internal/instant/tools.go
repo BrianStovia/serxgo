@@ -386,8 +386,9 @@ func checkCurrencyConverter(ctx context.Context, q string) *models.InstantAnswer
 		Type:        "calculator",
 		Title:       "Currency Conversion",
 		Value:       fmt.Sprintf("%s %s", resFormatted, toCurr),
-		Description: fmt.Sprintf("%g %s = %s %s &bull; <a href=\"/currency\" style=\"color:#34d399; text-decoration:underline;\">Live Currency Studio &rarr;</a>", amount, fromCurr, resFormatted, toCurr),
-		URL:         "/currency",
+		Description: fmt.Sprintf("%g %s = %s %s", amount, fromCurr, resFormatted, toCurr),
+		ActionURL:   "/currency",
+		ActionLabel: "Live Currency Studio →",
 	}
 }
 

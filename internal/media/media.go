@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"searxgo/internal/netguard"
 )
 
 type MediaResult struct {
@@ -31,9 +33,7 @@ type Service struct {
 
 func NewService() *Service {
 	return &Service{
-		httpClient: &http.Client{
-			Timeout: 12 * time.Second,
-		},
+		httpClient: netguard.NewHTTPClient(12*time.Second, 5),
 	}
 }
 
@@ -79,6 +79,9 @@ func (s *Service) Extract(ctx context.Context, targetURL string) (*MediaResult, 
 	targetURL = strings.TrimSpace(targetURL)
 	if targetURL == "" {
 		return nil, fmt.Errorf("URL cannot be empty")
+	}
+	if _, err := netguard.ValidatePublicURL(targetURL); err != nil {
+		return nil, fmt.Errorf("invalid or restricted target: %w", err)
 	}
 
 	platform := DetectPlatform(targetURL)
@@ -210,8 +213,8 @@ func (s *Service) extractTwitter(ctx context.Context, targetURL string) (*MediaR
 			} `json:"author"`
 			Media struct {
 				Videos []struct {
-					URL          string `json:"url"`
-					ThumbnailURL string `json:"thumbnail_url"`
+					URL          string  `json:"url"`
+					ThumbnailURL string  `json:"thumbnail_url"`
 					Duration     float64 `json:"duration"`
 				} `json:"videos"`
 				Photos []struct {
@@ -279,8 +282,8 @@ func (s *Service) extractReddit(ctx context.Context, targetURL string) (*MediaRe
 		Data struct {
 			Children []struct {
 				Data struct {
-					Title  string `json:"title"`
-					Author string `json:"author"`
+					Title       string `json:"title"`
+					Author      string `json:"author"`
 					SecureMedia struct {
 						RedditVideo struct {
 							FallbackURL string `json:"fallback_url"`

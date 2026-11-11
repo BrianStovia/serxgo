@@ -93,7 +93,9 @@ func CheckDevTools(query string) *models.InstantAnswer {
 				Type:        "tools",
 				Title:       "🔍 Domain Security Recon: " + cleanTarget,
 				Value:       "Audit SSL/TLS, HTTP Security Headers, DNS, and Tech Stack",
-				Description: fmt.Sprintf("<a href=\"/recon?domain=%s\" class=\"action-btn btn-searx\" style=\"display:inline-flex; align-items:center; gap:0.4rem; background:var(--accent-gradient); color:#fff; padding:0.45rem 1rem; border-radius:6px; text-decoration:none; font-weight:700; font-size:0.85rem; margin-top:0.5rem;\">🚀 Launch Deep Recon for %s &raquo;</a>", url.QueryEscape(cleanTarget), cleanTarget),
+				Description: "Run a security audit for this domain.",
+				ActionURL:   "/recon?domain=" + url.QueryEscape(cleanTarget),
+				ActionLabel: "🚀 Launch Deep Recon for " + cleanTarget + " »",
 			}
 		}
 	}
@@ -272,18 +274,38 @@ func calculateChmod(val string) *models.InstantAnswer {
 						w := (n & 2) != 0
 						x := (n & 1) != 0
 						s := ""
-						if r { s += "r" } else { s += "-" }
-						if w { s += "w" } else { s += "-" }
-						if x { s += "x" } else { s += "-" }
+						if r {
+							s += "r"
+						} else {
+							s += "-"
+						}
+						if w {
+							s += "w"
+						} else {
+							s += "-"
+						}
+						if x {
+							s += "x"
+						} else {
+							s += "-"
+						}
 						return s
 					}
 
 					permToDesc := func(n int) string {
 						var d []string
-						if (n & 4) != 0 { d = append(d, "Read") }
-						if (n & 2) != 0 { d = append(d, "Write") }
-						if (n & 1) != 0 { d = append(d, "Execute") }
-						if len(d) == 0 { return "No Permissions (---)" }
+						if (n & 4) != 0 {
+							d = append(d, "Read")
+						}
+						if (n & 2) != 0 {
+							d = append(d, "Write")
+						}
+						if (n & 1) != 0 {
+							d = append(d, "Execute")
+						}
+						if len(d) == 0 {
+							return "No Permissions (---)"
+						}
 						return strings.Join(d, " + ")
 					}
 
@@ -330,14 +352,30 @@ func explainRegex(pattern string) *models.InstantAnswer {
 		attrs["Error Details"] = errMsg
 	} else {
 		var elements []string
-		if strings.HasPrefix(pattern, "^") { elements = append(elements, "^: Anchors to beginning of string") }
-		if strings.HasSuffix(pattern, "$") { elements = append(elements, "$: Anchors to end of string") }
-		if strings.Contains(pattern, `\d`) { elements = append(elements, `\d: Matches any digit (0-9)`) }
-		if strings.Contains(pattern, `\w`) { elements = append(elements, `\w: Matches any word character`) }
-		if strings.Contains(pattern, `\s`) { elements = append(elements, `\s: Matches any whitespace character`) }
-		if strings.Contains(pattern, "+") { elements = append(elements, "+: Matches 1 or more occurrences") }
-		if strings.Contains(pattern, "*") { elements = append(elements, "*: Matches 0 or more occurrences") }
-		if strings.Contains(pattern, "?") { elements = append(elements, "?: Matches 0 or 1 occurrence") }
+		if strings.HasPrefix(pattern, "^") {
+			elements = append(elements, "^: Anchors to beginning of string")
+		}
+		if strings.HasSuffix(pattern, "$") {
+			elements = append(elements, "$: Anchors to end of string")
+		}
+		if strings.Contains(pattern, `\d`) {
+			elements = append(elements, `\d: Matches any digit (0-9)`)
+		}
+		if strings.Contains(pattern, `\w`) {
+			elements = append(elements, `\w: Matches any word character`)
+		}
+		if strings.Contains(pattern, `\s`) {
+			elements = append(elements, `\s: Matches any whitespace character`)
+		}
+		if strings.Contains(pattern, "+") {
+			elements = append(elements, "+: Matches 1 or more occurrences")
+		}
+		if strings.Contains(pattern, "*") {
+			elements = append(elements, "*: Matches 0 or more occurrences")
+		}
+		if strings.Contains(pattern, "?") {
+			elements = append(elements, "?: Matches 0 or 1 occurrence")
+		}
 
 		if len(elements) > 0 {
 			attrs["Syntax Elements"] = strings.Join(elements, " | ")

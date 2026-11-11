@@ -65,20 +65,20 @@ type TempUploadedImage struct {
 }
 
 type Handler struct {
-	cfg            *config.Config
-	aggregator     *aggregator.Aggregator
-	instantService *instant.InstantService
-	suggestService *SuggestService
-	imageProxy     *proxy.ImageProxy
-	limiter        *RateLimiter
-	templates      *template.Template
-	imageStoreMu   sync.RWMutex
-	imageStore     map[string]*TempUploadedImage
-	archiveClient  *archive.ArchiveClient
-	techInspector  *tech.Inspector
-	subFinder      *subdomains.Finder
-	dnsService     *dns.Service
-	pingService    *ping.Service
+	cfg               *config.Config
+	aggregator        *aggregator.Aggregator
+	instantService    *instant.InstantService
+	suggestService    *SuggestService
+	imageProxy        *proxy.ImageProxy
+	limiter           *RateLimiter
+	templates         *template.Template
+	imageStoreMu      sync.RWMutex
+	imageStore        map[string]*TempUploadedImage
+	archiveClient     *archive.ArchiveClient
+	techInspector     *tech.Inspector
+	subFinder         *subdomains.Finder
+	dnsService        *dns.Service
+	pingService       *ping.Service
 	bypassService     *bypass.Service
 	mediaService      *media.Service
 	newsHubService    *newshub.Service
@@ -89,9 +89,9 @@ type Handler struct {
 
 func NewHandler(cfg *config.Config, agg *aggregator.Aggregator) (*Handler, error) {
 	tmplFuncs := template.FuncMap{
-		"add": func(a, b int) int { return a + b },
-		"sub": func(a, b int) int { return a - b },
-		"safe": func(s string) template.HTML { return template.HTML(s) },
+		"add":            func(a, b int) int { return a + b },
+		"sub":            func(a, b int) int { return a - b },
+		"safeReaderHTML": func(s string) template.HTML { return template.HTML(s) },
 		"isMediaURL": func(u string) bool {
 			lower := strings.ToLower(u)
 			return strings.Contains(lower, "youtube.com") || strings.Contains(lower, "youtu.be") ||
@@ -207,21 +207,21 @@ func NewHandler(cfg *config.Config, agg *aggregator.Aggregator) (*Handler, error
 	}
 
 	return &Handler{
-		cfg:             cfg,
-		aggregator:      agg,
-		instantService:  instant.NewInstantService(),
-		suggestService:  NewSuggestService(),
-		imageProxy:      proxy.NewImageProxy(),
-		limiter:         NewRateLimiter(cfg.LimiterRate, cfg.LimiterBurst, cfg.LimiterEnabled),
-		templates:       tmpl,
-		imageStore:      make(map[string]*TempUploadedImage),
-		archiveClient:   archive.NewArchiveClient(),
-		techInspector:   tech.NewInspector(),
-		subFinder:       subdomains.NewFinder(),
-		dnsService:      dns.NewService(),
-		pingService:     ping.NewService(),
-		bypassService:   bypass.NewService(),
-		mediaService:    media.NewService(),
+		cfg:               cfg,
+		aggregator:        agg,
+		instantService:    instant.NewInstantService(),
+		suggestService:    NewSuggestService(),
+		imageProxy:        proxy.NewImageProxy(),
+		limiter:           NewRateLimiter(cfg.LimiterRate, cfg.LimiterBurst, cfg.LimiterEnabled, cfg.TrustedProxies),
+		templates:         tmpl,
+		imageStore:        make(map[string]*TempUploadedImage),
+		archiveClient:     archive.NewArchiveClient(),
+		techInspector:     tech.NewInspector(),
+		subFinder:         subdomains.NewFinder(),
+		dnsService:        dns.NewService(),
+		pingService:       ping.NewService(),
+		bypassService:     bypass.NewService(),
+		mediaService:      media.NewService(),
 		newsHubService:    newshub.NewService(),
 		weatherService:    weather.NewService(),
 		currencyService:   currency.NewService(),
@@ -253,7 +253,6 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /settings", h.ServeSettings)
 	mux.HandleFunc("GET /stats", h.ServeStats)
 	mux.HandleFunc("GET /stats/data", h.ServeAPIStats)
-	mux.HandleFunc("GET /preferences/clear", h.ServeClearCookies)
 	mux.HandleFunc("POST /preferences/clear", h.ServeClearCookies)
 
 	// Feeds, OpenSearch & PWA
@@ -467,15 +466,14 @@ func (h *Handler) ServeConfig(w http.ResponseWriter, r *http.Request) {
 		"autocomplete_backends": []string{
 			"duckduckgo", "google", "brave", "bing", "wikipedia", "startpage", "qwant", "all",
 		},
-		"engine_count":    len(engine.FullEngineCatalog),
-		"safe_search":     []string{"off", "moderate", "strict"},
-		"themes":          []string{"dark", "light", "black", "oled", "neutral", "dracula", "nord", "mocha", "macchiato", "cyberpunk"},
-		"doi_resolvers":   []string{"oadoi.org", "sci-hub.se", "sci-hub.st", "sci-hub.ru", "libgen.is", "unpaywall.org"},
-		"limiter":          false,
-		"unlimited_search": true,
+		"engine_count":     len(engine.FullEngineCatalog),
+		"safe_search":      []string{"off", "moderate", "strict"},
+		"themes":           []string{"dark", "light", "black", "oled", "neutral", "dracula", "nord", "mocha", "macchiato", "cyberpunk"},
+		"doi_resolvers":    []string{"oadoi.org", "sci-hub.se", "sci-hub.st", "sci-hub.ru", "libgen.is", "unpaywall.org"},
+		"limiter":          h.limiter.enabled,
+		"unlimited_search": !h.limiter.enabled,
 		"max_page":         0,
 		"infinite_scroll":  true,
-		"public_instance":  true,
 		"image_proxy":      true,
 		"uptime":           "running",
 	})

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -313,20 +312,7 @@ func (h *Handler) parseSearchRequest(r *http.Request) models.SearchRequest {
 }
 
 func (h *Handler) getClientIP(r *http.Request) string {
-	for _, header := range []string{"CF-Connecting-IP", "X-Forwarded-For", "X-Real-IP"} {
-		if ip := r.Header.Get(header); ip != "" {
-			parts := strings.Split(ip, ",")
-			clean := strings.TrimSpace(parts[0])
-			if clean != "" {
-				return clean
-			}
-		}
-	}
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err == nil {
-		return host
-	}
-	return r.RemoteAddr
+	return h.limiter.clientIP(r)
 }
 
 // ServeSearch performs full privacy search aggregation and formats the output

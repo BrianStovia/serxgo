@@ -6,13 +6,13 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/BrianStovia/serxgo)](https://goreportcard.com/report/github.com/BrianStovia/serxgo)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go)](https://go.dev/)
+[![Go Version](https://img.shields.io/badge/Go-1.27.2-00ADD8?logo=go)](https://go.dev/)
 [![Docker Pulls](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)](Dockerfile)
-[![Engines](https://img.shields.io/badge/Engines-260+-brightgreen)](internal/engine)
+[![Engines](https://img.shields.io/badge/Engines-322_catalog-brightgreen)](internal/engine)
 [![Port](https://img.shields.io/badge/Default%20Port-8184-orange)](settings.yml)
 
 **Ultra-fast, hardware-agnostic, privacy-respecting metasearch aggregator written in pure Golang.**  
-*100% feature parity with SearXNG, zero telemetry, zero database dependencies, and sub-second multi-engine aggregation.*
+*Privacy-focused metasearch written in Go, with a broad engine catalog and built-in research tools.*
 
 [✨ Features](#-key-features) • [🚀 Quickstart](#-quickstart) • [🔍 Search Syntax & Bangs](#-search-bangs--syntax-cheatsheet) • [🌐 REST API](#-api--integration-endpoints) • [⚙️ Configuration](#-configuration) • [🛡️ Privacy Architecture](#-privacy--security-architecture)
 </div>
@@ -38,12 +38,12 @@
 - 🔓 **Data Breach OSINT & Public Dump Scrapers**: Native scrapers for leaked credentials archives, security incident disclosures, and public dump sites (*Pastebin, Ghostbin, Rentry, JustPaste, Dumpz, GitHub Gists*).
 - 🛡️ **Zero-Knowledge K-Anonymity Breach Verifier**: Instant client password & account compromise verification using SHA-1 5-character prefix queries (`pwned: password`, `breach: email@domain.com`).
 - ⚡ **Pure Golang & Single Static Binary**: Zero external runtime dependencies (no Python, no Redis, no Node.js). Consumes <30MB RAM idle with instant sub-second startup.
-- 🚀 **263+ Search Engines Across 10 Categories**: Native scrapers and API integrations covering *General, Images, Videos, IT & Code, Science & Academic, News, Social, Files & Torrents, Music, and Maps*.
+- 🚀 **322 Engine Catalog Entries Across 10 Categories**: Live support and result quality vary by provider; some entries use shared search adapters.
 - 🧠 **Smart Semantic Topic Clustering**: Automatically classifies search results into dynamic topics (*Docs & Specs, Code & Repos, Discussions, Media, Research, News, Tools*) with zero-latency client-side filtering.
 - 🛡️ **Zero-Censorship & Unfiltered Defaults**: Default `SafeSearch=Off` for unfiltered upstream aggregation without keyword filtering or censorship.
 - 📱 **Progressive Web App (PWA) & Offline Mode**: Installable on Android, iOS, Windows, and macOS with Service Worker offline caching.
 - 🔖 **Private Client-side Bookmarks & Workspace**: Save searches and pin results directly to browser `localStorage` with JSON export and zero server footprint.
-- 🏎️ **SSRF-Safe Image Proxy**: Built-in HMAC SHA-256 authenticated image and thumbnail caching proxy that shields user IP addresses from upstream CDNs.
+- 🏎️ **SSRF-Hardened Image Proxy**: Validates public destinations, pins connections to validated IP addresses, and shields user IP addresses from upstream CDNs.
 - 🧹 **Surveillance Tracker Stripper**: Automatically purges UTM tags, Facebook click IDs (`fbclid`), Google click IDs (`gclid`), and tracking parameters.
 - 📐 **Instant Answer Engine**: Built-in math evaluator, currency converter, live weather, hash generators, Base64 encoder/decoder, K-Anonymity breach checker, and interactive Leaflet / OpenStreetMap maps.
 - 📊 **Real-time Telemetry & Prometheus Metrics**: Live engine response times, reliability scoring, and OpenMetrics at `/stats` and `/metrics`.
@@ -51,13 +51,13 @@
 
 ---
 
-## 📊 SearXNG vs SearXGo Parity Matrix
+## 📊 SearXNG and SearXGo Feature Comparison
 
 | Feature / Metric | Official SearXNG (Python) | SearXGo (Golang) |
 | :--- | :---: | :---: |
 | **Runtime & Dependencies** | Python 3.10+ + Redis + UWSGI | **Single Static Binary (Zero DB)** |
 | **Memory Footprint (Idle)** | ~180MB - 350MB | **< 30MB RAM** |
-| **Engine Catalog** | 260 Engines across 9 categories | **263+ Engines (Full Parity + Leaks + Web3)** |
+| **Engine Catalog** | Provider-specific support varies | **322 catalog entries; adapter coverage varies** |
 | **Network OSINT & DNS/SSL Tools** | ❌ None native | ** Native DNS, SSL, Headers, WHOIS, Subdomain Tools** |
 | **Multi-Archive Snapshot View** | ❌ Wayback only | ** Wayback, Archive.today, Google Cache, Ghostarchive** |
 | **Split-Screen Dual Search** | ❌ Not available | ** Side-by-Side Dual Engine Comparison (`/split`)** |
@@ -141,7 +141,7 @@ Access the web interface at **`http://localhost:8184`**.
 
 ### 2. Build from Source
 
-Ensure you have [Go 1.22+](https://go.dev/dl/) installed:
+Ensure you have [Go 1.27.2+](https://go.dev/dl/) installed, as required by `go.mod`:
 
 ```bash
 git clone https://github.com/BrianStovia/serxgo.git
@@ -292,7 +292,8 @@ SearXGo can be configured via [`settings.yml`](settings.yml), CLI arguments, or 
 | `SEARXNG_BIND_ADDRESS` | `-host` | `0.0.0.0` | Network binding interface |
 | `SEARXNG_TIMEOUT_MS` | `-timeout` | `3500` | Aggregation timeout in milliseconds |
 | `SEARXNG_PAGE_SIZE` / `PAGE_SIZE` | - | `20` | Default results count per page (max 50) |
-| `SEARXNG_SECRET_KEY` | - | `searxgo-secret-key...` | HMAC secret for image proxy |
+| `SEARXNG_TRUSTED_PROXIES` | - | - | Comma-separated proxy CIDRs allowed to set forwarded client IP headers |
+| `SEARXNG_LIMITER` | - | `true` | Enable request rate limiting (`false` disables it) |
 | `SEARXNG_DEBUG` | - | `false` | Enable verbose debug logging |
 | `SEARXNG_LIMITER` | - | `false` | Enable rate limiting (Unlimited by default) |
 

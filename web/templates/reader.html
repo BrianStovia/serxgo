@@ -254,7 +254,7 @@
       </div>
 
       <div class="reader-content" id="reader-body">
-        {{safe .Article.ContentHTML}}
+        {{safeReaderHTML .Article.ContentHTML}}
       </div>
     {{end}}
   </div>

@@ -7,12 +7,12 @@ import (
 	"io"
 	"math"
 	"net/http"
-	"net/url"
 	"regexp"
 	"strings"
 	"time"
 
 	"golang.org/x/net/html"
+	"searxgo/internal/netguard"
 )
 
 // Article represents cleaned, ad-free extracted article content
@@ -31,9 +31,9 @@ type Article struct {
 
 // ExtractArticle fetches target web page and parses clean distraction-free article text
 func ExtractArticle(ctx context.Context, targetURL string) (*Article, error) {
-	parsedURL, err := url.Parse(targetURL)
-	if err != nil || !strings.HasPrefix(parsedURL.Scheme, "http") {
-		return nil, fmt.Errorf("invalid URL: must start with http:// or https://")
+	parsedURL, err := netguard.ValidatePublicURL(targetURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid URL: %w", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "GET", targetURL, nil)
@@ -44,7 +44,7 @@ func ExtractArticle(ctx context.Context, targetURL string) (*Article, error) {
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 
-	client := &http.Client{Timeout: 6 * time.Second}
+	client := netguard.NewHTTPClient(6*time.Second, 5)
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch article: %w", err)
@@ -119,15 +119,23 @@ func extractMeta(n *html.Node, a *Article) {
 
 			switch key {
 			case "og:title", "twitter:title":
-				if a.Title == "" { a.Title = content }
+				if a.Title == "" {
+					a.Title = content
+				}
 			case "og:site_name":
 				a.SiteName = content
 			case "author", "article:author":
-				if a.Author == "" { a.Author = content }
+				if a.Author == "" {
+					a.Author = content
+				}
 			case "article:published_time", "date":
-				if a.PublishedDate == "" { a.PublishedDate = content }
+				if a.PublishedDate == "" {
+					a.PublishedDate = content
+				}
 			case "description", "og:description":
-				if a.Excerpt == "" { a.Excerpt = content }
+				if a.Excerpt == "" {
+					a.Excerpt = content
+				}
 			}
 		}
 	}

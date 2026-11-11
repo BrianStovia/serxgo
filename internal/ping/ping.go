@@ -7,46 +7,49 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"searxgo/internal/netguard"
 )
 
 type PortResult struct {
-	Port        int    `json:"port"`
-	Service     string `json:"service"`
-	IsOpen      bool   `json:"is_open"`
-	LatencyMs   int64  `json:"latency_ms"`
-	Status      string `json:"status"` // "OPEN", "CLOSED", "TIMEOUT"
+	Port      int    `json:"port"`
+	Service   string `json:"service"`
+	IsOpen    bool   `json:"is_open"`
+	LatencyMs int64  `json:"latency_ms"`
+	Status    string `json:"status"` // "OPEN", "CLOSED", "TIMEOUT"
 }
 
 type TLSCertInfo struct {
-	Issuer         string `json:"issuer"`
-	Subject        string `json:"subject"`
-	ValidFrom      string `json:"valid_from"`
-	ValidTo        string `json:"valid_to"`
-	DaysRemaining  int    `json:"days_remaining"`
-	IsExpired      bool   `json:"is_expired"`
-	DNSNames       []string `json:"dns_names,omitempty"`
+	Issuer        string   `json:"issuer"`
+	Subject       string   `json:"subject"`
+	ValidFrom     string   `json:"valid_from"`
+	ValidTo       string   `json:"valid_to"`
+	DaysRemaining int      `json:"days_remaining"`
+	IsExpired     bool     `json:"is_expired"`
+	DNSNames      []string `json:"dns_names,omitempty"`
 }
 
 type PingReport struct {
-	Target          string       `json:"target"`
-	Host            string       `json:"host"`
-	ResolvedIP      string       `json:"resolved_ip"`
-	IsUp            bool         `json:"is_up"`
-	Verdict         string       `json:"verdict"` // "UP", "DEGRADED", "DOWN"
-	HTTPStatusCode  int          `json:"http_status_code"`
-	HTTPStatusText  string       `json:"http_status_text"`
-	HTTPLatencyMs   int64        `json:"http_latency_ms"`
-	FinalURL        string       `json:"final_url"`
-	ServerHeader    string       `json:"server_header,omitempty"`
-	ContentType     string       `json:"content_type,omitempty"`
-	RedirectHops    int          `json:"redirect_hops"`
-	TLSCert         *TLSCertInfo `json:"tls_cert,omitempty"`
-	PortResults     []PortResult `json:"port_results"`
-	CheckedAt       string       `json:"checked_at"`
-	ErrorMessage    string       `json:"error_message,omitempty"`
+	Target         string       `json:"target"`
+	Host           string       `json:"host"`
+	ResolvedIP     string       `json:"resolved_ip"`
+	IsUp           bool         `json:"is_up"`
+	Verdict        string       `json:"verdict"` // "UP", "DEGRADED", "DOWN"
+	HTTPStatusCode int          `json:"http_status_code"`
+	HTTPStatusText string       `json:"http_status_text"`
+	HTTPLatencyMs  int64        `json:"http_latency_ms"`
+	FinalURL       string       `json:"final_url"`
+	ServerHeader   string       `json:"server_header,omitempty"`
+	ContentType    string       `json:"content_type,omitempty"`
+	RedirectHops   int          `json:"redirect_hops"`
+	TLSCert        *TLSCertInfo `json:"tls_cert,omitempty"`
+	PortResults    []PortResult `json:"port_results"`
+	CheckedAt      string       `json:"checked_at"`
+	ErrorMessage   string       `json:"error_message,omitempty"`
 }
 
 type Service struct {
@@ -55,15 +58,7 @@ type Service struct {
 
 func NewService() *Service {
 	return &Service{
-		httpClient: &http.Client{
-			Timeout: 5 * time.Second,
-			CheckRedirect: func(req *http.Request, via []*http.Request) error {
-				if len(via) >= 10 {
-					return http.ErrUseLastResponse
-				}
-				return nil
-			},
-		},
+		httpClient: netguard.NewHTTPClient(5*time.Second, 5),
 	}
 }
 
@@ -100,6 +95,12 @@ func (s *Service) Check(ctx context.Context, targetInput string) (*PingReport, e
 	if host == "" {
 		return nil, fmt.Errorf("target host cannot be empty")
 	}
+	parsedTarget, err := netguard.ValidatePublicURL(targetURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid or restricted target: %w", err)
+	}
+	host = parsedTarget.Hostname()
+	targetURL = parsedTarget.String()
 
 	report := &PingReport{
 		Target:      targetURL,
@@ -120,17 +121,16 @@ func (s *Service) Check(ctx context.Context, targetInput string) (*PingReport, e
 	if err == nil {
 		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 SearXGo-Ping/1.0")
 		req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-		
+
 		hops := 0
-		client := &http.Client{
-			Timeout: 6 * time.Second,
-			CheckRedirect: func(req *http.Request, via []*http.Request) error {
-				hops = len(via)
-				if hops >= 10 {
-					return http.ErrUseLastResponse
-				}
-				return nil
-			},
+		client := netguard.NewHTTPClient(6*time.Second, 5)
+		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			hops = len(via)
+			if len(via) > 5 {
+				return http.ErrUseLastResponse
+			}
+			_, err := netguard.ValidatePublicURL(req.URL.String())
+			return err
 		}
 
 		resp, err := client.Do(req)
@@ -183,10 +183,18 @@ func (s *Service) Check(ctx context.Context, targetInput string) (*PingReport, e
 	}
 
 	// 2. TLS Certificate Probe
-	tlsConn, err := tls.DialWithDialer(&net.Dialer{Timeout: 3 * time.Second}, "tcp", host+":443", &tls.Config{
-		InsecureSkipVerify: false,
-		ServerName:         host,
-	})
+	tlsCtx, cancelTLS := context.WithTimeout(ctx, 3*time.Second)
+	conn, err := netguard.DialContext(tlsCtx, "tcp", net.JoinHostPort(host, "443"))
+	var tlsConn *tls.Conn
+	if err == nil {
+		tlsConn = tls.Client(conn, &tls.Config{ServerName: host, MinVersion: tls.VersionTLS12})
+		err = tlsConn.HandshakeContext(tlsCtx)
+		if err != nil {
+			conn.Close()
+			tlsConn = nil
+		}
+	}
+	cancelTLS()
 	if err == nil {
 		defer tlsConn.Close()
 		state := tlsConn.ConnectionState()
@@ -240,9 +248,10 @@ func (s *Service) Check(ctx context.Context, targetInput string) (*PingReport, e
 
 func (s *Service) scanPort(ctx context.Context, host string, port int, service string) PortResult {
 	start := time.Now()
-	addr := fmt.Sprintf("%s:%d", host, port)
-	d := net.Dialer{Timeout: 2 * time.Second}
-	conn, err := d.DialContext(ctx, "tcp", addr)
+	addr := net.JoinHostPort(host, strconv.Itoa(port))
+	dialCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	conn, err := netguard.DialContext(dialCtx, "tcp", addr)
+	cancel()
 	latency := time.Since(start).Milliseconds()
 
 	if err != nil {

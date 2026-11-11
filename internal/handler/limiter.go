@@ -24,9 +24,10 @@ type RateLimiter struct {
 	enabled   bool
 	clients   map[string]*clientBucket
 	stopClean chan struct{}
+	trustedProxies []*net.IPNet
 }
 
-func NewRateLimiter(rate float64, burst int, enabled bool) *RateLimiter {
+func NewRateLimiter(rate float64, burst int, enabled bool, trustedProxies ...[]string) *RateLimiter {
 	if rate <= 0 {
 		rate = 20.0
 	}
@@ -41,6 +42,14 @@ func NewRateLimiter(rate float64, burst int, enabled bool) *RateLimiter {
 		clients:   make(map[string]*clientBucket),
 		stopClean: make(chan struct{}),
 	}
+	if len(trustedProxies) > 0 {
+		for _, raw := range trustedProxies[0] {
+			_, network, err := net.ParseCIDR(strings.TrimSpace(raw))
+			if err == nil {
+				limiter.trustedProxies = append(limiter.trustedProxies, network)
+			}
+		}
+	}
 
 	// Periodic garbage collection for stale IP buckets
 	go limiter.cleanupLoop(10 * time.Minute)
@@ -52,26 +61,10 @@ func (l *RateLimiter) Stop() {
 	close(l.stopClean)
 }
 
-func (l *RateLimiter) isWhitelisted(ipStr string) bool {
-	ip := net.ParseIP(ipStr)
-	if ip == nil {
-		return false
-	}
-	// Bypass loopback (127.0.0.1, ::1) and local private networks
-	if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsUnspecified() {
-		return true
-	}
-	return false
-}
-
 // Allow evaluates if a client request is within rate limits.
 // Returns (allowed, retryAfterDuration).
 func (l *RateLimiter) Allow(ip string) (bool, time.Duration) {
 	if !l.enabled {
-		return true, 0
-	}
-
-	if l.isWhitelisted(ip) {
 		return true, 0
 	}
 
@@ -81,6 +74,9 @@ func (l *RateLimiter) Allow(ip string) (bool, time.Duration) {
 	now := time.Now()
 	bucket, exists := l.clients[ip]
 	if !exists {
+		if len(l.clients) >= 100000 {
+			return false, time.Minute
+		}
 		l.clients[ip] = &clientBucket{
 			tokens:    float64(l.burst) - 1.0,
 			lastCheck: now,
@@ -128,25 +124,44 @@ func (l *RateLimiter) cleanupLoop(interval time.Duration) {
 	}
 }
 
-// ResolveClientIP extracts real client IP considering reverse proxy headers
+// ResolveClientIP uses only the TCP peer address. Forwarding headers are
+// untrusted unless the server explicitly configures a trusted proxy.
 func ResolveClientIP(r *http.Request) string {
-	// Cloudflare
-	if cf := r.Header.Get("CF-Connecting-IP"); cf != "" {
-		return strings.TrimSpace(cf)
-	}
-	// Standard proxy
-	if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
-		parts := strings.Split(fwd, ",")
-		return strings.TrimSpace(parts[0])
-	}
-	if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
-		return strings.TrimSpace(realIP)
-	}
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err == nil {
 		return host
 	}
 	return r.RemoteAddr
+}
+
+func (l *RateLimiter) clientIP(r *http.Request) string {
+	remote := net.ParseIP(ResolveClientIP(r))
+	if remote == nil || !l.isTrustedProxy(remote) {
+		return ResolveClientIP(r)
+	}
+	if cf := net.ParseIP(strings.TrimSpace(r.Header.Get("CF-Connecting-IP"))); cf != nil {
+		return cf.String()
+	}
+	parts := strings.Split(r.Header.Get("X-Forwarded-For"), ",")
+	for i := len(parts) - 1; i >= 0; i-- {
+		candidate := net.ParseIP(strings.TrimSpace(parts[i]))
+		if candidate != nil && !l.isTrustedProxy(candidate) {
+			return candidate.String()
+		}
+	}
+	if realIP := net.ParseIP(strings.TrimSpace(r.Header.Get("X-Real-IP"))); realIP != nil {
+		return realIP.String()
+	}
+	return remote.String()
+}
+
+func (l *RateLimiter) isTrustedProxy(ip net.IP) bool {
+	for _, network := range l.trustedProxies {
+		if network.Contains(ip) {
+			return true
+		}
+	}
+	return false
 }
 
 // Middleware wraps an http.Handler with rate limiting and returns HTTP 429 when throttled
@@ -159,7 +174,7 @@ func (l *RateLimiter) Middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		clientIP := ResolveClientIP(r)
+		clientIP := l.clientIP(r)
 		allowed, retryAfter := l.Allow(clientIP)
 		if !allowed {
 			seconds := int(math.Ceil(retryAfter.Seconds()))

@@ -334,6 +334,10 @@ func (h *Handler) ServeSettings(w http.ResponseWriter, r *http.Request) {
 
 // ServeClearCookies clears all user preference cookies
 func (h *Handler) ServeClearCookies(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	for _, cookie := range r.Cookies() {
 		if strings.HasPrefix(cookie.Name, "searx") {
 			http.SetCookie(w, &http.Cookie{
