@@ -643,19 +643,23 @@ func (s *Service) addQualityFromObj(info *LiveRoomInfo, key string, qObj map[str
 	mainMap, _ := qObj["main"].(map[string]interface{})
 	backupMap, _ := qObj["backup"].(map[string]interface{})
 
-	var hlsURL, flvURL string
+	var hlsURL, flvURL, backupHLSURL string
 	if mainMap != nil {
 		hlsURL, _ = mainMap["hls"].(string)
 		flvURL, _ = mainMap["flv"].(string)
 	}
-	if hlsURL == "" && backupMap != nil {
-		hlsURL, _ = backupMap["hls"].(string)
-	}
-	if flvURL == "" && backupMap != nil {
-		flvURL, _ = backupMap["flv"].(string)
+	if backupMap != nil {
+		backupHLSURL, _ = backupMap["hls"].(string)
+		if hlsURL == "" {
+			hlsURL = backupHLSURL
+		}
+		if flvURL == "" {
+			flvURL, _ = backupMap["flv"].(string)
+		}
 	}
 
 	hlsURL = CleanStreamURL(hlsURL)
+	backupHLSURL = CleanStreamURL(backupHLSURL)
 	flvURL = CleanStreamURL(flvURL)
 
 	qLabel := strings.ToUpper(key)
@@ -676,44 +680,41 @@ func (s *Service) addQualityFromObj(info *LiveRoomInfo, key string, qObj map[str
 		qLabel = "Low (360p)"
 	}
 
-	// Avoid duplicate entries
-	if hlsURL != "" {
+	// Keep both CDN candidates so the player can fail over without waiting for
+	// a new TikTok room lookup when the primary edge stalls or rejects a chunk.
+	appendQuality := func(name, streamURL, streamType string) {
+		if streamURL == "" {
+			return
+		}
 		exists := false
 		for _, q := range info.Qualities {
-			if q.URL == hlsURL {
+			if q.URL == streamURL {
 				exists = true
 				break
 			}
 		}
 		if !exists {
 			info.Qualities = append(info.Qualities, StreamQuality{
-				Name: qLabel + " [HLS]",
-				URL:  hlsURL,
-				Type: "m3u8",
+				Name: name,
+				URL:  streamURL,
+				Type: streamType,
 			})
-			if info.StreamURL == "" {
-				info.StreamURL = hlsURL
-			}
 		}
 	}
 
-	if flvURL != "" {
-		exists := false
-		for _, q := range info.Qualities {
-			if q.URL == flvURL {
-				exists = true
-				break
-			}
+	if hlsURL != "" {
+		appendQuality(qLabel+" [HLS]", hlsURL, "m3u8")
+		if info.StreamURL == "" {
+			info.StreamURL = hlsURL
 		}
-		if !exists {
-			info.Qualities = append(info.Qualities, StreamQuality{
-				Name: qLabel + " [FLV]",
-				URL:  flvURL,
-				Type: "flv",
-			})
-			if info.FLVURL == "" {
-				info.FLVURL = flvURL
-			}
+	}
+	if backupHLSURL != "" && backupHLSURL != hlsURL {
+		appendQuality(qLabel+" [HLS Backup]", backupHLSURL, "m3u8")
+	}
+	if flvURL != "" {
+		appendQuality(qLabel+" [FLV]", flvURL, "flv")
+		if info.FLVURL == "" {
+			info.FLVURL = flvURL
 		}
 	}
 }

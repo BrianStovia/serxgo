@@ -1618,6 +1618,7 @@
     let currentStreamURL = '';
     let currentQualities = [];
     let currentUsername = '';
+    let preferredQualityIndex = 0;
     let playbackGeneration = 0;
     let playbackRecoveryTimer = null;
     let playbackRecoveryAttempts = 0;
@@ -2017,8 +2018,10 @@
           return false;
         }
 
-        currentStreamURL = data.stream_url;
         currentQualities = data.qualities || [];
+        const availableQualities = getHlsQualities();
+        const selectedQuality = availableQualities[Math.min(preferredQualityIndex, availableQualities.length - 1)];
+        currentStreamURL = selectedQuality?.url || data.stream_url;
         const title = document.getElementById('streamTitle');
         const viewers = document.getElementById('viewerCount');
         if (title && data.title) title.textContent = data.title;
@@ -2065,7 +2068,7 @@
       const container = document.getElementById('qualityButtons');
       if (!toolbar || !container) return;
       container.innerHTML = '';
-      const qualities = currentQualities.filter((quality) => quality.type === 'm3u8' || quality.url.includes('.m3u8'));
+      const qualities = getHlsQualities();
       toolbar.style.display = qualities.length ? 'flex' : 'none';
       qualities.forEach((quality) => {
         const button = document.createElement('button');
@@ -2077,6 +2080,26 @@
       });
     }
 
+    function getHlsQualities() {
+      return currentQualities.filter((quality) => quality.type === 'm3u8' || quality.url.includes('.m3u8'));
+    }
+
+    function tryNextStreamQuality(reason) {
+      const qualities = getHlsQualities();
+      if (qualities.length < 2) return false;
+
+      const activeIndex = qualities.findIndex((quality) => quality.url === currentStreamURL);
+      const nextIndex = Math.max(activeIndex, preferredQualityIndex) + 1;
+      if (nextIndex >= qualities.length) return false;
+
+      preferredQualityIndex = nextIndex;
+      currentStreamURL = qualities[nextIndex].url;
+      updateQualityButtons();
+      addSystemNotice(`📶 Koneksi tersendat${reason ? ` (${reason})` : ''}; beralih ke ${qualities[nextIndex].name}.`);
+      playHlsStream(currentStreamURL);
+      return true;
+    }
+
     async function loadLiveStream(userInput) {
       const loadingBox = document.getElementById('loadingBox');
       const playerContainer = document.getElementById('playerContainer');
@@ -2086,6 +2109,7 @@
       playbackGeneration += 1;
       clearPlaybackRecovery();
       playbackRecoveryAttempts = 0;
+      preferredQualityIndex = 0;
       hasPlayedCurrentStream = false;
 
       // Update URL query state without page refresh
@@ -2199,6 +2223,8 @@
 
       currentStreamURL = data.stream_url;
       currentQualities = data.qualities || [];
+      const initialQualityIndex = getHlsQualities().findIndex((quality) => quality.url === currentStreamURL);
+      preferredQualityIndex = initialQualityIndex >= 0 ? initialQualityIndex : 0;
 
       // Reset Embed mode state if previously active
       isEmbedMode = false;
@@ -2295,6 +2321,7 @@
           if (data.fatal) {
             switch (data.type) {
               case Hls.ErrorTypes.NETWORK_ERROR:
+                if (tryNextStreamQuality('jaringan CDN')) return;
                 if (!useDirect && !localStorage.getItem('tiktok_sessionid')) {
                   console.warn('[TikTokLive] HLS Proxy network error (kemungkinan IP server dibatasi CDN TikTok), mencoba Direct CDN Stream...');
                   hls.destroy();
@@ -2313,6 +2340,7 @@
                   console.warn('[TikTokLive] HLS media error; attempting decoder recovery...');
                   hls.recoverMediaError();
                 } else {
+                  if (tryNextStreamQuality('decoder video')) return;
                   hls.destroy();
                   currentHls = null;
                   schedulePlaybackRecovery('decoder video', playbackGeneration);
@@ -2320,6 +2348,7 @@
                 break;
               default:
                 console.error('[TikTokLive] HLS Fatal error:', data);
+                if (tryNextStreamQuality('stream error')) return;
                 if (!useDirect && !localStorage.getItem('tiktok_sessionid')) {
                   console.warn('[TikTokLive] Fatal proxy error; retrying with the direct CDN URL...');
                   hls.destroy();
@@ -2372,6 +2401,7 @@
         playbackStallTimer = setTimeout(() => {
           playbackStallTimer = null;
           if (generation === playbackGeneration && !isEmbedMode && !playbackVideo.paused) {
+            if (tryNextStreamQuality('buffer macet')) return;
             if (currentHls) {
               try { currentHls.stopLoad(); } catch (_) {}
             }
@@ -2387,6 +2417,8 @@
 
     function switchStreamQuality(newURL, clickedBtn) {
       currentStreamURL = newURL;
+      const selectedIndex = getHlsQualities().findIndex((quality) => quality.url === newURL);
+      if (selectedIndex >= 0) preferredQualityIndex = selectedIndex;
       document.querySelectorAll('.quality-btn').forEach(b => b.classList.remove('active'));
       if (clickedBtn) clickedBtn.classList.add('active');
       playHlsStream(newURL);
