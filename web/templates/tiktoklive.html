@@ -1618,6 +1618,13 @@
     let currentStreamURL = '';
     let currentQualities = [];
     let currentUsername = '';
+    let playbackGeneration = 0;
+    let playbackRecoveryTimer = null;
+    let playbackRecoveryAttempts = 0;
+    let playbackRecoveryRun = 0;
+    let playbackRecoveryController = null;
+    let playbackStallTimer = null;
+    let hasPlayedCurrentStream = false;
     let chatEventSource = null;
     let autoScrollChat = true;
     let soundEnabled = true;
@@ -1967,11 +1974,119 @@
       }
     }
 
+    function clearPlaybackRecovery() {
+      playbackRecoveryRun += 1;
+      if (playbackRecoveryTimer) {
+        clearTimeout(playbackRecoveryTimer);
+        playbackRecoveryTimer = null;
+      }
+      if (playbackRecoveryController) {
+        playbackRecoveryController.abort();
+        playbackRecoveryController = null;
+      }
+      if (playbackStallTimer) {
+        clearTimeout(playbackStallTimer);
+        playbackStallTimer = null;
+      }
+    }
+
+    async function refreshPlaybackStream(generation) {
+      if (!currentUsername || generation !== playbackGeneration) return false;
+
+      const sessionID = localStorage.getItem('tiktok_sessionid') || '';
+      const controller = new AbortController();
+      playbackRecoveryController = controller;
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      try {
+        const response = await fetch('/api/tiktoklive/info', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user: currentUsername, sessionid: sessionID }),
+          signal: controller.signal
+        });
+        if (!response.ok) return false;
+
+        const data = await response.json();
+        if (generation !== playbackGeneration) return false;
+        if (!data.is_live || !data.stream_url) {
+          if (data.is_restricted) showRestrictedToast();
+          addSystemNotice(data.is_restricted
+            ? '🔞 Stream dibatasi TikTok; pemutar mencoba tersambung kembali setelah URL stream diperbarui.'
+            : '📴 Siaran tampaknya sudah berakhir. Tekan Muat Ulang untuk mengecek lagi.');
+          return false;
+        }
+
+        currentStreamURL = data.stream_url;
+        currentQualities = data.qualities || [];
+        const title = document.getElementById('streamTitle');
+        const viewers = document.getElementById('viewerCount');
+        if (title && data.title) title.textContent = data.title;
+        if (viewers) viewers.textContent = formatNumber(data.viewer_count || 0);
+        updateQualityButtons();
+        playHlsStream(currentStreamURL);
+        return true;
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.warn('[TikTokLive] Gagal mengambil URL stream baru:', error);
+        }
+        return false;
+      } finally {
+        clearTimeout(timeout);
+        if (playbackRecoveryController === controller) playbackRecoveryController = null;
+      }
+    }
+
+    function schedulePlaybackRecovery(reason, generation = playbackGeneration) {
+      if (playbackRecoveryTimer || generation !== playbackGeneration || !currentUsername) return;
+
+      playbackRecoveryAttempts += 1;
+      const recoveryRun = ++playbackRecoveryRun;
+      const delay = Math.min(1500 * (2 ** Math.min(playbackRecoveryAttempts - 1, 5)), 30000);
+      if (playbackRecoveryAttempts === 1 || playbackRecoveryAttempts % 3 === 0) {
+        addSystemNotice(`🔄 Koneksi video terputus${reason ? ` (${reason})` : ''}. Mencoba menyambung kembali...`);
+      }
+
+      playbackRecoveryTimer = setTimeout(async () => {
+        playbackRecoveryTimer = null;
+        if (generation !== playbackGeneration || recoveryRun !== playbackRecoveryRun) return;
+        const restored = await refreshPlaybackStream(generation);
+        if (!restored && generation === playbackGeneration && recoveryRun === playbackRecoveryRun) {
+          playbackRecoveryTimer = setTimeout(() => {
+            playbackRecoveryTimer = null;
+            schedulePlaybackRecovery('menunggu koneksi', generation);
+          }, delay);
+        }
+      }, delay);
+    }
+
+    function updateQualityButtons() {
+      const toolbar = document.getElementById('qualityToolbar');
+      const container = document.getElementById('qualityButtons');
+      if (!toolbar || !container) return;
+      container.innerHTML = '';
+      const qualities = currentQualities.filter((quality) => quality.type === 'm3u8' || quality.url.includes('.m3u8'));
+      toolbar.style.display = qualities.length ? 'flex' : 'none';
+      qualities.forEach((quality) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `quality-btn ${quality.url === currentStreamURL ? 'active' : ''}`;
+        button.textContent = quality.name;
+        button.onclick = () => switchStreamQuality(quality.url, button);
+        container.appendChild(button);
+      });
+    }
+
     async function loadLiveStream(userInput) {
       const loadingBox = document.getElementById('loadingBox');
       const playerContainer = document.getElementById('playerContainer');
       const statusBox = document.getElementById('statusBox');
       const videoEl = document.getElementById('liveVideo');
+
+      playbackGeneration += 1;
+      clearPlaybackRecovery();
+      playbackRecoveryAttempts = 0;
+      hasPlayedCurrentStream = false;
 
       // Update URL query state without page refresh
       const urlParams = new URLSearchParams(window.location.search);
@@ -2101,25 +2216,7 @@
       hideRestrictedToast();
 
       // Setup Quality buttons
-      const qualityToolbar = document.getElementById('qualityToolbar');
-      const qualityBtnsContainer = document.getElementById('qualityButtons');
-      qualityBtnsContainer.innerHTML = '';
-
-      if (currentQualities.length > 0) {
-        qualityToolbar.style.display = 'flex';
-        currentQualities.forEach((q) => {
-          if (q.type === 'm3u8' || q.url.includes('.m3u8')) {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = `quality-btn ${q.url === currentStreamURL ? 'active' : ''}`;
-            btn.textContent = q.name;
-            btn.onclick = () => switchStreamQuality(q.url, btn);
-            qualityBtnsContainer.appendChild(btn);
-          }
-        });
-      } else {
-        qualityToolbar.style.display = 'none';
-      }
+      updateQualityButtons();
 
       playerContainer.style.display = 'block';
 
@@ -2144,30 +2241,39 @@
 
       // 3. MSE HLS Engine (Chromium & Firefox)
       if (Hls.isSupported()) {
-        currentHls = new Hls({
+        let mediaRecoveryAttempts = 0;
+        const hls = currentHls = new Hls({
           enableWorker: true,
-          lowLatencyMode: true,
+          // Prefer a little more buffer over repeatedly falling behind TikTok's live edge.
+          lowLatencyMode: false,
+          liveSyncDurationCount: 4,
+          liveMaxLatencyDurationCount: 10,
+          maxLiveSyncPlaybackRate: 1.1,
           backBufferLength: 60,
-          maxBufferLength: 30,
+          maxBufferLength: 45,
+          maxMaxBufferLength: 90,
+          highBufferWatchdogPeriod: 2,
           manifestLoadingTimeOut: 15000,
-          manifestLoadingMaxRetry: 4,
+          manifestLoadingMaxRetry: 6,
           levelLoadingTimeOut: 15000,
-          levelLoadingMaxRetry: 4,
-          fragLoadingTimeOut: 20000,
-          fragLoadingMaxRetry: 4,
+          levelLoadingMaxRetry: 6,
+          fragLoadingTimeOut: 30000,
+          fragLoadingMaxRetry: 8,
+          fragLoadingRetryDelay: 1000,
           xhrSetup: function(xhr, url) {
             xhr.withCredentials = false;
           }
         });
 
         // Attach media FIRST before loading source
-        currentHls.attachMedia(videoEl);
+        hls.attachMedia(videoEl);
 
-        currentHls.on(Hls.Events.MEDIA_ATTACHED, function () {
-          currentHls.loadSource(targetSource);
+        hls.on(Hls.Events.MEDIA_ATTACHED, function () {
+          if (currentHls === hls) hls.loadSource(targetSource);
         });
 
-        currentHls.on(Hls.Events.MANIFEST_PARSED, function () {
+        hls.on(Hls.Events.MANIFEST_PARSED, function () {
+          if (currentHls !== hls) return;
           if (useDirect) {
             console.log('[TikTokLive] Direct CDN stream loaded successfully');
           }
@@ -2184,49 +2290,46 @@
           }
         });
 
-        currentHls.on(Hls.Events.ERROR, function (event, data) {
+        hls.on(Hls.Events.ERROR, function (event, data) {
+          if (currentHls !== hls) return;
           if (data.fatal) {
             switch (data.type) {
               case Hls.ErrorTypes.NETWORK_ERROR:
-                if (!useDirect) {
-                  if (localStorage.getItem('tiktok_sessionid')) {
-                    console.warn('[TikTokLive] Authenticated proxy playback failed; keeping the session cookie on the proxy path.');
-                    showRestrictedToast();
-                    currentHls.destroy();
-                    currentHls = null;
-                    return;
-                  }
+                if (!useDirect && !localStorage.getItem('tiktok_sessionid')) {
                   console.warn('[TikTokLive] HLS Proxy network error (kemungkinan IP server dibatasi CDN TikTok), mencoba Direct CDN Stream...');
-                  currentHls.destroy();
+                  hls.destroy();
                   currentHls = null;
                   playHlsStream(streamURL, true);
                   return;
                 }
-                console.warn('[TikTokLive] HLS Network error, attempting recovery...');
-                currentHls.startLoad();
-                showRestrictedToast();
+                console.warn('[TikTokLive] HLS network error; refreshing the signed stream URL...');
+                hls.destroy();
+                currentHls = null;
+                schedulePlaybackRecovery('jaringan CDN', playbackGeneration);
                 break;
               case Hls.ErrorTypes.MEDIA_ERROR:
-                console.warn('[TikTokLive] HLS Media error, attempting recovery...');
-                currentHls.recoverMediaError();
+                if (mediaRecoveryAttempts < 2) {
+                  mediaRecoveryAttempts += 1;
+                  console.warn('[TikTokLive] HLS media error; attempting decoder recovery...');
+                  hls.recoverMediaError();
+                } else {
+                  hls.destroy();
+                  currentHls = null;
+                  schedulePlaybackRecovery('decoder video', playbackGeneration);
+                }
                 break;
               default:
                 console.error('[TikTokLive] HLS Fatal error:', data);
-                if (!useDirect) {
-                  if (localStorage.getItem('tiktok_sessionid')) {
-                    showRestrictedToast();
-                    currentHls.destroy();
-                    currentHls = null;
-                    return;
-                  }
-                  console.warn('[TikTokLive] Fatal error with proxy, retrying with Direct CDN Stream...');
-                  currentHls.destroy();
+                if (!useDirect && !localStorage.getItem('tiktok_sessionid')) {
+                  console.warn('[TikTokLive] Fatal proxy error; retrying with the direct CDN URL...');
+                  hls.destroy();
                   currentHls = null;
                   playHlsStream(streamURL, true);
                   return;
                 }
-                showRestrictedToast();
-                currentHls.destroy();
+                hls.destroy();
+                currentHls = null;
+                schedulePlaybackRecovery('stream error', playbackGeneration);
                 break;
             }
           }
@@ -2245,10 +2348,41 @@
             console.warn('[TikTokLive] Native HLS proxy failed, trying direct stream URL...');
             playHlsStream(streamURL, true);
           } else {
-            showRestrictedToast();
+            schedulePlaybackRecovery('stream video', playbackGeneration);
           }
         };
       }
+    }
+
+    const playbackVideo = document.getElementById('liveVideo');
+    if (playbackVideo) {
+      playbackVideo.addEventListener('playing', () => {
+        hasPlayedCurrentStream = true;
+        clearPlaybackRecovery();
+        playbackRecoveryAttempts = 0;
+        hideRestrictedToast();
+        if (playbackStallTimer) {
+          clearTimeout(playbackStallTimer);
+          playbackStallTimer = null;
+        }
+      });
+      playbackVideo.addEventListener('waiting', () => {
+        if (!hasPlayedCurrentStream || isEmbedMode || playbackVideo.paused || playbackStallTimer) return;
+        const generation = playbackGeneration;
+        playbackStallTimer = setTimeout(() => {
+          playbackStallTimer = null;
+          if (generation === playbackGeneration && !isEmbedMode && !playbackVideo.paused) {
+            if (currentHls) {
+              try { currentHls.stopLoad(); } catch (_) {}
+            }
+            if (currentHls) {
+              try { currentHls.destroy(); } catch (_) {}
+              currentHls = null;
+            }
+            schedulePlaybackRecovery('buffer macet', generation);
+          }
+        }, 15000);
+      });
     }
 
     function switchStreamQuality(newURL, clickedBtn) {
